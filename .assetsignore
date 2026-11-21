@@ -1,0 +1,16 @@
+# Not part of the website: keep them out of the Cloudflare upload (gitignore syntax).
+.git
+.github
+node_modules
+tools
+docs
+test-results
+playwright-report
+apps-script
+*.md
+package.json
+package-lock.json
+wrangler.jsonc
+.assetsignore
+.gitignore
+.wrangler

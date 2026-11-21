@@ -1,0 +1,13 @@
+// Cloudflare Workers config. The site is static files served from the repo root (no build step).
+// - `npx wrangler deploy` (main → production) and `npx wrangler preview` (other branches → preview
+//   URLs) both read this file.
+// - `previews` must exist (even empty) for branch previews to build.
+// - Files that aren't part of the app are excluded in .assetsignore.
+{
+  "name": "motherland",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./"
+  },
+  "previews": {}
+}
