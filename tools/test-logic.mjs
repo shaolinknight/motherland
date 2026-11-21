@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import { compare, toneVariants, toneOf, stripTones, syllableDiff } from '../js/vitext.js';
 import { newCard, grade, nextInterval } from '../js/srs.js';
+import fs from 'node:fs';
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log('✓', name); };
 
@@ -34,4 +35,12 @@ t('SRS: lapse resets reps and lowers ease', () => {
   c = grade(c, 0); assert.equal(c.reps, 0); assert.equal(c.lapses, 1); assert.ok(c.ease < e);
 });
 t('SRS: ease never below 1.3', () => { let c = newCard(); for (let i = 0; i < 30; i++) c = grade(c, 0); assert.ok(c.ease >= 1.3); });
+
+// Shipping checks: a module missing from the service worker breaks offline use, and one missing from
+// the preload list brings back the slow import waterfall.
+const modules = ['js', 'data'].flatMap(d => fs.readdirSync(d).filter(f => f.endsWith('.js')).map(f => `${d}/${f}`));
+const sw = fs.readFileSync('sw.js', 'utf8'), html = fs.readFileSync('index.html', 'utf8');
+t('every module is cached by the service worker', () => modules.forEach(m => assert.ok(sw.includes(`'./${m}'`), `${m} missing from FILES in sw.js`)));
+t('every module is preloaded', () => modules.forEach(m => assert.ok(html.includes(`<link rel="modulepreload" href="${m}">`), `${m} missing from modulepreload in index.html`)));
+t('service worker shell is not the redirecting /index.html', () => assert.ok(!sw.includes("'./index.html'")));
 console.log(`\n${n} tests passed`);

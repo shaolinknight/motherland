@@ -416,3 +416,17 @@ button, .btn, .option, .tile, .m-tile, .q-tile, .tabs a { -webkit-user-select: n
 @media (min-width: 768px) {
   .page > .link-row, .page > .search, .page > .filters, .page > .bank, .page > .word-list { grid-column: 1 / -1; }
 }
+
+/* ── v1.2: update toast (top, so it never covers the tab bar or a lesson's Check button) ── */
+.update-toast {
+  position: fixed; left: 50%; top: calc(var(--safe-t) + 10px); z-index: 150;
+  transform: translate(-50%, -16px); opacity: 0; transition: transform .25s cubic-bezier(.2, .8, .2, 1), opacity .25s;
+  width: max-content; max-width: calc(100% - 32px);
+}
+.update-toast.show { transform: translate(-50%, 0); opacity: 1; }
+.update-toast button {
+  display: flex; flex-direction: column; align-items: center; gap: 1px; min-height: 48px; padding: 8px 22px;
+  border: 0; border-radius: 999px; background: var(--ink); color: #fff; cursor: pointer;
+  box-shadow: 0 6px 20px rgba(42, 27, 23, .3); font-size: .9rem;
+}
+.update-toast button span { font-size: .78rem; opacity: .85; }

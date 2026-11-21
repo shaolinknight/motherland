@@ -14,6 +14,27 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="css/app.css">
+  <!-- Fetch every module at once instead of discovering them import by import (keep in sync; npm test checks). -->
+  <link rel="modulepreload" href="js/main.js">
+  <link rel="modulepreload" href="js/course.js">
+  <link rel="modulepreload" href="js/exercises.js">
+  <link rel="modulepreload" href="js/games.js">
+  <link rel="modulepreload" href="js/icons.js">
+  <link rel="modulepreload" href="js/placement.js">
+  <link rel="modulepreload" href="js/pwa.js">
+  <link rel="modulepreload" href="js/screens.js">
+  <link rel="modulepreload" href="js/speech.js">
+  <link rel="modulepreload" href="js/srs.js">
+  <link rel="modulepreload" href="js/stats.js">
+  <link rel="modulepreload" href="js/store.js">
+  <link rel="modulepreload" href="js/sync.js">
+  <link rel="modulepreload" href="js/ui.js">
+  <link rel="modulepreload" href="js/util.js">
+  <link rel="modulepreload" href="js/vitext.js">
+  <link rel="modulepreload" href="data/vi-a.js">
+  <link rel="modulepreload" href="data/vi-b.js">
+  <link rel="modulepreload" href="data/vi-grammar.js">
+  <link rel="modulepreload" href="data/vi.js">
 </head>
 <body>
   <div id="app" aria-live="polite"></div>

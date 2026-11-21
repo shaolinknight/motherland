@@ -1,6 +1,6 @@
 // Tests Google Sheet sync against a simulated Apps Script, plus offline mode.
 import { chromium, webkit } from 'playwright';
-import { ensureServer } from './serve.mjs';
+import { ensureServer, startServer } from './serve.mjs';
 
 // BROWSER=webkit (default, closest to iPhone Safari) or chromium. CHROME_PATH lets you use an installed Chrome.
 const engine = (process.env.BROWSER || 'webkit') === 'chromium' ? chromium : webkit;
@@ -80,6 +80,46 @@ const ctl = await p2.evaluate(() => !!navigator.serviceWorker.controller);
 ctl ? ok('service worker active') : fail.push('service worker not controlling page');
 await ctx2.setOffline(true);
 await p2.reload(); await p2.waitForSelector('.hello', { timeout: 5000 }).then(() => ok('app opens offline')).catch(() => fail.push('app does not load offline'));
+await ctx2.close();
+
+// New deploy: the cache-first worker must never leave the phone on an old version.
+{
+  let deploy = 1;
+  const PORT2 = 8125, B2 = `http://localhost:${PORT2}/`;
+  const srv2 = await startServer(PORT2, { transform: (url, buf) => {
+    if (deploy === 1) return buf;
+    if (url === '/sw.js') return Buffer.from(buf.toString().replace(/const VERSION = '([^']+)'/, `const VERSION = '$1-test${deploy}'`));
+    if (url === '/' || url === '/index.html') return Buffer.from(buf.toString().replace('<html lang="en"', `<html lang="en" data-build="${deploy}"`));
+    return buf;
+  } });
+  const ctx3 = await browser.newContext({ viewport: { width: 393, height: 852 } });
+  const p3 = await ctx3.newPage(); p3.on('pageerror', e => fail.push('JS error (update): ' + e.message));
+  const build = () => p3.evaluate(() => document.documentElement.dataset.build || '1');
+  const hide = () => p3.evaluate(() => { Object.defineProperty(document, 'visibilityState', { get: () => 'hidden', configurable: true }); document.dispatchEvent(new Event('visibilitychange')); });
+  await p3.goto(B2 + '#/home'); await p3.waitForFunction(() => navigator.serviceWorker.controller, null, { timeout: 8000 });
+  await p3.reload(); await p3.waitForSelector('.hello');
+  (await p3.$('.update-toast')) ? fail.push('update toast shown with no deploy') : ok('no update toast without a deploy');
+
+  deploy = 2; await p3.reload(); await p3.waitForSelector('.hello');
+  (await build()) === '1' ? ok('launch after a deploy is served instantly from cache') : fail.push('cache-first not used');
+  await p3.waitForSelector('.update-toast.show', { timeout: 10000 }).then(() => ok('"Update ready" toast appears after a deploy')).catch(() => fail.push('no update toast after a deploy'));
+  await p3.click('.update-toast button');
+  await p3.waitForFunction(() => document.documentElement.dataset.build === '2', null, { timeout: 10000 }).then(() => ok('tapping the toast loads the new version')).catch(() => fail.push('new version not loaded after tapping the toast'));
+  const keys = await p3.evaluate(() => caches.keys());
+  keys.length === 1 && keys[0].endsWith('-test2') ? ok('old version cache deleted') : fail.push('caches after update: ' + keys.join(', '));
+
+  deploy = 3; await p3.reload(); await p3.waitForSelector('.update-toast.show', { timeout: 10000 }).catch(() => {});
+  await p3.click('.start-lesson'); await p3.waitForSelector('.session');
+  await hide(); await p3.waitForTimeout(1500);
+  (await p3.$('.session')) && (await build()) === '2' ? ok('update waits while a lesson is open') : fail.push('update interrupted an open lesson');
+  await p3.click('.s-close'); await p3.waitForTimeout(300);
+  if (await p3.$('.sheet-wrap .danger')) { await p3.click('.sheet-wrap .danger'); await p3.waitForTimeout(300); }
+  if (await p3.$('.session .done')) await p3.click('.session .done');
+  await hide();
+  await p3.waitForFunction(() => document.documentElement.dataset.build === '3', null, { timeout: 10000 }).then(() => ok('update applies by itself when the app goes to the background')).catch(() => fail.push('waiting update never applied in the background'));
+  await ctx3.close(); srv2.close();
+}
+
 await browser.close();
 console.log(fail.length ? '\n❌ ' + fail.join('\n❌ ') : '\n✅ Sync, backup and offline checks passed');
 server?.close();

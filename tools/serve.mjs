@@ -12,7 +12,8 @@ const TYPES = {
   '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
 };
 
-export function startServer(port = 8123) {
+// transform(urlPath, buffer) → buffer lets tests serve a changed file, e.g. to simulate a new deploy.
+export function startServer(port = 8123, { transform } = {}) {
   const server = http.createServer((req, res) => {
     const url = decodeURIComponent(new URL(req.url, 'http://x').pathname);
     let file = path.join(ROOT, url);
@@ -20,6 +21,7 @@ export function startServer(port = 8123) {
     if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
     fs.readFile(file, (err, buf) => {
       if (err) { res.writeHead(404).end('Not found'); return; }
+      if (transform) buf = transform(url, buf);
       res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
       res.end(buf);
     });
