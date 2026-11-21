@@ -195,6 +195,7 @@ export function learn(root) {
           <div class="grow">
             <div class="unit-name"><b>${esc(u.title)}</b>${p.pct === 100 ? '<span class="chip ok">✓</span>' : ''}</div>
             <div class="muted small" lang="vi">${esc(u.vi)}</div>
+            ${u.review ? '<span class="chip warn review-chip">🧐 New · needs family check</span>' : ''}
             ${bar(p.pct)}
           </div>
           <span class="chip lvl">L${u.level}</span>
@@ -262,6 +263,7 @@ export function unit(root, id, tab = 'words') {
     <section class="card unit-hero">
       <div class="row"><div aria-hidden="true" class="unit-ico big">${u.icon}</div>
         <div class="grow"><b>${p.learned}/${p.total} learned</b>${bar(p.pct)}<span class="chip lvl">Level ${u.level} · ${esc(u.section)}</span></div></div>
+        ${u.review ? '<p class="small review-note">🧐 <b>Needs family check.</b> This unit is new and hasn’t been checked by a native speaker yet. Tap 🚩 on anything that sounds off.</p>' : ''}
       <div class="btn-row">
         <button class="btn primary learn-new">${remaining ? (newVocab ? `Learn ${Math.min(newVocab, S.settings().newPerLesson)} new` : 'Learn the grammar') : 'Practice unit'}</button>
         ${p.learned && remaining ? `<button class="btn ghost practice">Practice</button>` : ''}

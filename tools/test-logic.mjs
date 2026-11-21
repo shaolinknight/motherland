@@ -178,6 +178,20 @@ t('merge: deleted My words stay deleted across devices', () => {
   const m = mergeStates(b, a).langs.vi.myWords; assert.equal(m['my-1'].deleted, true); assert.ok(m['my-2']);
 });
 
+// Content contract: item IDs come from positions, so units are only ever appended.
+const BASE_SIZES = '6/4 16/7 16/6 18/6 16/6 16/8 16/7 17/7 18/6 16/6 20/6 18/7 17/6 15/6 16/6 16/6 17/6 16/6 16/6 16/6 15/6 16/6 15/6 15/6 15/6';
+{
+  const vi = (await import('../data/vi.js')).default;
+  t('units are in order u00…u31 with no gaps', () => assert.deepEqual(vi.units.map(u => u.id), Array.from({ length: vi.units.length }, (_, i) => `u${String(i).padStart(2, '0')}`)));
+  t('first 25 units keep their size (append-only)', () => {
+    // Word/phrase counts of u00–u24 as of v1.2; a change here would shift every later item ID.
+    const sizes = vi.units.slice(0, 25).map(u => `${u.words.length}/${u.phrases.length}`).join(' ');
+    assert.equal(sizes, BASE_SIZES);
+  });
+  t('new units are marked as needing a family check', () => assert.ok(vi.units.slice(25).every(u => u.review === true)));
+  t('every new unit has a grammar point with 3+ drills', () => assert.ok(vi.units.slice(25).every(u => u.grammar.length && u.grammar.every(g => g.drills.length >= 3))));
+}
+
 // Shipping checks: a module missing from the service worker breaks offline use, and one missing from
 // the preload list brings back the slow import waterfall.
 const modules = ['js', 'data'].flatMap(d => fs.readdirSync(d).filter(f => f.endsWith('.js')).map(f => `${d}/${f}`));

@@ -5,7 +5,9 @@ const TONES = /[̣̀́̃̉]/g;     // huyền, sắc, ngã, hỏi, nặng
 const ACUTE = '́', DOT = '̣';
 // Loanwords / brand names / chat shorthand that are allowed as-is.
 export const ALLOW = new Set(['wifi', 'grab', 'size', 'ok', 'alo', 'zalo', 'messenger', 'gym', 'game', 'karaoke',
-  'menu', 'm', 's', 'k', 'ko', 'dc', 'đc', 'deadline', 'marketing', 'xanh', 'sm', 'be']);
+  'menu', 'm', 's', 'k', 'ko', 'dc', 'đc', 'deadline', 'marketing', 'xanh', 'sm', 'be',
+  // texting shorthand (unit u31): gì, rồi, vậy, mọi người, sinh nhật, inbox, thanks
+  'j', 'r', 'z', 'mn', 'sn', 'ib', 'tks']);
 const ONSET = '(ngh|ng|nh|ch|gh|gi|kh|ph|th|tr|qu|b|c|d|đ|g|h|k|l|m|n|p|r|s|t|v|x)?';
 const SYL = new RegExp('^' + ONSET + '([aăâeêioôơuưy]{1,3})(ch|ng|nh|c|m|n|p|t)?$');
 const base = s => s.normalize('NFD').replace(TONES, '').normalize('NFC');

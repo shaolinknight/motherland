@@ -22,6 +22,8 @@ export function load(code = 'vi') {
     u.phrases.forEach(([v, en], i) => list.push({ id: `${u.id}-p${i}`, unit: u.id, kind: 'phrase', vi: v, en, north: '', note: '', level: u.level }));
     // Grammar points are review items too; vi/en hold the first example for display & flagging.
     (u.grammar || []).forEach((g, i) => list.push({ id: `${u.id}-g${i}`, unit: u.id, kind: 'grammar', vi: g.examples[0][0], en: g.title, point: g, north: '', note: '', level: u.level }));
+    // review: content not yet checked by a native speaker (shown as “Needs family check”).
+    if (u.review) list.forEach(it => { it.review = true; });
     list.forEach(it => { items.push(it); byId.set(it.id, it); });
     byUnit.set(u.id, list);
   }

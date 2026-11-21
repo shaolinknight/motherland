@@ -9,7 +9,7 @@ const SKILL_NAMES = { vocab: 'Vocabulary', reading: 'Reading', grammar: 'Grammar
 export const skillName = k => SKILL_NAMES[k] || k;
 
 function levelItems(level, kind) {
-  return C.all().filter(i => i.level === level && i.kind === kind);
+  return C.all().filter(i => i.level === level && i.kind === kind && !i.review);   // only checked content is tested
 }
 
 export function buildTest() {

@@ -8,7 +8,8 @@ const errors = [], warnings = [];
 
 function checkText(text, where) {
   if (typeof text !== 'string' || !text.trim()) { errors.push(`${where}: empty text`); return; }
-  if (/[fjwz]/i.test(text.replace(/wifi|zalo|game|gym|size|deadline|marketing|karaoke|messenger|be/gi, '')))
+  // Standalone j / z are texting shorthand (gì, vậy) taught in u31, so they're skipped here too.
+  if (/[fjwz]/i.test(text.replace(/wifi|zalo|game|gym|size|deadline|marketing|karaoke|messenger|be/gi, '').replace(/(^|[^\p{L}])[jz](?=$|[^\p{L}])/giu, '$1')))
     warnings.push(`${where}: contains f/j/w/z — check “${text}”`);
   splitSyllables(text).forEach(t => syllableProblems(t).forEach(m => errors.push(`${where}: ${m}`)));
 }
