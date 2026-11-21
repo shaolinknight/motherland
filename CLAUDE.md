@@ -12,7 +12,7 @@ Motherland is my personal language-learning app. Vietnamese comes first (Saigon/
 ## Stack (keep it this way unless I agree to change it)
 - No build step. The repo root *is* the site. Vanilla ES modules, no framework, **no runtime dependencies**.
 - `index.html` loads `js/main.js`. Styles are in `css/app.css`. Lesson content is in `data/`.
-- `sw.js` provides offline support. `manifest.webmanifest` + `icons/` handle home-screen install.
+- `sw.js` is cache-first per version (instant launches, offline); `js/pwa.js` shows the "Update ready" toast. `manifest.webmanifest` + `icons/` handle home-screen install.
 
 ## Commands
 ```bash
@@ -24,6 +24,7 @@ npm test                       # logic unit tests (answer checking, tones, revie
 npm run qa                     # click-through of every screen at 375/393/430/820 widths
 npm run qa:sync                # Google Sheet sync (simulated), backup restore, offline
 npm run check                  # all of the above; must pass before any push
+npm run audit -- <label>       # perf + a11y numbers → test-results/audit-<label>.json (method in docs/AUDIT.md)
 ```
 If WebKit can't be downloaded, use `BROWSER=chromium npm run qa` (add `CHROME_PATH=...` to use an installed Chrome). Say which engine you used.
 

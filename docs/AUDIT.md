@@ -93,3 +93,27 @@ Other findings (not covered by axe):
 
 ## On-device checks I can't do from here
 Playwright Chromium is not an iPhone. These need a check on the phone: tap feel, transition smoothness, the haptic tick, the keyboard and Check button, Dynamic Type, and VoiceOver.
+
+## After Phases 1–5 (same method, Chromium, Nov 21, 2026)
+| | Baseline | After Phase 1 | After Phase 5 (final) |
+|---|---|---|---|
+| Slow 3G, **warm launch** → first screen | 3.89 s | **0.05 s** | **0.05 s** |
+| Fast 3G, warm launch | 1.32 s | 0.05 s | 0.05 s |
+| Bytes downloaded on a warm launch | 83 KB | **0 KB** | 0 KB |
+| Slow 3G, cold (first ever) load | 3.94 s | 2.96 s | 3.20 s |
+| Fast 3G, cold load | 1.34 s | 0.98 s | 1.06 s |
+| Requests / bytes, cold | 21 / 87 KB | 22 / 85 KB | 23 / 90 KB |
+| Offline launch | 0.08 s | 0.05 s | 0.05 s |
+| New deploy | next launch, but every launch waits for the network | toast on launch 1–2, new version ~1.2 s after tapping | same |
+| Tab switch / open lesson / next step | 6 / 26 / 14 ms | 6 / 19 / 14 ms | 5 / 28 / 14 ms (now animated) |
+| Learn scroll after Learn → Home → Learn | 0 (lost) | 0 | **600 px (kept)** |
+| axe-core violations | 71 | 71 | **0** |
+| Sheet takes focus / closes on Escape | no / no | no / no | **yes / yes** |
+| Text at 200% | sideways scroll + clipped tabs | same | **no problems** |
+| Follows iPhone Text Size | no | no | yes (`-apple-system-body`) |
+| Save 1,000 cards + 365 days | 0.8 ms | — | 1.3 ms (noise; still far below a frame) |
+
+Notes, honestly:
+- Cold load got ~0.25 s slower between Phase 1 and the end on slow 3G because two small modules (`pwa.js`, `haptics.js`) and ~5 KB of CSS were added. Warm launches, which is what you do every day, are unaffected.
+- With the update toast, the new version shows when you tap it, or by itself the next time the app goes to the background with no lesson or game open.
+- The haptic tick, transitions, Dynamic Type and VoiceOver were verified only by emulation here. They need a check on the iPhone.

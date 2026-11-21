@@ -4,7 +4,9 @@
 | File | What it does |
 |---|---|
 | `index.html` | App shell: `#app` (screens) + `#tabs` (bottom tab bar). Loads `js/main.js`. |
-| `js/main.js` | Boot, hash router (`#/home`, `#/unit/u03/grammar`…), back-navigation depth, sync on open/return, SW registration. |
+| `js/main.js` | Boot, hash router (`#/home`, `#/unit/u03/grammar`…), back-navigation depth, View Transitions between screens, per-screen scroll memory, sync on open/return. |
+| `js/pwa.js` | Service worker registration and the "Update ready" toast (cache-first updates). |
+| `js/haptics.js` | One light haptic tick (iOS 17.4+ `<input switch>` trick, `navigator.vibrate` elsewhere), gated by `settings.haptics`. |
 | `js/screens.js` | Every screen: home, learn, unit, grammar guide, word bank, review, play, leaderboard, progress, placement, diagnostics, settings. Each renders via `innerHTML` and wires its own events. |
 | `js/exercises.js` | Exercise types and the full-screen **session runner** used by lessons, reviews, endless mode and the placement test. Also the grammar renderers and the synonym-safe answer-choice picker (`clash`). |
 | `js/games.js` | Match pairs, Speed round, Tone hunter, Listen up. Flow: intro → 3-2-1 → play → results (with missed words). Keeps a run history for leaderboards. |
@@ -16,11 +18,11 @@
 | `js/sync.js` | Google Sheet sync: pull if the Sheet is newer, then push. `text/plain` POST to avoid CORS preflight. |
 | `js/speech.js` | Built-in voices (Web Speech API), iOS speech unlock on first tap, mic recording for "compare yourself". |
 | `js/vitext.js` | Vietnamese text tools: answer comparison (exact / tones / letters), tone variants, syllable diff. |
-| `js/ui.js` | Bottom sheets (replace browser dialogs), the flag/report sheet, keyboard-aware full-screen layers. |
+| `js/ui.js` | Bottom sheets (replace browser dialogs, drag down to close), the flag/report sheet, keyboard-aware full-screen layers, `trapFocus()` for modal layers, `dismissLayer()` exit animation. |
 | `js/icons.js`, `js/util.js` | Inline SVG icons and small helpers. |
 | `data/vi.js` | Vietnamese course entry: metadata + units (from `vi-a.js`, `vi-b.js`) + grammar (`vi-grammar.js`). |
 | `apps-script/Code.gs` | The Google Apps Script web app for sync. It lives in my Google account, not on Cloudflare. |
-| `tools/` | `validate.mjs` (content checker), `test-logic.mjs`, `qa.mjs`, `qa-sync.mjs`, `serve.mjs`. Dev only. |
+| `tools/` | `validate.mjs` (content checker), `test-logic.mjs`, `qa.mjs`, `qa-sync.mjs` (also simulates deploys), `audit.mjs` (perf/a11y numbers, see `docs/AUDIT.md`), `serve.mjs`. Dev only. |
 
 ## Content format (`data/`)
 Unit fields: `id, section, icon, level (1–3), title, vi, tip, words[], phrases[], dialogue[], reading{vi,en}`.
@@ -39,7 +41,7 @@ Unit fields: `id, section, icon, level (1–3), title, vi, tip, words[], phrases
 ```js
 {
   v: 1, updatedAt, deviceId, lang: 'vi',
-  settings: { showHanoi, rate, voiceURI, forceAudio, dailyGoal, newPerLesson, syncUrl, syncKey, lastSync, syncError },
+  settings: { showHanoi, rate, voiceURI, forceAudio, haptics, dailyGoal, newPerLesson, syncUrl, syncKey, lastSync, syncError },
   langs: { vi: {
     cards: { [itemId]: { reps, ivl, ease, due, lapses, seen, last } },   // SRS
     lessons: { [unitId]: { at, done } },

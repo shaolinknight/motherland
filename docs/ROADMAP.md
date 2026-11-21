@@ -1,6 +1,6 @@
 # Motherland roadmap
 
-## Now: make it feel native (see `docs/FIRST_PROMPT.md`)
+## Done: make it feel native (see `docs/FIRST_PROMPT.md`, results in `docs/AUDIT.md`)
 0. Audit → `docs/AUDIT.md` with baseline numbers
 1. Speed: cached-first service worker + update toast, fix the module waterfall
 2. Motion: View Transitions, press feedback, sheet drag-to-dismiss, reduced-motion crossfades
