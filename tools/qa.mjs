@@ -35,9 +35,17 @@ const fakeSpeech = () => {
 
 async function overflow(page, where) {
   // Measure the settled layout, not a step that is still sliding in.
-  await page.evaluate(() => Promise.all(document.getAnimations()
-    .filter(a => a.effect?.getTiming().iterations !== Infinity)   // skip looping ones (countdown, recording pulse)
-    .map(a => a.finished.catch(() => {}))));
+  // Test mode auto-advances, so a new step can start sliding in right after the last one settled:
+  // keep waiting until nothing finite is animating (a few rounds at most).
+  for (let round = 0; round < 5; round++) {
+    const busy = await page.evaluate(async () => {
+      const running = document.getAnimations().filter(a => a.effect?.getTiming().iterations !== Infinity && a.playState === 'running');
+      await Promise.all(running.map(a => a.finished.catch(() => {})));
+      await new Promise(r => setTimeout(r, 60));
+      return document.getAnimations().some(a => a.effect?.getTiming().iterations !== Infinity && a.playState === 'running');
+    }).catch(() => false);
+    if (!busy) break;
+  }
   const res = await page.evaluate(() => {
     const vw = document.documentElement.clientWidth; const bad = [];
     if (document.documentElement.scrollWidth > vw + 1) bad.push(`page scrolls sideways (${document.documentElement.scrollWidth} > ${vw})`);
