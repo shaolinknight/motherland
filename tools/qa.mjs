@@ -34,6 +34,10 @@ const fakeSpeech = () => {
 };
 
 async function overflow(page, where) {
+  // Measure the settled layout, not a step that is still sliding in.
+  await page.evaluate(() => Promise.all(document.getAnimations()
+    .filter(a => a.effect?.getTiming().iterations !== Infinity)   // skip looping ones (countdown, recording pulse)
+    .map(a => a.finished.catch(() => {}))));
   const res = await page.evaluate(() => {
     const vw = document.documentElement.clientWidth; const bad = [];
     if (document.documentElement.scrollWidth > vw + 1) bad.push(`page scrolls sideways (${document.documentElement.scrollWidth} > ${vw})`);

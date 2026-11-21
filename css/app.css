@@ -69,7 +69,7 @@ a.card:active, button.card:not(:disabled):active { transform: scale(.99); }
 .btn {
   min-height: 48px; padding: 0 18px; border-radius: 999px; border: 1.5px solid transparent;
   font-weight: 700; font-size: 1rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
-  text-decoration: none; white-space: nowrap; transition: transform .08s, background .15s;
+  text-decoration: none; white-space: nowrap;
 }
 .btn:active:not(:disabled) { transform: scale(.97); }
 .btn:disabled { opacity: .45; cursor: default; }
@@ -89,7 +89,7 @@ a.card:active, button.card:not(:disabled):active { transform: scale(.99); }
 .chip.lvl { background: var(--red-soft); color: var(--red-dark); }
 .chip.warn { background: var(--amber-soft); color: var(--amber); }
 .bar { height: 8px; background: #F1E8DE; border-radius: 99px; overflow: hidden; margin: 6px 0; }
-.bar > div { height: 100%; background: linear-gradient(90deg, var(--red), #E0453C); border-radius: 99px; transition: width .4s; }
+.bar > div { height: 100%; background: linear-gradient(90deg, var(--red), #E0453C); border-radius: 99px; }
 .bar.low > div { background: linear-gradient(90deg, var(--amber), #D97706); }
 .banner { display: block; padding: 12px 14px; border-radius: var(--radius-sm); text-decoration: none; font-size: .9rem; font-weight: 600; }
 .banner.warn { background: var(--amber-soft); color: var(--amber); }
@@ -170,7 +170,7 @@ a.card:active, button.card:not(:disabled):active { transform: scale(.99); }
 .week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; height: 130px; margin-top: 8px; }
 .wk-col { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
 .wk-bar { flex: 1; width: 100%; max-width: 30px; background: #F6EEE5; border-radius: 8px; position: relative; display: flex; align-items: flex-end; overflow: hidden; }
-.wk-bar > div { width: 100%; background: #E9A9B1; border-radius: 8px; min-height: 0; transition: height .4s; }
+.wk-bar > div { width: 100%; background: #E9A9B1; border-radius: 8px; min-height: 0; }
 .wk-bar > div.hit { background: var(--red); }
 .goal-line { position: absolute; left: 0; right: 0; height: 0; border-top: 2px dashed var(--gold-ink); opacity: .5; }
 .wk-col small { font-size: .72rem; color: var(--muted); font-weight: 700; }
@@ -221,12 +221,13 @@ code { background: var(--cream); padding: 1px 5px; border-radius: 4px; font-size
 /* ── Session overlay ── */
 .session { overflow: hidden;
   position: fixed; inset: 0; z-index: 50; background: var(--cream);
-  display: flex; flex-direction: column; animation: up .22s ease-out;
+  display: flex; flex-direction: column; animation: layerIn .32s cubic-bezier(.2, .8, .2, 1);
 }
+@keyframes layerIn { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes up { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 .s-head { display: flex; align-items: center; gap: 6px; padding: calc(var(--safe-t) + 6px) 8px 6px; }
 .s-progress { flex: 1; height: 12px; background: #EFE4D8; border-radius: 99px; overflow: hidden; position: relative; }
-.s-bar { height: 100%; width: 0; background: var(--red); border-radius: 99px; transition: width .3s; }
+.s-bar { height: 100%; width: 100%; background: var(--red); border-radius: 99px; transform: scaleX(0); transform-origin: left; transition: transform .35s cubic-bezier(.2, .8, .2, 1); }
 .s-bar.endless { background: repeating-linear-gradient(45deg, var(--red), var(--red) 10px, #D9343F 10px, #D9343F 20px); }
 .s-progress[data-label]::after { content: attr(data-label); position: absolute; inset: 0; display: grid; place-items: center; font-size: .65rem; font-weight: 800; color: #fff; }
 .s-flag { color: #C9B9AE; }
@@ -321,14 +322,13 @@ code { background: var(--cream); padding: 1px 5px; border-radius: 4px; font-size
   .tabs a { flex: 0 0 90px; }
   .s-body { padding-top: 28px; }
 }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 
 /* ── v1.1: grammar, sheets, leaderboards, dashboard, polish ── */
 button, a, .option, .tile, .m-tile, .word-row, .bubble, .sent { touch-action: manipulation; }
 button, .btn, .option, .tile, .m-tile, .q-tile, .tabs a { -webkit-user-select: none; user-select: none; }
 .ellip { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.step-in { animation: stepIn .18s ease-out; }
-@keyframes stepIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.step-in { animation: stepIn .26s cubic-bezier(.2, .8, .2, 1); }
+@keyframes stepIn { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
 
 .grammar-card h2 { font-size: 1.15rem; color: var(--red-dark); margin: 0; }
 .grammar-card p { line-height: 1.5; }
@@ -430,3 +430,68 @@ button, .btn, .option, .tile, .m-tile, .q-tile, .tabs a { -webkit-user-select: n
   box-shadow: 0 6px 20px rgba(42, 27, 23, .3); font-size: .9rem;
 }
 .update-toast button span { font-size: .78rem; opacity: .85; }
+
+/* ── v1.2: motion. Only transform and opacity animate; cubic-bezier easing (no linear() springs). ── */
+:root { --ease-out: cubic-bezier(.2, .8, .2, 1); }
+
+/* Instant press feedback on everything tappable. :where() keeps specificity at 0 so existing
+   :active styles (options, audio buttons) still win. */
+:where(button, a.card, a.btn, .tabs a, .option, .tile, .m-tile, .q-tile, .chip-btn, .ex-row, .bubble, .missed-row, .word-row, .seg button) {
+  transition: transform .14s var(--ease-out), opacity .14s;
+}
+:where(button, a.card, a.btn, .tabs a, .q-tile, .chip-btn, .ex-row, .bubble, .missed-row, .seg button):active:not(:disabled) { transform: scale(.96); transition-duration: .04s; }
+:where(.option, .tile, .m-tile):active:not(:disabled) { transform: scale(.98); transition-duration: .04s; }
+
+/* Screen changes (View Transitions): push/pop slides for detail pages, a quick crossfade for tabs.
+   The tab bar has its own name so it stays still while the page moves. */
+#tabs { view-transition-name: tabbar; }
+::view-transition-group(tabbar) { animation: none; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .3s; animation-timing-function: var(--ease-out); }
+html[data-nav="forward"]::view-transition-old(root) { animation-name: vtOutLeft; }
+html[data-nav="forward"]::view-transition-new(root) { animation-name: vtInRight; }
+html[data-nav="back"]::view-transition-old(root) { animation-name: vtOutRight; }
+html[data-nav="back"]::view-transition-new(root) { animation-name: vtInLeft; }
+html[data-nav="tab"]::view-transition-old(root) { animation: vtFadeOut .12s ease-out both; }
+html[data-nav="tab"]::view-transition-new(root) { animation: vtFadeIn .18s ease-out both; }
+@keyframes vtInRight { from { transform: translateX(100%); } }
+@keyframes vtOutLeft { to { transform: translateX(-28%); opacity: .6; } }
+@keyframes vtInLeft { from { transform: translateX(-28%); opacity: .6; } }
+@keyframes vtOutRight { to { transform: translateX(100%); } }
+@keyframes vtFadeIn { from { opacity: 0; } }
+@keyframes vtFadeOut { to { opacity: 0; } }
+html[data-nav="back"]::view-transition-old(root) { z-index: 2; }   /* the page being popped slides over */
+
+/* Fallback when View Transitions aren't available. */
+#app.screen-in { animation: screenIn .26s var(--ease-out); }
+#app.screen-in[data-enter="back"] { animation-name: screenInBack; }
+#app.screen-in[data-enter="tab"] { animation: vtFadeIn .18s ease-out; }
+@keyframes screenIn { from { transform: translateX(40px); opacity: 0; } }
+@keyframes screenInBack { from { transform: translateX(-40px); opacity: 0; } }
+
+/* Feedback bar rises in; lesson/game layers slide away when closed. */
+.s-foot.fb { animation: footUp .22s var(--ease-out); }
+@keyframes footUp { from { transform: translateY(24px); opacity: .4; } }
+.layer-leaving {
+  position: fixed; inset: 0; z-index: 50; background: var(--cream); display: flex; flex-direction: column; overflow: hidden;
+  pointer-events: none; animation: layerOut .22s cubic-bezier(.4, 0, 1, 1) forwards;
+}
+@keyframes layerOut { to { transform: translateY(48px); opacity: 0; } }
+
+/* Reduce Motion: no sliding or scaling, but keep short crossfades so changes are still visible. */
+@media (prefers-reduced-motion: reduce) {
+  :where(button, a.card, a.btn, .tabs a, .q-tile, .chip-btn, .ex-row, .bubble, .missed-row, .seg button, .option, .tile, .m-tile):active:not(:disabled) { transform: none; opacity: .7; }
+  .option:active, .audio-btn:active, a.card:active, button.card:active, .q-tile:active, .btn:active { transform: none !important; }
+  html[data-nav]::view-transition-old(root) { animation: vtFadeOut .15s ease-out both; }
+  html[data-nav]::view-transition-new(root) { animation: vtFadeIn .15s ease-out both; }
+  #app.screen-in, #app.screen-in[data-enter] { animation: vtFadeIn .15s ease-out; }
+  .session, .step-in, .flip-card.flipped .back, .s-foot.fb { animation: vtFadeIn .18s ease-out; }
+  .layer-leaving { animation: vtFadeOut .18s ease-out forwards; }
+  .countdown { animation: none; }
+  .shake { animation: none; }
+  .btn.rec.recording { animation: none; }
+  .sheet { transform: none; opacity: 0; transition: opacity .2s; }
+  .sheet-wrap.open .sheet { opacity: 1; }
+  .update-toast, .update-toast.show { transform: translate(-50%, 0); }
+  #toast, #toast.show { transform: translate(-50%, 0); }
+  .s-bar { transition: none; }
+}

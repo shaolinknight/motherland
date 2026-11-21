@@ -6,6 +6,7 @@ import { mcq, tone, clash } from './exercises.js';
 import { speak, audioAvailable, stop as stopAudio } from './speech.js';
 import { $, $$, esc, shuffle, pick, toast, haptic } from './util.js';
 import { icon } from './icons.js';
+import { dismissLayer } from './ui.js';
 import { TONE_NAMES, toneOf, stripTones } from './vitext.js';
 
 const L = () => C.get().speechLang;
@@ -48,7 +49,7 @@ function overlay(key) {
   const g = {
     key, info, root, body: $('.s-body', root), foot: $('.s-foot', root), hud: $('.g-hud', root), timers: [], paused: false,
     clearTimers() { g.timers.forEach(t => { clearInterval(t); clearTimeout(t); }); g.timers = []; },
-    close() { g.clearTimers(); document.removeEventListener('visibilitychange', onVis); stopAudio(); root.remove(); document.body.classList.remove('no-scroll'); window.dispatchEvent(new Event('motherland:refresh')); },
+    close() { g.clearTimers(); document.removeEventListener('visibilitychange', onVis); stopAudio(); dismissLayer(root); document.body.classList.remove('no-scroll'); window.dispatchEvent(new Event('motherland:refresh')); },
   };
   const onVis = () => { g.paused = document.visibilityState === 'hidden'; };
   document.addEventListener('visibilitychange', onVis);

@@ -7,7 +7,7 @@ import { speak, audioAvailable, canRecord, record, stop as stopAudio } from './s
 import { compare, syllableDiff, toneVariants, toneOf, TONE_NAMES, tokens, clean } from './vitext.js';
 import { $, $$, esc, shuffle, sample, pick, toast, haptic, pct } from './util.js';
 import { icon } from './icons.js';
-import { flagSheet, confirmSheet, fitToViewport } from './ui.js';
+import { flagSheet, confirmSheet, fitToViewport, dismissLayer } from './ui.js';
 
 const L = () => C.get().speechLang;
 const hasAudio = () => audioAvailable(L());
@@ -178,8 +178,9 @@ async function confirmClose(s) {
 
 function progress(s) {
   const bar = $('.s-bar', s.root);
-  if (s.endless) { bar.parentElement.dataset.label = `${s.done} done · ${pct(s.c, s.t)}%`; bar.style.width = '100%'; bar.classList.add('endless'); return; }
-  bar.style.width = `${Math.round((s.i / s.queue.length) * 100)}%`;
+  // scaleX (not width) so the bar animates on the compositor.
+  if (s.endless) { bar.parentElement.dataset.label = `${s.done} done · ${pct(s.c, s.t)}%`; bar.style.transform = 'none'; bar.classList.add('endless'); return; }
+  bar.style.transform = `scaleX(${(s.i / s.queue.length).toFixed(3)})`;
 }
 
 function render(s) {
@@ -264,7 +265,7 @@ function finish(s, early = false) {
   if (s.test) { close(s); s.onFinish && s.onFinish(out); return; }
   if (!s.done) { close(s); return; }
   const body = $('.s-body', s.root), foot = $('.s-foot', s.root);
-  $('.s-bar', s.root).style.width = '100%';
+  $('.s-bar', s.root).style.transform = 'none';
   $('.s-flag', s.root).style.visibility = 'hidden';
   const acc = pct(s.c, s.t);
   const missed = s.missed.filter(i => i.kind !== 'grammar').slice(0, 8);
@@ -289,7 +290,7 @@ function finish(s, early = false) {
 
 function close(s) {
   s.unfit && s.unfit();
-  s.root.remove();
+  dismissLayer(s.root);
   document.body.classList.remove('no-scroll');
   window.dispatchEvent(new Event('motherland:refresh'));
 }

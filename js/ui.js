@@ -17,8 +17,13 @@ export function sheet({ title = '', text = '', html = '', actions = [{ label: 'O
       </div>`;
     document.body.appendChild(wrap);
     requestAnimationFrame(() => wrap.classList.add('open'));
-    const done = v => { wrap.classList.remove('open'); setTimeout(() => wrap.remove(), 220); resolve(v); };
+    let closed = false;
+    const done = v => {
+      if (closed) return; closed = true;
+      wrap.classList.remove('open'); setTimeout(() => wrap.remove(), 220); resolve(v);
+    };
     $('.sheet-backdrop', wrap).onclick = () => done(null);
+    dragToDismiss(wrap, () => done(null));
     $$('.sheet-actions .btn', wrap).forEach(b => b.onclick = () => {
       const a = actions[+b.dataset.i];
       done(typeof a.value === 'function' ? a.value(wrap) : a.value);
@@ -27,7 +32,57 @@ export function sheet({ title = '', text = '', html = '', actions = [{ label: 'O
   });
 }
 
-export const confirmSheet = (title, text, okLabel = 'Yes', kind = 'primary') =>
+// Pull a sheet down to close it, like iOS. Starts only when the sheet is scrolled to the top, so its
+// own content can still scroll. Touch events (not pointer events) so we can stop the page scrolling.
+function dragToDismiss(wrap, close) {
+  const sheetEl = $('.sheet', wrap), backdrop = $('.sheet-backdrop', wrap);
+  let startY = null, dy = 0, lastY = 0, lastT = 0, speed = 0;
+  const set = y => {
+    sheetEl.style.transform = y ? `translateY(${y}px)` : '';
+    backdrop.style.opacity = y ? String(Math.max(0, 1 - y / sheetEl.offsetHeight)) : '';
+  };
+  const start = (y, t, target) => {
+    if (sheetEl.scrollTop > 0 || target.closest('input, select, textarea')) return;
+    startY = lastY = y; lastT = t; dy = 0; speed = 0;
+    sheetEl.style.transition = 'none'; backdrop.style.transition = 'none';
+  };
+  const move = (y, t, e) => {
+    if (startY == null) return;
+    dy = Math.max(0, y - startY);
+    if (dy > 0 && e.cancelable) e.preventDefault();
+    speed = (y - lastY) / Math.max(1, t - lastT); lastY = y; lastT = t;   // px per ms
+    set(dy);
+  };
+  const end = () => {
+    if (startY == null) return;
+    startY = null;
+    sheetEl.style.transition = ''; backdrop.style.transition = '';
+    set(0);
+    if (dy > 90 || (dy > 20 && speed > 0.5)) close();   // far enough, or a quick flick
+  };
+  sheetEl.addEventListener('touchstart', e => start(e.touches[0].clientY, e.timeStamp, e.target), { passive: true });
+  sheetEl.addEventListener('touchmove', e => move(e.touches[0].clientY, e.timeStamp, e), { passive: false });
+  sheetEl.addEventListener('touchend', end); sheetEl.addEventListener('touchcancel', end);
+  // Mouse (iPad with a trackpad, desktop testing): drag from the grip only.
+  $('.sheet-grip', wrap).addEventListener('pointerdown', e => {
+    if (e.pointerType !== 'mouse') return;
+    start(e.clientY, e.timeStamp, e.target);
+    const mv = ev => move(ev.clientY, ev.timeStamp, ev);
+    const up = () => { end(); window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); };
+    window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up);
+  });
+}
+
+// Close a full-screen lesson/game layer with a short slide down. It is renamed right away so
+// nothing (tests, the update check) still sees an open session while it animates out.
+export function dismissLayer(el) {
+  el.className = 'layer-leaving';
+  el.setAttribute('aria-hidden', 'true');
+  el.addEventListener('animationend', () => el.remove(), { once: true });
+  setTimeout(() => el.remove(), 400);   // in case animations are off
+}
+
+export const confirmSheet =(title, text, okLabel = 'Yes', kind = 'primary') =>
   sheet({ title, text, actions: [{ label: 'Cancel', value: false }, { label: okLabel, value: true, kind }] });
 
 const REASONS = ['Wrong tone or spelling', 'Wrong meaning', 'Not how Saigon people say it', 'Audio sounds wrong', 'Other'];
