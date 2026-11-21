@@ -56,6 +56,9 @@ function route(dir) {
   const show = () => {
     render();
     window.scrollTo(0, dir === 'forward' ? 0 : scrollMemory.get(screenKey(location.hash)) || 0);
+    // VoiceOver: land on the new screen's title instead of staying on a link that no longer exists.
+    const h = $('#app h1');
+    if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); }
   };
   // Never animate underneath a lesson, game or sheet.
   const animate = dir && !document.querySelector('.session, .sheet-wrap');

@@ -10,8 +10,8 @@ export function sheet({ title = '', text = '', html = '', actions = [{ label: 'O
     const wrap = document.createElement('div');
     wrap.className = 'sheet-wrap';
     wrap.innerHTML = `<div class="sheet-backdrop"></div>
-      <div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}">
-        <div class="sheet-grip"></div>
+      <div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title || text || 'Options')}" tabindex="-1">
+        <div class="sheet-grip" aria-hidden="true"></div>
         ${title ? `<h2>${esc(title)}</h2>` : ''}${text ? `<p class="muted">${esc(text)}</p>` : ''}${html}
         <div class="sheet-actions">${actions.map((a, i) => `<button class="btn ${a.kind || 'ghost'}" data-i="${i}">${esc(a.label)}</button>`).join('')}</div>
       </div>`;
@@ -19,9 +19,10 @@ export function sheet({ title = '', text = '', html = '', actions = [{ label: 'O
     requestAnimationFrame(() => wrap.classList.add('open'));
     let closed = false;
     const unfit = fitToViewport(wrap);   // a sheet with a text field stays above the keyboard
+    const release = trapFocus(wrap, $('.sheet', wrap), () => done(null));
     const done = v => {
       if (closed) return; closed = true;
-      unfit();
+      unfit(); release();
       wrap.classList.remove('open'); setTimeout(() => wrap.remove(), 220); resolve(v);
     };
     $('.sheet-backdrop', wrap).onclick = () => done(null);
@@ -32,6 +33,24 @@ export function sheet({ title = '', text = '', html = '', actions = [{ label: 'O
     });
     onOpen && onOpen(wrap);
   });
+}
+
+// Modal layers (sheets, lessons, games): make everything behind them inert so VoiceOver and the
+// keyboard stay inside, move focus in, close on Escape, and give focus back to where it was.
+// Returns a function that undoes all of it. Layers can stack (a sheet over a lesson).
+export function trapFocus(layer, focusTarget = layer, onEscape) {
+  const opener = document.activeElement;
+  const hidden = [...document.body.children].filter(el =>
+    el !== layer && !el.inert && !['SCRIPT', 'NOSCRIPT'].includes(el.tagName) && el.id !== 'toast' && !el.classList.contains('update-toast'));
+  hidden.forEach(el => { el.inert = true; });
+  const onKey = e => { if (e.key === 'Escape' && onEscape) { e.stopPropagation(); onEscape(); } };
+  layer.addEventListener('keydown', onKey);
+  requestAnimationFrame(() => { if (!layer.contains(document.activeElement)) focusTarget.focus({ preventScroll: true }); });
+  return () => {
+    layer.removeEventListener('keydown', onKey);
+    hidden.forEach(el => { el.inert = false; });
+    if (opener?.isConnected && !opener.closest('[inert]')) opener.focus({ preventScroll: true });
+  };
 }
 
 // Pull a sheet down to close it, like iOS. Starts only when the sheet is scrolled to the top, so its

@@ -532,3 +532,16 @@ a, button, .option, .tile, .m-tile, .q-tile, .tabs a { -webkit-touch-callout: no
 .seg { overflow-x: auto; scrollbar-width: none; }
 .seg::-webkit-scrollbar { display: none; }
 .seg button { flex: 1 0 auto; }
+
+/* ── v1.2: accessibility ── */
+h1.top-title { margin: 0; line-height: 1.2; font-size: 1.05rem; }
+h1:focus, .s-body:focus, .sheet:focus { outline: none; }
+/* Inactive tab labels were #9B8B84 (3.3:1); muted is 5.6:1 on white. */
+.tabs a { color: var(--muted); }
+/* Helper text and icons that were too faint. */
+.placeholder, .tap-hint { color: var(--muted); }
+::placeholder { color: #8A7A72; opacity: 1; }
+.s-flag, .word-row .icon-btn { color: #9B8B84; }   /* icons need 3:1 */
+/* A clear focus ring for keyboard / Switch Control users; taps don't show it. */
+:where(button, a, input, select, summary, [tabindex]:not([tabindex="-1"])):focus-visible { outline: 3px solid #1D4F91; outline-offset: 2px; }
+.top :where(button, a):focus-visible { outline-color: #fff; }

@@ -8,7 +8,7 @@ import { compare, syllableDiff, toneVariants, toneOf, TONE_NAMES, tokens, clean 
 import { $, $$, esc, shuffle, sample, pick, toast, pct } from './util.js';
 import { tick } from './haptics.js';
 import { icon } from './icons.js';
-import { flagSheet, confirmSheet, fitToViewport, dismissLayer } from './ui.js';
+import { flagSheet, confirmSheet, fitToViewport, dismissLayer, trapFocus } from './ui.js';
 
 const L = () => C.get().speechLang;
 const hasAudio = () => audioAvailable(L());
@@ -153,18 +153,21 @@ export function run(opts) {
   const root = document.createElement('div');
   root.className = 'session';
   root.setAttribute('role', 'dialog');
+  root.setAttribute('aria-modal', 'true');
+  root.setAttribute('aria-label', s.test ? 'Placement test' : s.endless ? 'Endless review' : 'Practice session');
   root.innerHTML = `
     <header class="s-head">
       <button class="icon-btn s-close" aria-label="Close">${icon('x')}</button>
       <div class="s-progress"><div class="s-bar"></div></div>
       <button class="icon-btn s-flag" aria-label="Report a problem with this item">${icon('flag')}</button>
     </header>
-    <main class="s-body"></main>
+    <main class="s-body" tabindex="-1"></main>
     <footer class="s-foot"></footer>`;
   document.body.appendChild(root);
   document.body.classList.add('no-scroll');
   s.root = root;
   s.unfit = fitToViewport(root);
+  s.release = trapFocus(root, $('.s-body', root), () => $('.s-close', root).click());
   $('.s-close', root).onclick = () => {
     if (s.finished) { close(s); s.onFinish && s.onFinish(s.out); return; }   // X on the results screen
     (s.done && !s.test) || s.endless ? finish(s) : confirmClose(s);
@@ -195,6 +198,8 @@ function render(s) {
   RENDER[st.type](s, st, body, foot);
   body.scrollTop = 0;
   body.classList.remove('step-in'); void body.offsetWidth; body.classList.add('step-in');
+  // Screen readers: start reading the new step (unless the step focused its own input).
+  if (!body.contains(document.activeElement)) body.focus({ preventScroll: true });
 }
 
 function audioBtn(text, big = false) {
@@ -272,7 +277,7 @@ function finish(s, early = false) {
   const missed = s.missed.filter(i => i.kind !== 'grammar').slice(0, 8);
   body.innerHTML = `
     <div class="finish">
-      <div class="finish-star">${acc >= 80 ? '🌟' : acc >= 50 ? '⭐' : '💪'}</div>
+      <div aria-hidden="true" class="finish-star">${acc >= 80 ? '🌟' : acc >= 50 ? '⭐' : '💪'}</div>
       <h2>${acc >= 80 ? 'Xuất sắc!' : acc >= 50 ? 'Làm tốt lắm!' : 'Cố lên!'}</h2>
       <p class="muted">${acc >= 80 ? 'Excellent work.' : acc >= 50 ? 'Nice job — keep going.' : 'Every miss is a word you’ll see again soon.'}</p>
       <div class="stat-row">
@@ -291,6 +296,7 @@ function finish(s, early = false) {
 
 function close(s) {
   s.unfit && s.unfit();
+  s.release && s.release();
   dismissLayer(s.root);
   document.body.classList.remove('no-scroll');
   window.dispatchEvent(new Event('motherland:refresh'));

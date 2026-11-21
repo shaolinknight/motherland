@@ -7,7 +7,7 @@ import { speak, audioAvailable, stop as stopAudio } from './speech.js';
 import { $, $$, esc, shuffle, pick, toast } from './util.js';
 import { tick } from './haptics.js';
 import { icon } from './icons.js';
-import { dismissLayer } from './ui.js';
+import { dismissLayer, trapFocus } from './ui.js';
 import { TONE_NAMES, toneOf, stripTones } from './vitext.js';
 
 const L = () => C.get().speechLang;
@@ -37,20 +37,24 @@ function overlay(key) {
   const info = GAME_INFO[key];
   const root = document.createElement('div');
   root.className = 'session game';
+  root.setAttribute('role', 'dialog');
+  root.setAttribute('aria-modal', 'true');
+  root.setAttribute('aria-label', info.name);
   root.innerHTML = `
     <header class="s-head">
       <button class="icon-btn s-close" aria-label="Close">${icon('x')}</button>
       <div class="g-title">${info.emoji} ${esc(info.name)}</div>
       <div class="g-hud" aria-live="polite"></div>
     </header>
-    <main class="s-body"></main>
+    <main class="s-body" tabindex="-1"></main>
     <footer class="s-foot"></footer>`;
   document.body.appendChild(root);
   document.body.classList.add('no-scroll');
+  const release = trapFocus(root, $('.s-body', root), () => g.close());
   const g = {
     key, info, root, body: $('.s-body', root), foot: $('.s-foot', root), hud: $('.g-hud', root), timers: [], paused: false,
     clearTimers() { g.timers.forEach(t => { clearInterval(t); clearTimeout(t); }); g.timers = []; },
-    close() { g.clearTimers(); document.removeEventListener('visibilitychange', onVis); stopAudio(); dismissLayer(root); document.body.classList.remove('no-scroll'); window.dispatchEvent(new Event('motherland:refresh')); },
+    close() { g.clearTimers(); document.removeEventListener('visibilitychange', onVis); stopAudio(); release(); dismissLayer(root); document.body.classList.remove('no-scroll'); window.dispatchEvent(new Event('motherland:refresh')); },
   };
   const onVis = () => { g.paused = document.visibilityState === 'hidden'; };
   document.addEventListener('visibilitychange', onVis);
@@ -64,7 +68,7 @@ function intro(g, start) {
   const b = best(g.key);
   g.hud.textContent = '';
   g.body.innerHTML = `<div class="finish game-intro">
-      <div class="finish-star">${g.info.emoji}</div>
+      <div aria-hidden="true" class="finish-star">${g.info.emoji}</div>
       <h2>${esc(g.info.name)}</h2>
       <p class="muted">${esc(g.info.rules)}</p>
       ${b != null ? `<span class="chip">Your best: ${b}${g.info.unit}</span>` : '<span class="chip">No score yet</span>'}
@@ -99,7 +103,7 @@ function results(g, { score, label, missed = [], xp = 0 }) {
   g.hud.textContent = '';
   const uniq = [...new Map(missed.map(m => [m.id, m])).values()].slice(0, 8);
   g.body.innerHTML = `<div class="finish">
-      <div class="finish-star">${isBest ? '🏆' : '🎯'}</div>
+      <div aria-hidden="true" class="finish-star">${isBest ? '🏆' : '🎯'}</div>
       <h2>${esc(label)}</h2>
       <div class="stat-row">
         <div class="stat"><b>${score}${g.info.unit}</b><span>${isBest ? (prev == null ? 'first score!' : 'new best!') : `best ${prev}${g.info.unit}`}</span></div>

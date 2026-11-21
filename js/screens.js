@@ -33,7 +33,7 @@ const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 function header(title, { back, sub } = {}) {
   if (back) return `<header class="top">
     <button class="icon-btn back" data-parent="${esc(back)}" aria-label="Back">${icon('back')}</button>
-    <div class="top-title">${esc(title)}${sub ? `<small lang="vi">${esc(sub)}</small>` : ''}</div>
+    <h1 class="top-title">${esc(title)}${sub ? `<small lang="vi">${esc(sub)}</small>` : ''}</h1>
     <span class="icon-btn-spacer"></span>
   </header>`;
   return `<header class="top">
@@ -90,14 +90,14 @@ export function home(root) {
     </section>
 
     ${!hasTest ? `<a class="card cta-test" href="#/placement">
-      <div class="cta-ico">${icon('target')}</div>
+      <div aria-hidden="true" class="cta-ico">${icon('target')}</div>
       <div class="grow"><b>Find your level</b><p class="muted">A 4-minute placement test shows where you are and what to work on.</p></div>
       ${icon('chevron')}</a>` : ''}
 
     <section class="card continue">
       <p class="kicker">Continue learning</p>
       <div class="row">
-        <div class="unit-ico">${nextU.icon}</div>
+        <div aria-hidden="true" class="unit-ico">${nextU.icon}</div>
         <div class="grow"><b>${esc(nextU.title)}</b><div class="muted" lang="vi">${esc(nextU.vi)}</div>${bar(np.pct)}</div>
       </div>
       <div class="btn-row">
@@ -123,7 +123,7 @@ export function home(root) {
 
     <p class="kicker pad">Quick play</p>
     <section class="quick">
-      ${Object.entries(G.GAME_INFO).map(([k, g]) => `<button class="q-tile" data-game="${k}"><span>${g.emoji}</span>${esc(g.name.split(' ')[0])}</button>`).join('')}
+      ${Object.entries(G.GAME_INFO).map(([k, g]) => `<button class="q-tile" data-game="${k}"><span aria-hidden="true">${g.emoji}</span>${esc(g.name.split(' ')[0])}</button>`).join('')}
     </section>
   </div>`;
   wireHeader(root); wireSay(root);
@@ -142,13 +142,13 @@ export function learn(root) {
   root.innerHTML = `${header('Learn', { sub: `${course.units.length} units · ${C.vocabItems().length} words & phrases · ${gCount} grammar points` })}
   <div class="page">
     <div class="link-row">
-      <a class="card link-card" href="#/grammar"><span class="mode-ico">${icon('book')}</span><div class="grow"><b>Grammar guide</b><p class="muted small">${gLearned}/${gCount} learned</p></div></a>
-      <a class="card link-card" href="#/words"><span class="mode-ico">${icon('cards')}</span><div class="grow"><b>Word bank</b><p class="muted small">${C.seenItems().filter(i => i.kind !== 'grammar').length} learned</p></div></a>
+      <a class="card link-card" href="#/grammar"><span aria-hidden="true" class="mode-ico">${icon('book')}</span><div class="grow"><b>Grammar guide</b><p class="muted small">${gLearned}/${gCount} learned</p></div></a>
+      <a class="card link-card" href="#/words"><span aria-hidden="true" class="mode-ico">${icon('cards')}</span><div class="grow"><b>Word bank</b><p class="muted small">${C.seenItems().filter(i => i.kind !== 'grammar').length} learned</p></div></a>
     </div>
     ${groups.map(g => `<h2 class="section-title">${esc(g.sec)}</h2>
       <div class="unit-list">${g.units.map(u => { const p = C.unitProgress(u.id); return `
         <a class="unit-row card" href="#/unit/${u.id}">
-          <div class="unit-ico">${u.icon}</div>
+          <div aria-hidden="true" class="unit-ico">${u.icon}</div>
           <div class="grow">
             <div class="unit-name"><b>${esc(u.title)}</b>${p.pct === 100 ? '<span class="chip ok">✓</span>' : ''}</div>
             <div class="muted small" lang="vi">${esc(u.vi)}</div>
@@ -217,7 +217,7 @@ export function unit(root, id, tab = 'words') {
   root.innerHTML = `${header(u.title, { back: '#/learn', sub: u.vi })}
   <div class="page">
     <section class="card unit-hero">
-      <div class="row"><div class="unit-ico big">${u.icon}</div>
+      <div class="row"><div aria-hidden="true" class="unit-ico big">${u.icon}</div>
         <div class="grow"><b>${p.learned}/${p.total} learned</b>${bar(p.pct)}<span class="chip lvl">Level ${u.level} · ${esc(u.section)}</span></div></div>
       <div class="btn-row">
         <button class="btn primary learn-new">${remaining ? (newVocab ? `Learn ${Math.min(newVocab, S.settings().newPerLesson)} new` : 'Learn the grammar') : 'Practice unit'}</button>
@@ -319,11 +319,11 @@ export function review(root) {
       <div class="stat"><b>${mastered}</b><span>mastered</span></div>
     </section>
     ${!due && upcoming ? `<p class="muted center small">Next card due ${new Date(upcoming.due).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}</p>` : ''}
-    <button class="card mode" data-mode="flash" ${due ? '' : 'disabled'}><span class="mode-ico">${icon('cards')}</span><div class="grow"><b>Flashcards</b><p class="muted">Flip and rate how well you knew it. Classic and fast.</p></div>${icon('chevron')}</button>
-    <button class="card mode" data-mode="quiz" ${due ? '' : 'disabled'}><span class="mode-ico">${icon('check')}</span><div class="grow"><b>Quiz review</b><p class="muted">Due cards as mixed exercises: meaning, grammar, tones, listening, typing.</p></div>${icon('chevron')}</button>
-    <button class="card mode" data-mode="endless" ${seen ? '' : 'disabled'}><span class="mode-ico">${icon('infinity')}</span><div class="grow"><b>Endless review</b><p class="muted">Keeps going as long as you want. Focuses on what you miss.</p></div>${icon('chevron')}</button>
-    <button class="card mode" data-mode="grammar" ${gSeen.length ? '' : 'disabled'}><span class="mode-ico">${icon('book')}</span><div class="grow"><b>Grammar drills</b><p class="muted">${gSeen.length ? `Mixed drills from the ${plural(gSeen.length, 'grammar point')} you’ve learned.` : 'Unlocks after your first lesson.'}</p></div>${icon('chevron')}</button>
-    <button class="card mode" data-mode="weak" ${weak.length ? '' : 'disabled'}><span class="mode-ico">${icon('target')}</span><div class="grow"><b>Weak spots</b><p class="muted">${weak.length ? `${plural(weak.length, 'item')} you’ve missed before.` : 'Things you miss will show up here.'}</p></div>${icon('chevron')}</button>
+    <button class="card mode" data-mode="flash" ${due ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('cards')}</span><div class="grow"><b>Flashcards</b><p class="muted">Flip and rate how well you knew it. Classic and fast.</p></div>${icon('chevron')}</button>
+    <button class="card mode" data-mode="quiz" ${due ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('check')}</span><div class="grow"><b>Quiz review</b><p class="muted">Due cards as mixed exercises: meaning, grammar, tones, listening, typing.</p></div>${icon('chevron')}</button>
+    <button class="card mode" data-mode="endless" ${seen ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('infinity')}</span><div class="grow"><b>Endless review</b><p class="muted">Keeps going as long as you want. Focuses on what you miss.</p></div>${icon('chevron')}</button>
+    <button class="card mode" data-mode="grammar" ${gSeen.length ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('book')}</span><div class="grow"><b>Grammar drills</b><p class="muted">${gSeen.length ? `Mixed drills from the ${plural(gSeen.length, 'grammar point')} you’ve learned.` : 'Unlocks after your first lesson.'}</p></div>${icon('chevron')}</button>
+    <button class="card mode" data-mode="weak" ${weak.length ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('target')}</span><div class="grow"><b>Weak spots</b><p class="muted">${weak.length ? `${plural(weak.length, 'item')} you’ve missed before.` : 'Things you miss will show up here.'}</p></div>${icon('chevron')}</button>
     ${!seen ? `<p class="muted center pad">Finish your first lesson to unlock reviews.</p>` : ''}
   </div>`;
   wireHeader(root);
@@ -344,9 +344,9 @@ export function play(root) {
   root.innerHTML = `${header('Play', { sub: 'Games for when you have a few minutes' })}
   <div class="page">
     ${Object.entries(G.GAME_INFO).map(([k, info]) => `<button class="card game-card" data-game="${k}" ${k === 'listen' && !audio ? 'disabled' : ''}>
-      <span class="g-emoji">${info.emoji}</span><div class="grow"><b>${info.name}</b><p class="muted">${k === 'listen' && !audio ? 'Needs a Vietnamese voice (see Settings).' : esc(info.rules)}</p>
+      <span aria-hidden="true" class="g-emoji">${info.emoji}</span><div class="grow"><b>${info.name}</b><p class="muted">${k === 'listen' && !audio ? 'Needs a Vietnamese voice (see Settings).' : esc(info.rules)}</p>
       ${g[k]?.best != null ? `<span class="chip">Best: ${g[k].best}${info.unit} · ${plural(g[k].runs?.length || 1, 'play')}</span>` : ''}</div>${icon('chevron')}</button>`).join('')}
-    <a class="card link-card" href="#/leaderboard"><span class="mode-ico">🏆</span><div class="grow"><b>Leaderboards</b><p class="muted small">Your best weeks, months and game runs</p></div>${icon('chevron')}</a>
+    <a class="card link-card" href="#/leaderboard"><span aria-hidden="true" class="mode-ico">🏆</span><div class="grow"><b>Leaderboards</b><p class="muted small">Your best weeks, months and game runs</p></div>${icon('chevron')}</a>
     <p class="muted small center pad">Games use words you’ve learned, plus beginner words until you have enough.</p>
   </div>`;
   wireHeader(root);
@@ -444,8 +444,8 @@ export function progress(root) {
     </section>
 
     <section class="link-row">
-      <a class="card link-card" href="#/leaderboard"><span class="mode-ico">🏆</span><div class="grow"><b>Leaderboards</b><p class="muted small">Weeks · months · games</p></div></a>
-      <a class="card link-card" href="#/words"><span class="mode-ico">${icon('cards')}</span><div class="grow"><b>Word bank</b><p class="muted small">${seenV} learned</p></div></a>
+      <a class="card link-card" href="#/leaderboard"><span aria-hidden="true" class="mode-ico">🏆</span><div class="grow"><b>Leaderboards</b><p class="muted small">Weeks · months · games</p></div></a>
+      <a class="card link-card" href="#/words"><span aria-hidden="true" class="mode-ico">${icon('cards')}</span><div class="grow"><b>Word bank</b><p class="muted small">${seenV} learned</p></div></a>
     </section>
 
     <section class="card">
@@ -499,7 +499,7 @@ export function placement(root) {
   root.innerHTML = `${header('Placement test', { back: '#/progress' })}
   <div class="page">
     <section class="card">
-      <div class="big-emoji">🎯</div>
+      <div aria-hidden="true" class="big-emoji">🎯</div>
       <h2>Find your level</h2>
       <p>About 25 quick questions across three levels: vocabulary, reading, grammar, tones${audioAvailable(L()) ? ' and listening' : ''}.</p>
       <ul class="checklist">
