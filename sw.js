@@ -5,12 +5,12 @@
 // network. A new deploy changes this file; the browser notices on the next launch and installs the new
 // version in the background. The page (js/pwa.js) then shows "Update ready" and, on tap, tells the new
 // worker to take over and reloads. Nothing is ever mixed between versions: each version has its own cache.
-const VERSION = 'motherland-v1.4.0';
+const VERSION = 'motherland-v1.5.0';
 const FILES = [
   './', './manifest.webmanifest', './css/app.css',
   './js/main.js', './js/screens.js', './js/exercises.js', './js/games.js', './js/placement.js',
   './js/course.js', './js/store.js', './js/srs.js', './js/speech.js', './js/sync.js',
-  './js/vitext.js', './js/util.js', './js/icons.js', './js/ui.js', './js/stats.js', './js/pwa.js', './js/haptics.js', './js/merge.js', './js/ankiexport.js', './js/streak.js', './js/theme.js', './js/vispell.js', './js/focus.js', './js/levels.js', './js/gestures.js', './js/decks.js',
+  './js/vitext.js', './js/util.js', './js/icons.js', './js/ui.js', './js/stats.js', './js/pwa.js', './js/haptics.js', './js/merge.js', './js/ankiexport.js', './js/streak.js', './js/theme.js', './js/vispell.js', './js/focus.js', './js/levels.js', './js/gestures.js', './js/decks.js', './js/demo.js',
   './data/vi.js', './data/vi-a.js', './data/vi-b.js', './data/vi-c.js', './data/vi-d.js', './data/vi-grammar.js',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png',
 ];

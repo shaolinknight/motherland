@@ -13,13 +13,14 @@ import { isMastered, isHidden } from './srs.js';
 import { flagSheet, confirmSheet, itemOptions, sheet, askText } from './ui.js';
 import { ankiText } from './ankiexport.js';
 import * as D from './decks.js';
+import { isPreview, resetDemo } from './demo.js';
 import { applyTheme } from './theme.js';
 import { focusSkills, retestDue, daysSincePlacement, RETEST_AFTER_DAYS } from './focus.js';
 import { hapticsSupported, tick } from './haptics.js';
 import { stripAll } from './vitext.js';
 import { spellingProblems } from './vispell.js';
 
-const VERSION = '1.4';
+const VERSION = '1.5';
 const L = () => C.get().speechLang;
 const say = (t, opts) => speak(t, L(), opts);
 const go = h => { location.hash = h; };
@@ -116,6 +117,7 @@ export function home(root) {
   const wk = T.periods('week');
   root.innerHTML = `${header('')}
   <div class="page">
+    ${isPreview() ? '<a class="banner preview-banner" href="#/settings/preview">🧪 Preview with sample data. Your real app isn’t affected. Settings → Preview to reset it.</a>' : ''}
     ${audioBanner()}
     ${backupDue() ? `<section class="card backup-nudge" role="region" aria-label="Backup reminder">
       <p><b>💾 Back up your progress</b></p>
@@ -861,6 +863,13 @@ export function settings(root, section) {
   const flags = S.get().flags;
   root.innerHTML = `${header('Settings', { back: '#/home' })}
   <div class="page">
+    ${isPreview() ? `<details class="card set-sec" name="settings" data-sec="preview" ${openSection === 'preview' ? 'open' : ''}>
+      <summary><span class="set-ico" aria-hidden="true">🧪</span><span class="grow"><b>Preview</b><small class="muted">Sample data for testing</small></span><span class="set-chev" aria-hidden="true">${icon('chevron')}</span></summary>
+      <div class="set-body">
+        <p class="small">This preview link started with sample progress so you can try everything: due cards, a leech, buried and suspended cards, My words, two decks, an edited card, a streak freeze, and an old over-generous placement to re-check or reset. It’s separate from your real app.</p>
+        <button class="btn ghost wide reset-demo">Reset sample data</button>
+      </div>
+    </details>` : ''}
     <details class="card set-sec" name="settings" data-sec="languages" ${openSection === 'languages' ? 'open' : ''}>
       <summary><span class="set-ico" aria-hidden="true">🌏</span><span class="grow"><b>Languages</b><small class="muted">${C.get().flag} ${esc(C.get().name)} · ${C.UPCOMING.length} more coming</small></span><span class="set-chev" aria-hidden="true">${icon('chevron')}</span></summary>
       <div class="set-body">
@@ -987,6 +996,10 @@ export function settings(root, section) {
   };
   $$('.unflag', root).forEach(b => b.onclick = () => { S.get().flags = S.get().flags.filter(f => f.id !== b.dataset.id); S.save(); settings(root); });
   $('.export', root).onclick = exportBackup;
+  $('.reset-demo', root)?.addEventListener('click', async () => {
+    if (!(await confirmSheet('Reset sample data?', 'Everything on this preview goes back to the starting sample.', 'Reset'))) return;
+    resetDemo(); toast('Sample data restored'); go('#/home');
+  });
   $('.export-anki', root).onclick = () => {
     const learned = C.seenItems();
     if (!learned.length) { toast('Learn some words first'); return; }

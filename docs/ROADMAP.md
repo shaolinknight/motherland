@@ -8,6 +8,13 @@
 4. Haptics: checkbox-switch trick, single pulse, with a setting to turn it off
 5. Accessibility fixes from the audit
 
+## Done: v1.5 (Nov 21, 2026)
+- Question mid-screen with answers at the bottom; tap-anywhere flashcard flip (and back); bigger grade buttons.
+- Edit the text of any card (course cards are overlaid and logged as flags).
+- Custom decks: fill from the course or write every card yourself; study a deck on its own.
+- Diagnostic: adaptive early stop, “what this level means”, units you might know (Test out), Reset placement.
+- Preview links start with sample data (Settings → Preview to reset).
+
 ## Done: v1.4 (Nov 21, 2026)
 - Updates apply by themselves at the next quiet moment (no more being stuck on an old version).
 - Stricter placement (80% per level, production questions), no bulk skipping, Test out per unit, re-check of what the old test skipped.

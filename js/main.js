@@ -8,6 +8,7 @@ import { stop as stopAudio } from './speech.js';
 import { registerSW } from './pwa.js';
 import { applyTheme } from './theme.js';
 import { enableEdgeSwipe } from './gestures.js';
+import { seedIfEmpty } from './demo.js';
 
 const TABS = [
   ['home', 'Home', 'home'],
@@ -130,6 +131,7 @@ document.addEventListener('visibilitychange', () => {
   else sync();
 });
 
+seedIfEmpty();   // preview links start with sample data (never the real app)
 applyTheme();
 enableEdgeSwipe();
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);

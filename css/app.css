@@ -712,3 +712,5 @@ button.flip-card { display: grid; align-items: stretch; padding: 0; min-height: 
 .pick-mark { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 1.1rem; background: var(--brand-soft); color: var(--brand-dark); flex-shrink: 0; margin-right: 6px; }
 .pick-row.in .pick-mark { background: var(--jade); color: #fff; }
 @media (min-width: 768px) { .page > .decks-sec, .page > .pick-list, .page > .deck-cards, .page > .pick-search, .page > .field, .page > .add-unit, .page > .pick-more { grid-column: 1 / -1; } }
+.preview-banner { background: var(--blue-soft); color: var(--blue); }
+@media (min-width: 768px) { .page > .preview-banner { grid-column: 1 / -1; } }

@@ -16,6 +16,8 @@
 | `js/srs.js` | Spaced repetition with **FSRS-5** (the scheduler modern Anki uses, written fresh from the published formulas): stability/difficulty per card, desired retention, Anki-style fuzz, leeches (8 lapses), bury/suspend. Old SM-2 cards convert on their next review (`fromSM2`). |
 | `js/merge.js` | Sync merge: combines this phone's state with the Sheet's copy card by card (latest review wins, day logs take the max, lists union). Pure, unit-tested. |
 | `js/streak.js` | Streak with one forgiven missed day per Monday–Sunday week; computed from the day log. |
+| `js/decks.js` | Custom decks (`lang().decks`): named lists of item IDs, hand-written cards (stored as My words), deck study steps. |
+| `js/demo.js` | Sample data for branch previews (`*-motherland.*.workers.dev` or `?demo`), only when that site has no saved progress. |
 | `js/levels.js` | Placement scoring rules (80% per level and 2/3 of production questions). |
 | `js/gestures.js` | Left-edge swipe: closes a sheet or lesson, or goes back (not in iOS Safari tabs). |
 | `js/focus.js` | Reads the latest placement: skill weights that tilt lesson exercise types, retest timing. |
@@ -53,7 +55,9 @@ Unit fields: `id, section, icon, level (1–3), title, vi, tip, words[], phrases
   langs: { vi: {
     cards: { [itemId]: { reps, ivl, ease, due, lapses, seen, last,     // SRS (ease is legacy SM-2, kept for old cards)
                          s, d, leech?, suspended?, buriedUntil?, edited?, placed? } },   // FSRS stability/difficulty + card state
-    myWords: { ['my-…']: { id, vi, en, north, note, verified, at, edited, deleted? } },   // your own words; deletes are tombstones
+    myWords: { ['my-…']: { id, vi, en, north, note, verified, at, edited, deleted?, deck? } },   // your own words; deletes are tombstones
+    edits: { [itemId]: { vi?, en?, north?, note?, edited, reset? } },   // your text laid over course cards
+    decks: { ['deck-…']: { id, name, items: [itemId], at, edited, deleted? } },
     lessons: { [unitId]: { at, done } },
     placements: [{ at, level, label, score, c, t, levels, skills, sections, weak, applied? }],
     skills: { vocab|reading|grammar|listening|tones|speaking: { c, t } },
