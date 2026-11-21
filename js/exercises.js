@@ -569,24 +569,27 @@ const RENDER = {
   flash(s, st, body, foot) {
     const it = st.item;
     const reverse = (C.card(it.id)?.ivl || 0) >= 3 && Math.random() < 0.5;
+    const front = reverse ? `<div class="en-prompt">${esc(it.en)}</div>` : `<div class="vi big" lang="vi">${esc(it.vi)}</div>`;
+    // Two real faces stacked in one grid cell, so the card keeps the height of the taller side.
     body.innerHTML = `
       <p class="kicker">${reverse ? 'Say it in Vietnamese' : 'Do you remember?'}</p>
-      <button class="card flip-card" aria-label="Show answer">
-        <div class="front">${reverse ? `<div class="en-prompt">${esc(it.en)}</div>` : `<div class="vi big" lang="vi">${esc(it.vi)}</div>`}</div>
-        <div class="back hidden">
-          ${reverse ? `<div class="vi big" lang="vi">${esc(it.vi)}</div>` : `<div class="en">${esc(it.en)}</div>`}
-          ${hanoiLine(it)}${it.note ? `<div class="note">💡 ${esc(it.note)}</div>` : ''}
-        </div>
-        <span class="tap-hint">Tap to flip</span>
-      </button>
+      <div class="flip-wrap">
+        <button class="card flip-card" aria-label="Flip card" aria-pressed="false">
+          <span class="face front">${front}<span class="tap-hint">Tap anywhere to flip</span></span>
+          <span class="face back">
+            <span class="small muted">${reverse ? esc(it.en) : `<span lang="vi">${esc(it.vi)}</span>`}</span>
+            ${reverse ? `<span class="vi big" lang="vi">${esc(it.vi)}</span>` : `<span class="en">${esc(it.en)}</span>`}
+            ${hanoiLine(it)}${it.note ? `<span class="note">💡 ${esc(it.note)}</span>` : ''}
+            <span class="tap-hint">Tap to flip back</span>
+          </span>
+        </button>
+      </div>
       <div class="audio-row center">${audioBtn(it.vi)}</div>`;
     wireAudio(body);
     if (!reverse && hasAudio()) setTimeout(() => speak(it.vi, L()), 250);
     const card = $('.flip-card', body);
-    const reveal = () => {
-      if (card.classList.contains('flipped')) return;
-      card.classList.add('flipped'); $('.back', card).classList.remove('hidden'); $('.tap-hint', card)?.remove();
-      if (reverse && hasAudio()) speak(it.vi, L());
+    const showGrades = () => {
+      if ($('.grades', foot)) return;
       const c0 = C.cards()[it.id] || newCard(), ret = S.settings().retention || 0.9;
       const lbl = g => ivlLabel(nextInterval(c0, g, { retention: ret }));
       foot.innerHTML = `<div class="grades">${['Again', 'Hard', 'Good', 'Easy'].map((n, g) =>
@@ -601,9 +604,16 @@ const RENDER = {
         S.save(); next(s);
       });
     };
-    card.onclick = reveal;
+    // Flip back and forth as often as you like; grading appears after the first flip.
+    const flip = () => {
+      const on = !card.classList.contains('flipped');
+      card.classList.toggle('flipped', on); card.setAttribute('aria-pressed', String(on));
+      if (on) { if (reverse && hasAudio()) speak(it.vi, L()); showGrades(); }
+    };
+    // The whole screen is the tap target (one-handed), except the audio buttons.
+    body.onclick = e => { if (!e.target.closest('.audio-btn, a')) flip(); };
     foot.innerHTML = `<button class="btn primary">Show answer</button>`;
-    $('button', foot).onclick = reveal;
+    $('button', foot).onclick = flip;
   },
 };
 

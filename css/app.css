@@ -283,9 +283,6 @@ code { background: var(--cream); padding: 1px 5px; border-radius: 4px; font-size
 .btn.rec { background: var(--paper); border-color: var(--line); color: var(--brand-dark); }
 .btn.rec.recording { background: var(--brand); color: #fff; animation: pulse 1s infinite; }
 @keyframes pulse { 50% { opacity: .7; } }
-.flip-card { flex-direction: column; text-align: center !important; justify-content: center; min-height: 230px; padding: 24px 16px; text-align: center; position: relative; }
-.flip-card .front, .flip-card .back { width: 100%; }
-.flip-card.flipped .back { border-top: 1px dashed var(--line); margin-top: 14px; padding-top: 14px; animation: up .2s; }
 .tap-hint { position: absolute; bottom: 10px; left: 0; right: 0; font-size: .75rem; color: var(--muted); }
 .grades { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%; }
 .grades .btn { padding: 0 4px; font-size: .9rem; border-radius: 12px; }
@@ -488,7 +485,7 @@ html[data-nav="back"]::view-transition-old(root) { z-index: 2; }   /* the page b
   html[data-nav]::view-transition-old(root) { animation: vtFadeOut .15s ease-out both; }
   html[data-nav]::view-transition-new(root) { animation: vtFadeIn .15s ease-out both; }
   #app.screen-in, #app.screen-in[data-enter] { animation: vtFadeIn .15s ease-out; }
-  .session, .step-in, .flip-card.flipped .back, .s-foot.fb { animation: vtFadeIn .18s ease-out; }
+  .session, .step-in, .s-foot.fb { animation: vtFadeIn .18s ease-out; }
   .layer-leaving { animation: vtFadeOut .18s ease-out forwards; }
   .countdown { animation: none; }
   .shake { animation: none; }
@@ -660,9 +657,6 @@ h1:focus, .s-body:focus, .sheet:focus { outline: none; }
 }
 
 /* ── v1.4: one-handed use ── */
-/* Lessons sit at the bottom, near the thumb and the Check/Continue button. margin-top:auto (not
-   justify-content:flex-end) so a tall step still scrolls normally from its top. */
-.s-body > :first-child { margin-top: auto; }
 .s-body > .finish:first-child, .s-body > .countdown:first-child { margin-top: 0; }
 .fb-row { display: flex; gap: 10px; align-items: center; }
 .fb-row .next { flex: 1; }
@@ -677,3 +671,31 @@ h1:focus, .s-body:focus, .sheet:focus { outline: none; }
 .action-bar .btn.primary { flex: 1.4; }
 .page.has-action { padding-bottom: 84px; }
 @media (min-width: 768px) { .action-bar { justify-content: center; } .action-bar .btn { flex: 0 1 240px; } }
+
+/* ── v1.5: question in the middle, answers at the bottom ──
+   Free space is split by auto margins: above the first block and below the question, so the prompt
+   sits mid-screen and the answer area (options / tiles / typing / recording) rests at the bottom
+   near the thumb. Steps with no answer area (intro cards, flashcards) are centred. */
+.s-body > :first-child { margin-top: auto; }
+.s-body > :is(.options, .tiles, .dict-input, .rec-row) { margin-top: auto; }
+.s-body > :last-child:not(.options, .tiles, .dict-input, .rec-row) { margin-bottom: auto; }
+
+/* Flashcards: a real two-sided card. Tap anywhere to flip, tap again to flip back. */
+.flip-wrap { perspective: 1200px; }
+button.flip-card { display: grid; align-items: stretch; padding: 0; min-height: 260px; width: 100%; transform-style: preserve-3d; transition: transform .45s cubic-bezier(.2, .8, .2, 1); cursor: pointer; }
+.flip-card .face { grid-area: 1 / 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 28px 16px 34px; text-align: center; backface-visibility: hidden; -webkit-backface-visibility: hidden; position: relative; }
+.flip-card .face.back { transform: rotateY(180deg); }
+.flip-card.flipped { transform: rotateY(180deg); }
+.flip-card.flipped:active { transform: rotateY(180deg) scale(.98); }
+.flip-card .back .en { font-size: 1.3rem; font-weight: 650; }
+@media (prefers-reduced-motion: reduce) {
+  .flip-card, .flip-card.flipped, .flip-card.flipped:active { transform: none; transition: none; }
+  .flip-card .face.back { transform: none; opacity: 0; transition: opacity .15s; }
+  .flip-card .face.front { transition: opacity .15s; }
+  .flip-card.flipped .face.back { opacity: 1; }
+  .flip-card.flipped .face.front { opacity: 0; }
+}
+/* Bigger Again / Hard / Good / Easy buttons */
+.grades { gap: 8px; }
+.grades .btn { min-height: 64px; font-size: 1.02rem; border-radius: 14px; }
+.grades .btn small { font-size: .78rem; margin-top: 2px; }
