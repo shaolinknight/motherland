@@ -4,6 +4,7 @@ import * as S from './store.js';
 import { mcq, tone, gdrill, run } from './exercises.js';
 import { audioAvailable } from './speech.js';
 import { sample, shuffle, pct } from './util.js';
+import { latestPlacement } from './focus.js';
 
 const SKILL_NAMES = { vocab: 'Vocabulary', reading: 'Reading', grammar: 'Grammar', listening: 'Listening', tones: 'Tones', speaking: 'Speaking' };
 export const skillName = k => SKILL_NAMES[k] || k;
@@ -30,6 +31,7 @@ export function start(onDone) {
   run({ title: 'Placement test', steps: buildTest(), test: true, activity: 'placement', onFinish: out => {
     if (out.early && out.results.length < 6) return onDone && onDone(null);
     const result = score(out.results);
+    result.seeded = seedKnown(out.results, result.level);
     S.lang().placements.push(result);
     S.logSession('placement', { ms: out.ms, c: out.c, t: out.t });
     S.save();
@@ -57,6 +59,20 @@ export function score(results) {
   return { at: Date.now(), level, label: C.get().levels[level], score: pct(c, results.length), c, t: results.length, levels, skills, sections: sectionsRaw, weak };
 }
 
+// Words you got right in a level you passed are "clearly known": add them to reviews (not as
+// mastered) with a short first interval, so FSRS confirms them within a few days instead of you
+// relearning them from scratch. Right answers in levels you didn't pass could be guesses, so they
+// are left alone. Grammar and items that already have a card are skipped.
+export function seedKnown(results, level, now = Date.now()) {
+  const cards = C.cards(); let n = 0;
+  for (const r of results) {
+    if (!r.correct || !r.id || r.level > level || cards[r.id] || C.item(r.id)?.kind === 'grammar') continue;
+    cards[r.id] = { reps: 1, ivl: 2, ease: 2.5, s: 2, d: 5, due: now + (1 + Math.random() * 2) * 86400000, lapses: 0, seen: now, last: now, placed: true };
+    n++;
+  }
+  return n;
+}
+
 // Units the placement says you already know → put them into review (not "mastered").
 export function applyLevel(level) {
   if (!level) return 0;
@@ -75,5 +91,19 @@ export function recommendation(result) {
   if (!result) return null;
   const units = C.get().units;
   const target = Math.min(result.level + 1, 3);
-  return units.find(u => u.level >= target && C.unitProgress(u.id).learned < C.unitItems(u.id).length) || C.nextUnit();
+  const open = u => u.level >= target && C.unitProgress(u.id).learned < C.unitItems(u.id).length;
+  // Prefer units a native speaker has checked; new "needs family check" units come after.
+  return units.find(u => open(u) && !u.review) || units.find(open) || C.nextUnit();
+}
+
+// What Home's "Continue learning" offers: a unit you're partway through (most recent first), otherwise
+// where your latest placement says to start, otherwise the first unfinished unit.
+export function continueUnit() {
+  const lessons = S.lang().lessons || {};
+  const inProgress = Object.entries(lessons)
+    .filter(([id, v]) => !v.done && id !== 'my' && C.unit(id) && C.unitProgress(id).learned < C.unitItems(id).length)
+    .sort((a, b) => (b[1].at || 0) - (a[1].at || 0))[0];
+  if (inProgress) return C.unit(inProgress[0]);
+  const r = latestPlacement();
+  return r ? recommendation(r) : C.nextUnit();
 }

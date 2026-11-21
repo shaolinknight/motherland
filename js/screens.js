@@ -13,6 +13,7 @@ import { isMastered, isHidden } from './srs.js';
 import { flagSheet, confirmSheet, itemOptions, sheet } from './ui.js';
 import { ankiText } from './ankiexport.js';
 import { applyTheme } from './theme.js';
+import { focusSkills, retestDue, daysSincePlacement, RETEST_AFTER_DAYS } from './focus.js';
 import { hapticsSupported, tick } from './haptics.js';
 import { stripAll } from './vitext.js';
 import { spellingProblems } from './vispell.js';
@@ -103,7 +104,7 @@ function streakLine() {
 // ── HOME ────────────────────────────────────────────────────────────────────
 export function home(root) {
   const st = S.get(), today = S.day(dayKey()), goal = st.settings.dailyGoal;
-  const due = C.dueItems().length, nextU = C.nextUnit(), np = C.unitProgress(nextU.id);
+  const due = C.dueItems().length, nextU = P.continueUnit(), np = C.unitProgress(nextU.id);
   const hasTest = S.lang().placements.length > 0;
   const words = C.words();
   const seed = [...dayKey()].reduce((a, ch) => a + ch.charCodeAt(0), 0);
@@ -129,6 +130,8 @@ export function home(root) {
       <div class="ring" style="--p:${ring}" role="img" aria-label="Daily goal ${today.xp} of ${goal} XP"><span><b>${today.xp}</b><small>/${goal} XP</small></span></div>
     </section>
 
+    ${retestDue() ? `<a class="card link-card retest" href="#/placement"><span aria-hidden="true" class="mode-ico">${icon('target')}</span>
+      <div class="grow"><b>Time for a check-up</b><p class="muted small">Your last placement test was ${daysSincePlacement()} days ago. Retake it so lessons focus on what you need now.</p></div>${icon('chevron')}</a>` : ''}
     ${!hasTest ? `<a class="card cta-test" href="#/placement">
       <div aria-hidden="true" class="cta-ico">${icon('target')}</div>
       <div class="grow"><b>Find your level</b><p class="muted">A 4-minute placement test shows where you are and what to work on.</p></div>
@@ -677,7 +680,14 @@ export function diagnostics(root) {
     <section class="card"><p class="kicker">What to work on</p>
       ${r.level === 0 && r.score < 40 ? '<p>You’re early on, which is the perfect place to start. Work through the units in order and retake the test in a few weeks to see the change.</p>' : ''}
       ${r.weak.length ? `<ul class="checklist warnlist">${r.weak.map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : '<p>Nothing stood out as weak. Keep moving forward!</p>'}
-      ${rec ? `<p>Start with <b>${rec.icon} ${esc(rec.title)}</b>.</p><a class="btn primary" href="#/unit/${rec.id}">Go to ${esc(rec.title)}</a>` : ''}
+      ${rec ? `<p>Start with <b>${rec.icon} ${esc(rec.title)}</b>. Home’s “Continue learning” now points there.</p><a class="btn primary" href="#/unit/${rec.id}">Go to ${esc(rec.title)}</a>` : ''}
+    </section>
+    <section class="card"><p class="kicker">How this shapes your lessons</p>
+      <ul class="checklist">
+        ${r.seeded ? `<li>${plural(r.seeded, 'word')} you clearly know ${r.seeded === 1 ? 'was' : 'were'} added to your reviews, so you confirm ${r.seeded === 1 ? 'it' : 'them'} instead of relearning.</li>` : ''}
+        ${focusSkills(r).length ? `<li>Lessons now give you more practice in <b>${focusSkills(r).map(P.skillName).join(', ')}</b>.</li>` : '<li>Your skills are even, so lessons keep a balanced mix.</li>'}
+        <li>Retake the test in about ${Math.round(RETEST_AFTER_DAYS / 7)} weeks; Home will remind you. Your newest result always counts.</li>
+      </ul>
     </section>
     ${r.level > 0 && !r.applied ? `<section class="card"><p class="kicker">Skip ahead?</p>
       <p class="small">You passed level ${r.level}. Add those units to your review queue so you can confirm them quickly instead of relearning from scratch.</p>

@@ -7,6 +7,7 @@ import { mergeStates } from '../js/merge.js';
 import { ankiText } from '../js/ankiexport.js';
 import { streakInfo, longestStreak } from '../js/streak.js';
 import { spellingProblems } from '../js/vispell.js';
+import { skillWeights, focusSkills, weightedOrder } from '../js/focus.js';
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log('✓', name); };
 
@@ -192,6 +193,20 @@ const BASE_SIZES = '6/4 16/7 16/6 18/6 16/6 16/8 16/7 17/7 18/6 16/6 20/6 18/7 1
   t('every new unit has a grammar point with 3+ drills', () => assert.ok(vi.units.slice(25).every(u => u.grammar.length && u.grammar.every(g => g.drills.length >= 3))));
 }
 
+t('placement focus: weak skills weigh 3×, shaky 2×, thin evidence ignored', () => {
+  const r = { skills: { tones: { c: 1, t: 4 }, listening: { c: 2, t: 3 }, vocab: { c: 9, t: 10 }, grammar: { c: 0, t: 1 } } };
+  assert.deepEqual(skillWeights(r), { tones: 3, listening: 2, vocab: 1 });
+  assert.deepEqual(focusSkills(r), ['tones', 'listening']);
+  assert.deepEqual(skillWeights(null), {});
+});
+t('placement focus: heavier exercise types come first more often, lighter ones still appear', () => {
+  let seed = 1; const rng = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  let heavyFirst = 0, lightFirst = 0;
+  for (let i = 0; i < 2000; i++) { const top = weightedOrder([{ n: 'a', weight: 3 }, { n: 'b', weight: 1 }], rng)[0].n; top === 'a' ? heavyFirst++ : lightFirst++; }
+  assert.ok(heavyFirst > 1350 && heavyFirst < 1650, `${heavyFirst}`);   // expected 75%
+  assert.ok(lightFirst > 0);
+});
+
 // Shipping checks: a module missing from the service worker breaks offline use, and one missing from
 // the preload list brings back the slow import waterfall.
 const modules = ['js', 'data'].flatMap(d => fs.readdirSync(d).filter(f => f.endsWith('.js')).map(f => `${d}/${f}`));
@@ -207,7 +222,7 @@ const v11 = { v: 1, updatedAt: 1700000000000, deviceId: 'old', lang: 'vi',
   days: { '2026-11-01': { xp: 40, ms: 1, c: 4, t: 5, words: 2, skills: {} } }, flags: [], pending: [] };
 const mem = { 'motherland.v1': JSON.stringify(v11) };
 globalThis.localStorage = { getItem: k => mem[k] ?? null, setItem: (k, v) => { mem[k] = v; }, removeItem: k => { delete mem[k]; } };
-const S = await import('../js/store.js');
+const S = await import('../js/store.js?v11');   // fresh instance that reads the stubbed storage
 t('v1.1 state loads: progress kept', () => { assert.equal(S.lang().cards['u03-w0'].reps, 2); assert.equal(S.get().days['2026-11-01'].xp, 40); });
 t('v1.1 state loads: user settings kept, haptics defaults on', () => {
   const st = S.settings(); assert.equal(st.showHanoi, false); assert.equal(st.dailyGoal, 100); assert.equal(st.syncKey, 'k'); assert.equal(st.haptics, true);

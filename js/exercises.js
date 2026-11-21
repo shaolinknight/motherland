@@ -7,6 +7,7 @@ import { speak, audioAvailable, canRecord, record, stop as stopAudio } from './s
 import { compare, syllableDiff, toneVariants, toneOf, TONE_NAMES, tokens, clean } from './vitext.js';
 import { $, $$, esc, shuffle, sample, pick, toast, pct } from './util.js';
 import { tick } from './haptics.js';
+import { skillWeights, weightedOrder } from './focus.js';
 import { icon } from './icons.js';
 import { confirmSheet, fitToViewport, dismissLayer, trapFocus, itemOptions } from './ui.js';
 
@@ -83,17 +84,21 @@ export const grammarDrills = item => shuffle(item.point.drills.map((_, i) => gdr
 export function choose(item, round = 2) {
   if (item.kind === 'grammar') return gdrill(item) || gdrill(item, 0);
   const audio = hasAudio();
-  if (round === 1) return mcq(item, audio && item.kind === 'word' && Math.random() < 0.3 ? 'audio2en' : 'vi2en');
-  const opts = [];
-  if (item.kind === 'word') {
-    opts.push(() => mcq(item, 'en2vi'), () => mcq(item, 'vi2en'));
-    opts.push(() => tone(item));
-    if (audio) opts.push(() => mcq(item, 'audio2en'), () => dictation(item));
-  } else {
-    opts.push(() => build(item), () => build(item), () => mcq(item, 'vi2en'));
-    if (audio && tokens(item.vi).length <= 7) opts.push(() => dictation(item));
+  // Your latest placement test tilts the mix: weak skills come up 2–3× as often (see focus.js).
+  const w = skillWeights();
+  if (round === 1) {
+    const listenChance = 0.3 * (w.listening || 1);   // 30% normally, up to 90% if listening is weak
+    return mcq(item, audio && item.kind === 'word' && Math.random() < listenChance ? 'audio2en' : 'vi2en');
   }
-  for (const fn of shuffle(opts)) { const s = fn(); if (s) return s; }
+  const opts = [];   // [make step, skill it trains]
+  if (item.kind === 'word') {
+    opts.push([() => mcq(item, 'en2vi'), 'vocab'], [() => mcq(item, 'vi2en'), 'vocab'], [() => tone(item), 'tones']);
+    if (audio) opts.push([() => mcq(item, 'audio2en'), 'listening'], [() => dictation(item), 'listening']);
+  } else {
+    opts.push([() => build(item), 'reading'], [() => build(item), 'reading'], [() => mcq(item, 'vi2en'), 'reading']);
+    if (audio && tokens(item.vi).length <= 7) opts.push([() => dictation(item), 'listening']);
+  }
+  for (const { fn } of weightedOrder(opts.map(([fn, skill]) => ({ fn, weight: w[skill] || 1 })))) { const s = fn(); if (s) return s; }
   return mcq(item, 'vi2en');
 }
 

@@ -561,6 +561,8 @@ h1:focus, .s-body:focus, .sheet:focus { outline: none; }
 .word-row .chip { margin-top: 6px; }
 .review-note { margin: 10px 0 0; padding: 8px 10px; border-radius: 10px; background: var(--amber-soft); color: var(--ink); }
 .review-chip { margin-top: 4px; }
+.retest { border-color: var(--gold); }
+@media (min-width: 768px) { .page > .retest { grid-column: 1 / -1; } }
 .chip.leech { background: var(--amber-soft); color: var(--amber); }
 .chip.hid { background: var(--track); color: var(--muted); }
 .word-row .opts { margin-top: -6px; }
