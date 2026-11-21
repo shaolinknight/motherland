@@ -1,6 +1,7 @@
 // Free sync through your own Google Sheet (Google Apps Script web app).
 // The phone always works offline; the Sheet is a backup + a readable log.
 import * as S from './store.js';
+import { mergeStates } from './merge.js';
 
 let busy = false;
 
@@ -41,18 +42,21 @@ export async function pull() {
   return call({ action: 'pull' });
 }
 
-// Pull if the Sheet is newer, otherwise push. Safe to call often.
+// Pull the Sheet's copy, merge it card by card with this phone's (see merge.js), then push the result.
+// Safe to call often.
 export async function sync({ quiet = true } = {}) {
   const st = S.settings();
   if (!st.syncUrl || busy || !navigator.onLine) return { skipped: true };
   busy = true;
   try {
     const remote = await pull();
-    const local = S.get();
-    if (remote.state && remote.updatedAt > local.updatedAt) {
-      const next = JSON.parse(remote.state);
-      next.pending = local.pending; // keep unsent local sessions
-      S.replace(next);
+    if (remote.state) {
+      const local = S.get();
+      const merged = mergeStates(local, JSON.parse(remote.state));
+      if (JSON.stringify(merged) !== JSON.stringify(local)) {
+        S.replace(merged);
+        window.dispatchEvent(new Event('motherland:synced'));   // re-draw the screen with the merged progress
+      }
     }
     await push();
     S.settings().lastSync = Date.now(); S.settings().syncError = '';

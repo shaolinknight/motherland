@@ -50,6 +50,7 @@ const scrollMemory = new Map();
 const screenKey = hash => (hash || '#/home').split('/').slice(0, 3).join('/');
 const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+let transitionId = 0;
 // dir: 'forward' (open a detail page), 'back', or 'tab' (switch tabs).
 function route(dir) {
   stopAudio();
@@ -64,7 +65,11 @@ function route(dir) {
   const animate = dir && !document.querySelector('.session, .sheet-wrap');
   if (animate && document.startViewTransition) {
     document.documentElement.dataset.nav = dir;
-    document.startViewTransition(show).finished.finally(() => { delete document.documentElement.dataset.nav; });
+    const vt = document.startViewTransition(show);
+    const mine = ++transitionId;
+    // A second navigation mid-animation skips this one; that's expected, not an error.
+    vt.ready.catch(() => {});
+    vt.finished.catch(() => {}).then(() => { if (mine === transitionId) delete document.documentElement.dataset.nav; });
     return;
   }
   show();
@@ -102,6 +107,11 @@ document.addEventListener('touchstart', () => {}, { passive: true });
 window.addEventListener('motherland:refresh', () => {
   const y = window.scrollY; render(); window.scrollTo(0, y);
   syncSoon();
+});
+// After a sync brought in progress from another device, re-draw in place (not under a lesson).
+window.addEventListener('motherland:synced', () => {
+  if (document.querySelector('.session')) return;
+  const y = window.scrollY; render(); window.scrollTo(0, y);
 });
 // Voices load late on iOS; re-render once so audio buttons appear.
 if (window.speechSynthesis) speechSynthesis.addEventListener?.('voiceschanged', () => { if (!document.querySelector('.session')) { const y = scrollY; render(); scrollTo(0, y); } }, { once: true });

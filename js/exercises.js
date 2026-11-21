@@ -173,6 +173,14 @@ export function run(opts) {
     (s.done && !s.test) || s.endless ? finish(s) : confirmClose(s);
   };
   $('.s-flag', root).onclick = () => { const st = s.queue[s.i]; st?.item && flagSheet(st.item); };
+  // If the screen changes underneath (Back gesture, a link), end the session quietly instead of
+  // leaving it stranded on top of the wrong page. Answers so far are already saved.
+  s.onNav = () => {
+    if (s.closed) return;
+    if (!s.finished) { s.quiet = true; finish(s, true); }
+    if (!s.closed) { close(s); if (!s.test) s.onFinish && s.onFinish(s.out); }
+  };
+  window.addEventListener('hashchange', s.onNav);
   render(s);
 }
 
@@ -268,7 +276,7 @@ function finish(s, early = false) {
     S.save();
   }
   const out = s.out = { c: s.c, t: s.t, xp: s.xp, ms, results: s.results, early, learned: s.learned };
-  if (s.test) { close(s); s.onFinish && s.onFinish(out); return; }
+  if (s.test) { close(s); if (!s.quiet) s.onFinish && s.onFinish(out); return; }
   if (!s.done) { close(s); return; }
   const body = $('.s-body', s.root), foot = $('.s-foot', s.root);
   $('.s-bar', s.root).style.transform = 'none';
@@ -295,6 +303,9 @@ function finish(s, early = false) {
 }
 
 function close(s) {
+  if (s.closed) return;
+  s.closed = true;
+  window.removeEventListener('hashchange', s.onNav);
   s.unfit && s.unfit();
   s.release && s.release();
   dismissLayer(s.root);

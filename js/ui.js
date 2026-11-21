@@ -22,10 +22,12 @@ export function sheet({ title = '', text = '', html = '', actions = [{ label: 'O
     const release = trapFocus(wrap, $('.sheet', wrap), () => done(null));
     const done = v => {
       if (closed) return; closed = true;
-      unfit(); release();
+      unfit(); release(); window.removeEventListener('hashchange', onNav);
       wrap.classList.remove('open'); setTimeout(() => wrap.remove(), 220); resolve(v);
     };
     $('.sheet-backdrop', wrap).onclick = () => done(null);
+    const onNav = () => done(null);   // a sheet never outlives the screen it was opened on
+    window.addEventListener('hashchange', onNav, { once: true });
     dragToDismiss(wrap, () => done(null));
     $$('.sheet-actions .btn', wrap).forEach(b => b.onclick = () => {
       const a = actions[+b.dataset.i];

@@ -59,6 +59,16 @@ sheet.state = JSON.stringify(remote); sheet.updatedAt = Date.now() + 100000;
 await page.click('.sync-now'); await page.waitForTimeout(800);
 const adopted = await page.evaluate(async () => { const C = await import('/js/course.js'); return !!C.cards()['u05-w0']; });
 adopted ? ok('newer Sheet data is pulled into the app') : fail.push('remote newer state not adopted');
+// an OLDER Sheet copy (another device that synced earlier) must still contribute its cards
+{
+  const older = JSON.parse(sheet.state); older.langs.vi.cards['u06-w1'] = { reps: 1, ivl: 1, ease: 2.5, due: Date.now() + 1e8, lapses: 0, seen: 1, last: 5 };
+  sheet.state = JSON.stringify(older); sheet.updatedAt = 1;
+  await page.click('.sync-now'); await page.waitForTimeout(800);
+  const both = await page.evaluate(async () => { const C = await import('/js/course.js'); const c = C.cards(); return !!c['u06-w1'] && !!c['u05-w0'] && !!c['u03-w0']; });
+  both ? ok('older Sheet copy is merged in, nothing on the phone is lost') : fail.push('merge with older Sheet copy lost cards');
+  const pushed = JSON.parse(sheet.state).langs.vi.cards;
+  pushed['u06-w1'] && pushed['u03-w0'] ? ok('merged progress is pushed back to the Sheet') : fail.push('merged state not pushed');
+}
 const kept = await page.evaluate(() => JSON.parse(localStorage.getItem('motherland.v1')).settings.syncKey);
 kept === 'pw' ? ok('sync settings survive a pull') : fail.push('sync key lost after pull');
 
@@ -66,12 +76,34 @@ kept === 'pw' ? ok('sync settings survive a pull') : fail.push('sync key lost af
 const [dl] = await Promise.all([page.waitForEvent('download'), page.click('.export')]);
 const path = await dl.path();
 ok('backup exported: ' + dl.suggestedFilename());
+{
+  const { readFileSync } = await import('node:fs');
+  const file = JSON.parse(readFileSync(path, 'utf8'));
+  file.settings.syncKey === '' && file.langs?.vi?.cards ? ok('backup file has progress but not the sync password') : fail.push('backup file leaks the sync password or lacks progress');
+}
 const ctx2 = await browser.newContext({ viewport: { width: 393, height: 852 } });
 const p2 = await ctx2.newPage(); p2.on('dialog', d => d.accept()); p2.on('pageerror', e => fail.push('JS error (import): ' + e.message));
 await p2.goto(BASE + '#/settings'); await p2.waitForSelector('.import input', { state: 'attached' });
 await p2.setInputFiles('.import input', path); await p2.waitForSelector('.sheet-wrap.open'); await p2.click('.sheet-actions .primary'); await p2.waitForTimeout(500);
 const restored = await p2.evaluate(async () => { const C = await import('/js/course.js'); return Object.keys(C.cards()).length; });
 restored >= 2 ? ok(`backup restored (${restored} cards)`) : fail.push('import failed');
+
+// Backup reminder: shown without Sheet sync once there is progress; "Later" snoozes it.
+await p2.evaluate(async () => { const S = await import('/js/store.js'); const C = await import('/js/course.js');
+  const c = C.cards(); for (let i = 0; i < 12; i++) c['u02-w' + i] = { reps: 1, ivl: 1, ease: 2.5, due: Date.now() + 1e8, lapses: 0, seen: 1, last: 1 };
+  S.settings().syncUrl = ''; S.settings().lastBackup = 0; S.settings().backupSnooze = 0; S.saveNow(); });
+await p2.goto(BASE + '#/learn'); await p2.goto(BASE + '#/home'); await p2.waitForSelector('.hello');
+(await p2.$('.backup-nudge')) ? ok('backup reminder shows when only this phone has the progress') : fail.push('no backup reminder');
+await p2.click('.later-backup'); await p2.waitForTimeout(200);
+!(await p2.$('.backup-nudge')) ? ok('"Later" hides the backup reminder') : fail.push('backup reminder not snoozed');
+
+// A lesson open when the route changes underneath closes itself and keeps its answers.
+await p2.click('.start-lesson'); await p2.waitForSelector('.session');
+await p2.click('.s-foot .btn.primary');   // first intro card counts as learned
+await p2.evaluate(() => { location.hash = '#/learn'; }); await p2.waitForTimeout(500);
+const stranded = await p2.$('.session');
+const kept1 = await p2.evaluate(async () => Object.keys((await import('/js/course.js')).cards()).length);
+!stranded && kept1 >= 15 ? ok('lesson closes on navigation, progress kept') : fail.push(`lesson stranded=${!!stranded} cards=${kept1}`);
 
 // Offline: service worker serves the app with no network
 await p2.goto(BASE + '#/home'); await p2.waitForTimeout(1500);

@@ -545,3 +545,8 @@ h1:focus, .s-body:focus, .sheet:focus { outline: none; }
 /* A clear focus ring for keyboard / Switch Control users; taps don't show it. */
 :where(button, a, input, select, summary, [tabindex]:not([tabindex="-1"])):focus-visible { outline: 3px solid #1D4F91; outline-offset: 2px; }
 .top :where(button, a):focus-visible { outline-color: #fff; }
+
+/* ── v1.3 ── */
+.backup-nudge { border-color: var(--gold); background: var(--gold-soft); }
+.backup-nudge p { margin: 0 0 4px; }
+@media (min-width: 768px) { .page > .backup-nudge { grid-column: 1 / -1; } }

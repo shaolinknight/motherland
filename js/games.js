@@ -54,8 +54,13 @@ function overlay(key) {
   const g = {
     key, info, root, body: $('.s-body', root), foot: $('.s-foot', root), hud: $('.g-hud', root), timers: [], paused: false,
     clearTimers() { g.timers.forEach(t => { clearInterval(t); clearTimeout(t); }); g.timers = []; },
-    close() { g.clearTimers(); document.removeEventListener('visibilitychange', onVis); stopAudio(); release(); dismissLayer(root); document.body.classList.remove('no-scroll'); window.dispatchEvent(new Event('motherland:refresh')); },
+    close() {
+      if (g.closed) return; g.closed = true;
+      g.clearTimers(); document.removeEventListener('visibilitychange', onVis); window.removeEventListener('hashchange', g.close);
+      stopAudio(); release(); dismissLayer(root); document.body.classList.remove('no-scroll'); window.dispatchEvent(new Event('motherland:refresh'));
+    },
   };
+  window.addEventListener('hashchange', g.close);   // the screen changed underneath: don't strand the game on top
   const onVis = () => { g.paused = document.visibilityState === 'hidden'; };
   document.addEventListener('visibilitychange', onVis);
   $('.s-close', root).onclick = () => g.close();

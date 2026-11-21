@@ -13,6 +13,7 @@ function defaults() {
     settings: {
       showHanoi: true, rate: 0.85, voiceURI: '', forceAudio: false, haptics: true,
       dailyGoal: 60, newPerLesson: 8, syncUrl: '', syncKey: '', lastSync: 0, syncError: '',
+      lastBackup: 0, backupSnooze: 0,
     },
     langs: {},
     days: {},       // { 'YYYY-MM-DD': { xp, ms, c, t, skills: {vocab:{c,t}...} } }

@@ -65,6 +65,26 @@ export function startLesson(unitId) {
   } });
 }
 
+// Download all progress as a JSON file (Settings → Backup, and the Home reminder).
+// The sync password is left out: the file may end up in Files, iCloud or a chat.
+function exportBackup() {
+  const st = S.get();
+  const copy = { ...st, settings: { ...st.settings, syncKey: '' } };
+  const blob = new Blob([JSON.stringify(copy, null, 1)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `motherland-backup-${dayKey()}.json`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  st.settings.lastBackup = Date.now(); S.save({ touch: false });
+}
+
+// Without Sheet sync, progress lives only in Safari's storage for this site. Nudge a backup every
+// two weeks once there's something worth keeping (10+ items studied).
+const BACKUP_EVERY = 14 * 86400000;
+function backupDue() {
+  const st = S.settings();
+  if (st.syncUrl || Object.keys(C.cards()).length < 10) return false;
+  return Date.now() - Math.max(st.lastBackup || 0, st.backupSnooze || 0) > BACKUP_EVERY;
+}
+
 // ── HOME ────────────────────────────────────────────────────────────────────
 export function home(root) {
   const st = S.get(), today = S.day(dayKey()), goal = st.settings.dailyGoal;
@@ -80,6 +100,11 @@ export function home(root) {
   root.innerHTML = `${header('')}
   <div class="page">
     ${audioBanner()}
+    ${backupDue() ? `<section class="card backup-nudge" role="region" aria-label="Backup reminder">
+      <p><b>💾 Back up your progress</b></p>
+      <p class="muted small">Your progress is only on this phone. Save a backup file, or set up Google Sheet sync in Settings.</p>
+      <div class="btn-row"><button class="btn primary small do-backup">Save backup</button><button class="btn ghost small later-backup">Later</button></div>
+    </section>` : ''}
     <section class="hello card">
       <div>
         <h1 lang="vi">${greet}</h1>
@@ -128,6 +153,8 @@ export function home(root) {
   </div>`;
   wireHeader(root); wireSay(root);
   $('.start-lesson', root).onclick = () => startLesson(nextU.id);
+  $('.do-backup', root)?.addEventListener('click', () => { exportBackup(); toast('Backup saved 💾'); home(root); });
+  $('.later-backup', root)?.addEventListener('click', () => { S.settings().backupSnooze = Date.now(); S.save({ touch: false }); home(root); });
   $('.do-flash', root)?.addEventListener('click', () => X.run({ steps: X.flashSteps(), activity: 'flashcards' }));
   $('.do-quiz', root)?.addEventListener('click', () => X.run({ steps: X.reviewSteps(), activity: 'review' }));
   $('.do-endless', root)?.addEventListener('click', () => X.run({ endless: true, activity: 'endless', steps: [] }));
@@ -639,11 +666,7 @@ export function settings(root) {
     settings(root);
   };
   $$('.unflag', root).forEach(b => b.onclick = () => { S.get().flags = S.get().flags.filter(f => f.id !== b.dataset.id); S.save(); settings(root); });
-  $('.export', root).onclick = () => {
-    const blob = new Blob([JSON.stringify(S.get(), null, 1)], { type: 'application/json' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `motherland-backup-${dayKey()}.json`; a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-  };
+  $('.export', root).onclick = exportBackup;
   $('.import input', root).onchange = async e => {
     const f = e.target.files[0]; if (!f) return;
     try {
