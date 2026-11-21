@@ -8,6 +8,12 @@
 4. Haptics: checkbox-switch trick, single pulse, with a setting to turn it off
 5. Accessibility fixes from the audit
 
+## Done: v1.4 (Nov 21, 2026)
+- Updates apply by themselves at the next quiet moment (no more being stuck on an old version).
+- Stricter placement (80% per level, production questions), no bulk skipping, Test out per unit, re-check of what the old test skipped.
+- One-handed use: bottom-anchored lessons, left-edge swipe back, unit action bar.
+- Six more units (u32–u37), marked “needs family check”.
+
 ## Done: v1.3 (agreed and built Nov 21, 2026; one commit per item, on preview until confirmed on the phone)
 Still open from v1.3: family check of units u25–u31 (remove `review: true` per unit once confirmed).
 Order: the progress-touching work first (sync merge, then FSRS), each kept separate.

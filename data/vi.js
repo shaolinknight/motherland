@@ -3,6 +3,7 @@
 import a from './vi-a.js';
 import b from './vi-b.js';
 import c from './vi-c.js';   // v1.3 units, marked review: true (needs family check)
+import d from './vi-d.js';   // v1.4 units, marked review: true (needs family check)
 import grammar from './vi-grammar.js';
 
 export default {
@@ -14,5 +15,5 @@ export default {
   accent: 'Saigon (Southern) first, with Hanoi (Northern) variants shown',
   levels: ['Beginner', 'Elementary', 'Pre-intermediate', 'Intermediate'],
   sections: ['Foundations', 'Weddings', 'Everyday Life', 'Going Out', 'Family & Culture', 'Deeper Conversations'],
-  units: [...a, ...b, ...c].map(u => ({ ...u, grammar: grammar[u.id] || [] })),
+  units: [...a, ...b, ...c, ...d].map(u => ({ ...u, grammar: grammar[u.id] || [] })),
 };

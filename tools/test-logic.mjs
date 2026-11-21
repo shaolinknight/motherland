@@ -180,13 +180,13 @@ t('merge: deleted My words stay deleted across devices', () => {
 });
 
 // Content contract: item IDs come from positions, so units are only ever appended.
-const BASE_SIZES = '6/4 16/7 16/6 18/6 16/6 16/8 16/7 17/7 18/6 16/6 20/6 18/7 17/6 15/6 16/6 16/6 17/6 16/6 16/6 16/6 15/6 16/6 15/6 15/6 15/6';
+const BASE_SIZES = '6/4 16/7 16/6 18/6 16/6 16/8 16/7 17/7 18/6 16/6 20/6 18/7 17/6 15/6 16/6 16/6 17/6 16/6 16/6 16/6 15/6 16/6 15/6 15/6 15/6 12/6 12/6 12/6 12/6 12/6 12/6 12/6';   // u00–u31 (everything shipped through v1.3)
 {
   const vi = (await import('../data/vi.js')).default;
-  t('units are in order u00…u31 with no gaps', () => assert.deepEqual(vi.units.map(u => u.id), Array.from({ length: vi.units.length }, (_, i) => `u${String(i).padStart(2, '0')}`)));
-  t('first 25 units keep their size (append-only)', () => {
-    // Word/phrase counts of u00–u24 as of v1.2; a change here would shift every later item ID.
-    const sizes = vi.units.slice(0, 25).map(u => `${u.words.length}/${u.phrases.length}`).join(' ');
+  t('units are in order (u00, u01, …) with no gaps', () => assert.deepEqual(vi.units.map(u => u.id), Array.from({ length: vi.units.length }, (_, i) => `u${String(i).padStart(2, '0')}`)));
+  t('shipped units keep their size (append-only)', () => {
+    // Word/phrase counts of every shipped unit; a change here would shift item IDs and break progress.
+    const sizes = vi.units.slice(0, 32).map(u => `${u.words.length}/${u.phrases.length}`).join(' ');
     assert.equal(sizes, BASE_SIZES);
   });
   t('new units are marked as needing a family check', () => assert.ok(vi.units.slice(25).every(u => u.review === true)));

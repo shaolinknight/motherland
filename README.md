@@ -3,8 +3,8 @@
 Your personal language app. It starts with Vietnamese (Saigon first, with Hanoi variants shown) and is built so Korean, Japanese and Mexican Spanish can be added later. It costs nothing to run: there are no servers or API keys, audio uses the iPhone's built-in voices, and progress syncs to your own Google Sheet.
 
 ## What's inside
-- **32 units, 482 words, 196 phrases, 184 dialogue lines and 32 short readings**, organized by real situations. Units 25–31 (wedding planning, đám giỗ, phone calls with relatives, ordering for a group, bargaining, the pharmacy, texting shorthand) are new and marked **“needs family check”** until a native speaker confirms them.
-- **33 grammar points with 110 drills**, one or two per unit: pronouns, là, có…không, đã/đang/sẽ, chưa, classifiers, comparisons, bị/được, particles (nha, đi, hả, nè), respect words (dạ, ạ) and more. Each comes with an explanation, tables, tappable examples and fill-the-gap, which-is-correct and word-order drills. Grammar is taught inside each unit’s first lesson and comes back in reviews. Weddings come early (units 3–6: the wedding day, ceremonies and customs, wishes and toasts, giving a speech).
+- **38 units, 554 words, 232 phrases, 220 dialogue lines and 38 short readings**, organized by real situations. Units 25–37 (wedding planning, đám giỗ, phone calls with relatives, ordering for a group, bargaining, the pharmacy, texting shorthand, cooking with family, describing people, directions and Saigon addresses, childhood memories, Trung Thu and Vu Lan, paying and banking) are new and marked **“needs family check”** until a native speaker confirms them.
+- **39 grammar points with 134 drills**, one or two per unit: pronouns, là, có…không, đã/đang/sẽ, chưa, classifiers, comparisons, bị/được, particles (nha, đi, hả, nè), respect words (dạ, ạ) and more. Each comes with an explanation, tables, tappable examples and fill-the-gap, which-is-correct and word-order drills. Grammar is taught inside each unit’s first lesson and comes back in reviews. Weddings come early (units 3–6: the wedding day, ceremonies and customs, wishes and toasts, giving a speech).
 - **Lessons** introduce up to 8 new items at a time, then drill them with meaning quizzes, tone picking, sentence building, dictation and speaking practice (record yourself and compare).
 - **Spaced repetition with FSRS** (the scheduler modern Anki uses) brings each word back when your chance of remembering it drops to your target (90% by default). Anki-style touches: interval labels on the grade buttons, fuzz, leeches, bury and suspend, and an **Export for Anki** file. You can review with flashcards, quiz review, endless review or a weak-words drill.
 - **Placement test and diagnostics** give your level, scores by skill and topic, what to work on, and where to start.
@@ -13,7 +13,8 @@ Your personal language app. It starts with Vietnamese (Saigon first, with Hanoi 
 - **Word bank**: every word you've learned, searchable with or without accents, filterable by learning, mastered, missed or hidden.
 - **My words**: add words you hear from family; they join your reviews and stay “not yet checked” until you confirm them.
 - **Grammar guide search**, with or without accents.
-- **Placement keeps working**: your latest result sets where Continue learning starts, adds words you clearly know to reviews, gives more practice in weak skills, and reminds you to retest after 4 weeks.
+- **Placement keeps working** (stricter since v1.4: 80% per level, half the questions make you produce Vietnamese): your latest result sets where Continue learning starts, adds words you produced correctly to reviews, gives more practice in weak skills, and reminds you to retest after 4 weeks. It never skips whole units; use **Test out** on a unit instead.
+- **One-handed**: lessons sit at the bottom of the screen, swipe from the left edge to go back or close, and unit actions live above the tab bar.
 - **Streak freeze** (one missed day a week is forgiven), **dark mode**, and a **backup reminder** when Sheet sync isn't set up.
 - **Sync merges** progress from several devices card by card instead of overwriting.
 - **Games**: Match pairs, Speed round, Tone hunter and Listen up. Each has a rules screen, a 3-2-1 countdown, a timer that pauses when you leave the app, and a results screen listing the words you missed.
@@ -34,7 +35,7 @@ Follow the steps at the top of `apps-script/Code.gs`, then paste the web app URL
 
 ## Updating the app
 - After changing files, bump `VERSION` in `sw.js` so phones pick up the update.
-- Lesson content lives in `data/vi-a.js`, `data/vi-b.js` and `data/vi-c.js`. To add a unit, append it (IDs are positional), give it the next `id`, and add `review: true` until a native speaker has checked it.
+- Lesson content lives in `data/vi-a.js` … `data/vi-d.js`. To add a unit, append it (IDs are positional), give it the next `id`, and add `review: true` until a native speaker has checked it.
 - **Always run the checks before uploading:**
   ```
   npm run validate   # Vietnamese spelling + tone rules on every word and grammar drill

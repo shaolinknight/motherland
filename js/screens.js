@@ -18,7 +18,7 @@ import { hapticsSupported, tick } from './haptics.js';
 import { stripAll } from './vitext.js';
 import { spellingProblems } from './vispell.js';
 
-const VERSION = '1.3';
+const VERSION = '1.4';
 const L = () => C.get().speechLang;
 const say = (t, opts) => speak(t, L(), opts);
 const go = h => { location.hash = h; };
