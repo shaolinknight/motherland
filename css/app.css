@@ -658,3 +658,22 @@ h1:focus, .s-body:focus, .sheet:focus { outline: none; }
   --accent: #6EDDB0; --brand-dark: #8CE3BE; --brand-soft: #0F2A20; --brand-mid: #1F5A43; --brand-line: #1C4636;
   --gold-soft: #3B1418; --gold-ink: #FF8F99; --gold-line: #5A2328;
 }
+
+/* ── v1.4: one-handed use ── */
+/* Lessons sit at the bottom, near the thumb and the Check/Continue button. margin-top:auto (not
+   justify-content:flex-end) so a tall step still scrolls normally from its top. */
+.s-body > :first-child { margin-top: auto; }
+.s-body > .finish:first-child, .s-body > .countdown:first-child { margin-top: 0; }
+.fb-row { display: flex; gap: 10px; align-items: center; }
+.fb-row .next { flex: 1; }
+.fb-more { background: rgba(0, 0, 0, .06); }
+/* Unit page actions live above the tab bar. */
+.action-bar {
+  position: fixed; left: 0; right: 0; bottom: calc(var(--tab-h) + var(--safe-b)); z-index: 25;
+  display: flex; gap: 8px; padding: 10px calc(14px + var(--safe-r)) 10px calc(14px + var(--safe-l));
+  background: var(--tabs-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid var(--line);
+}
+.action-bar .btn { flex: 1; }
+.action-bar .btn.primary { flex: 1.4; }
+.page.has-action { padding-bottom: 84px; }
+@media (min-width: 768px) { .action-bar { justify-content: center; } .action-bar .btn { flex: 0 1 240px; } }

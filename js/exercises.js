@@ -276,8 +276,12 @@ function feedback(s, foot, result, html = '') {
   const cls = result === 'wrong' ? 'bad' : 'good';
   const msg = result === 'right' ? pick(['Đúng rồi! 🎉', 'Giỏi quá!', 'Chính xác!', 'Tuyệt vời!']) : result === 'close' ? 'Almost — check the tones' : 'Not quite';
   foot.className = `s-foot fb ${cls}`;
-  foot.innerHTML = `<div class="fb-msg"><strong>${msg}</strong>${html}</div><button class="btn primary next">Continue</button>`;
+  // ⋯ sits beside Continue so bury/suspend/report is reachable one-handed (the top-right one is a stretch).
+  const st = s.queue[s.i];
+  foot.innerHTML = `<div class="fb-msg"><strong>${msg}</strong>${html}</div>
+    <div class="fb-row">${st?.item ? `<button class="icon-btn fb-more" aria-label="Options for this item: bury, suspend or report">${icon('more')}</button>` : ''}<button class="btn primary next">Continue</button></div>`;
   const b = $('.next', foot); b.focus({ preventScroll: true }); b.onclick = () => next(s);
+  $('.fb-more', foot)?.addEventListener('click', () => $('.s-flag', s.root).click());
 }
 
 // Buried/suspended mid-session: drop its remaining steps and move on without grading it.

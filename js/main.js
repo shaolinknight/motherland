@@ -7,6 +7,7 @@ import { icon } from './icons.js';
 import { stop as stopAudio } from './speech.js';
 import { registerSW } from './pwa.js';
 import { applyTheme } from './theme.js';
+import { enableEdgeSwipe } from './gestures.js';
 
 const TABS = [
   ['home', 'Home', 'home'],
@@ -129,6 +130,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 applyTheme();
+enableEdgeSwipe();
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
 render();
 // Paint first from local data; the Sheet sync and SW check happen after the first frame.

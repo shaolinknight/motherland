@@ -269,16 +269,17 @@ export function unit(root, id, tab = 'words') {
       <div class="row"><div aria-hidden="true" class="unit-ico big">${u.icon}</div>
         <div class="grow"><b>${p.learned}/${p.total} learned</b>${bar(p.pct)}<span class="chip lvl">Level ${u.level} · ${esc(u.section)}</span></div></div>
         ${u.review ? '<p class="small review-note">🧐 <b>Needs family check.</b> This unit is new and hasn’t been checked by a native speaker yet. Tap 🚩 on anything that sounds off.</p>' : ''}
-      <div class="btn-row">
-        <button class="btn primary learn-new">${remaining ? (newVocab ? `Learn ${Math.min(newVocab, S.settings().newPerLesson)} new` : 'Learn the grammar') : 'Practice unit'}</button>
-        ${p.learned && remaining ? `<button class="btn ghost practice">Practice</button>` : ''}
-        ${remaining && !p.learned ? `<button class="btn ghost test-out">Test out</button>` : ''}
-      </div>
     </section>
     <details class="card tip" ${p.learned ? '' : 'open'}><summary>💡 Culture & usage note</summary><p>${esc(u.tip)}</p></details>
     <nav class="seg" role="tablist">${tabs.map(([k, n]) => `<button role="tab" aria-selected="${k === tab}" class="${k === tab ? 'on' : ''}" data-tab="${k}">${n}</button>`).join('')}</nav>
     <div class="panel">${panels[tab]()}</div>
+  </div>
+  <div class="action-bar">
+    <button class="btn primary learn-new">${remaining ? (newVocab ? `Learn ${Math.min(newVocab, S.settings().newPerLesson)} new` : 'Learn the grammar') : 'Practice unit'}</button>
+    ${p.learned && remaining ? `<button class="btn ghost practice">Practice</button>` : ''}
+    ${remaining && !p.learned ? `<button class="btn ghost test-out">Test out</button>` : ''}
   </div>`;
+  root.querySelector('.page').classList.add('has-action');
   wireHeader(root); wireSay(root);
   $('.learn-new', root).onclick = () => remaining ? startLesson(id) : X.run({ steps: X.practiceSteps(items, 12), activity: `practice:${id}` });
   $('.test-out', root)?.addEventListener('click', async () => {
