@@ -67,7 +67,10 @@ function mergeLang(a = {}, b = {}, newer) {
   out.placements = unionBy(a.placements, b.placements, p => p.at).sort((p, q) => p.at - q.at);
   out.skills = maxDeep(a.skills || {}, b.skills || {});
   out.games = mergeGames(a.games, b.games);
-  if (a.myWords || b.myWords) out.myWords = mergeMap(a.myWords, b.myWords, (x, y) => ((y.edited || 0) > (x.edited || 0) ? y : x));
+  const newerEdit = (x, y) => ((y.edited || 0) > (x.edited || 0) ? y : x);
+  if (a.myWords || b.myWords) out.myWords = mergeMap(a.myWords, b.myWords, newerEdit);
+  if (a.edits || b.edits) out.edits = mergeMap(a.edits, b.edits, newerEdit);
+  if (a.decks || b.decks) out.decks = mergeMap(a.decks, b.decks, newerEdit);
   return out;
 }
 

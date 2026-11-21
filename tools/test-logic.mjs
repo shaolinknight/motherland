@@ -235,6 +235,27 @@ t('placement focus: heavier exercise types come first more often, lighter ones s
     assert.equal(effectiveLevel({ level: 2, levels: { 1: { c: 9, t: 10 }, 2: { c: 7, t: 10 } } }), 1);
   });
 }
+{
+  const C = await import('../js/course.js?edits');
+  const it = C.item('u03-w0'), orig = it.en;
+  t('card edit: your text is laid over the course item', () => {
+    C.editsMap()['u03-w0'] = { vi: it.vi, en: 'my wedding', north: '', note: 'from Grandma', edited: 5 };
+    C.applyEdits();
+    assert.equal(C.item('u03-w0').en, 'my wedding'); assert.equal(C.item('u03-w0').note, 'from Grandma'); assert.equal(C.item('u03-w0').edited, true);
+  });
+  t('card edit: restoring brings the original back', () => {
+    C.editsMap()['u03-w0'] = { reset: true, edited: 9 }; C.applyEdits();
+    assert.equal(C.item('u03-w0').en, orig); assert.equal(C.item('u03-w0').edited, false);
+  });
+  t('card edit: grammar items are never edited', () => {
+    C.editsMap()['u03-g0'] = { en: 'x', edited: 1 }; C.applyEdits(); assert.notEqual(C.item('u03-g0').en, 'x');
+  });
+  t('merge: newer card edit (or restore) wins across devices', () => {
+    const a = dev({ langs: { vi: { cards: {}, edits: { 'u03-w0': { en: 'old', edited: 1 } } } } });
+    const b = dev({ langs: { vi: { cards: {}, edits: { 'u03-w0': { reset: true, edited: 2 } } } } });
+    assert.equal(mergeStates(a, b).langs.vi.edits['u03-w0'].reset, true);
+  });
+}
 // Shipping checks: a module missing from the service worker breaks offline use, and one missing from
 // the preload list brings back the slow import waterfall.
 const modules = ['js', 'data'].flatMap(d => fs.readdirSync(d).filter(f => f.endsWith('.js')).map(f => `${d}/${f}`));

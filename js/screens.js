@@ -223,7 +223,8 @@ export function unit(root, id, tab = 'words') {
   if (!tabs.some(t => t[0] === tab)) tab = 'words';
   const remaining = items.filter(i => !cards[i.id]).length;
   const newVocab = items.filter(i => i.kind !== 'grammar' && !cards[i.id]).length;
-  const flagBtn = it => `<button class="icon-btn flag-it" data-id="${it.id}" aria-label="Report a problem">${icon('flag')}</button>`;
+  // ⋯ per word: edit the card, add it to a deck, bury/suspend it, or report a problem.
+  const flagBtn = it => `<button class="icon-btn flag-it" data-id="${it.id}" aria-label="Options for ${esc(it.vi)}: edit, report…">${it.kind === 'grammar' ? icon('flag') : icon('more')}</button>`;
 
   const panels = {
     words: () => `<ul class="word-list">${items.filter(i => i.kind === 'word').map(it => `
@@ -231,7 +232,7 @@ export function unit(root, id, tab = 'words') {
         <span class="dot ${status(it)}" title="${status(it)}"></span>
         <div class="grow">
           <div class="vi" lang="vi">${esc(it.vi)}</div>
-          <div class="muted">${esc(it.en)}</div>
+          <div class="muted">${esc(it.en)}${it.edited ? ' <span class="edited-mark">✏️ edited</span>' : ''}</div>
           ${it.north && showH ? `<div class="hanoi">Hanoi: <b lang="vi">${esc(it.north)}</b></div>` : ''}
           ${it.note ? `<div class="note small">💡 ${esc(it.note)}</div>` : ''}
         </div>${flagBtn(it)}
@@ -239,7 +240,7 @@ export function unit(root, id, tab = 'words') {
     phrases: () => `<ul class="word-list">${items.filter(i => i.kind === 'phrase').map(it => `
       <li class="word-row" data-say="${esc(it.vi)}">
         <span class="dot ${status(it)}"></span>
-        <div class="grow"><div class="vi" lang="vi">${esc(it.vi)}</div><div class="muted">${esc(it.en)}</div></div>${flagBtn(it)}
+        <div class="grow"><div class="vi" lang="vi">${esc(it.vi)}</div><div class="muted">${esc(it.en)}${it.edited ? ' <span class="edited-mark">✏️ edited</span>' : ''}</div></div>${flagBtn(it)}
       </li>`).join('')}</ul>`,
     grammar: () => gItems.map(it => { const g = it.point; return `
       <section class="card grammar-card">
@@ -293,7 +294,12 @@ export function unit(root, id, tab = 'words') {
   $('.practice', root)?.addEventListener('click', () => X.run({ steps: X.practiceSteps(items.filter(i => cards[i.id]), 12), activity: `practice:${id}` }));
   $$('.practice-g', root).forEach(b => b.onclick = () => X.run({ steps: X.grammarSteps(C.item(b.dataset.id)), activity: `grammar:${b.dataset.id}` }));
   $$('.seg button', root).forEach(b => b.onclick = () => { stopAudio(); history.replaceState(null, '', `#/unit/${id}/${b.dataset.tab}`); unit(root, id, b.dataset.tab); });
-  $$('.flag-it', root).forEach(b => b.onclick = e => { e.stopPropagation(); flagSheet(C.item(b.dataset.id)); });
+  $$('.flag-it', root).forEach(b => b.onclick = async e => {
+    e.stopPropagation();
+    const it = C.item(b.dataset.id);
+    if (it.kind === 'grammar') { flagSheet(it); return; }
+    if (await itemOptions(it)) { const y = scrollY; unit(root, id, tab); scrollTo(0, y); }
+  });
   const tr = $('.tr-toggle', root);
   if (tr) tr.onchange = () => $$('.tr', root).forEach(x => x.classList.toggle('hidden', !tr.checked));
   const playSeq = (els) => {
@@ -436,7 +442,7 @@ export function words(root, filter = 'all') {
     ${learned.length ? `<ul class="word-list bank">${learned.map(it => { const c = cards[it.id], u = C.unit(it.unit); return `
       <li class="word-row" data-say="${esc(it.vi)}" data-id="${it.id}" data-st="${isMastered(c) ? 'mastered' : 'learning'}${c.lapses ? ' missed' : ''}${hidden(c) ? ' hidden-card' : ''}" data-q="${esc(stripAll(`${it.vi} ${it.en} ${it.north}`).toLowerCase())}">
         <span class="dot ${isMastered(c) ? 'mastered' : 'learning'}"></span>
-        <div class="grow"><div class="vi" lang="vi">${esc(it.vi)}</div><div class="muted">${esc(it.en)}</div>
+        <div class="grow"><div class="vi" lang="vi">${esc(it.vi)}</div><div class="muted">${esc(it.en)}${it.edited ? ' <span class="edited-mark">✏️ edited</span>' : ''}</div>
           <div class="small muted">${u.icon} ${esc(u.title)} · ${c.suspended ? 'suspended' : (c.buriedUntil || 0) > now ? 'buried until tomorrow' : `review ${when(c)}`}${c.lapses ? ` · missed ×${c.lapses}` : ''}${c.leech ? ' · 🐌 leech' : ''}</div></div>
         <button class="icon-btn opts" aria-label="Options for ${esc(it.vi)}">${icon('more')}</button>
       </li>`; }).join('')}</ul><p class="muted small center empty-msg hidden">No matches.</p>`

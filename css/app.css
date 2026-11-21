@@ -699,3 +699,5 @@ button.flip-card { display: grid; align-items: stretch; padding: 0; min-height: 
 .grades { gap: 8px; }
 .grades .btn { min-height: 64px; font-size: 1.02rem; border-radius: 14px; }
 .grades .btn small { font-size: .78rem; margin-top: 2px; }
+
+.edited-mark { font-size: .75rem; color: var(--gold-ink); white-space: nowrap; }

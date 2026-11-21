@@ -4,6 +4,7 @@ import { esc, $, $$ } from './util.js';
 import * as S from './store.js';
 import * as C from './course.js';
 import { tomorrow } from './srs.js';
+import { spellingProblems } from './vispell.js';
 import { toast } from './util.js';
 
 // sheet({ title, text, html, actions: [{ label, value, kind }] }) → Promise<value | null>
@@ -137,6 +138,7 @@ export async function itemOptions(item) {
   const card = C.card(item.id), now = Date.now();
   const buried = card && (card.buriedUntil || 0) > now;
   const actions = [];
+  if (item.kind !== 'grammar') actions.push({ label: '✏️ Edit card', value: 'edit' });
   if (card && card.suspended) actions.push({ label: 'Unsuspend', value: 'unsuspend', kind: 'primary' });
   else if (card) {
     actions.push(buried ? { label: 'Unbury', value: 'unbury' } : { label: 'Bury until tomorrow', value: 'bury' });
@@ -145,6 +147,7 @@ export async function itemOptions(item) {
   actions.push({ label: '🚩 Report a problem', value: 'report' }, { label: 'Cancel', value: null });
   const act = await sheet({ title: item.vi, text: item.en, actions, stack: true });
   if (act === 'report') { await flagSheet(item); return 'report'; }
+  if (act === 'edit') return (await editCard(item)) ? 'edit' : null;
   if (!act || !card) return null;
   if (act === 'bury') { card.buriedUntil = tomorrow(); toast('Buried until tomorrow'); }
   if (act === 'unbury') { delete card.buriedUntil; toast('Back in your reviews'); }
@@ -153,6 +156,42 @@ export async function itemOptions(item) {
   card.edited = now;   // so a sync merge keeps this choice (not `last`, which FSRS reads as a review)
   S.save();
   return act;
+}
+
+// Edit the text of any card. Course cards keep their original data; your version is laid over it on
+// this phone (and synced), and the change is logged as a flag so the course itself can be corrected.
+// Your own words (My words) are edited in place. Spelling that can't be Vietnamese gets a warning.
+export async function editCard(item) {
+  let draft = { vi: item.vi, en: item.en, north: item.north, note: item.note };   // never write into the card until Save
+  const field = (k, label, ph = '', vi = false) => `<label class="field"><span>${label}</span><input class="ed-${k}" ${vi ? 'lang="vi" autocapitalize="off" spellcheck="false"' : ''} autocomplete="off" autocorrect="off" value="${esc(draft[k] || '')}" placeholder="${esc(ph)}"></label>`;
+  const read = w => ({ vi: $('.ed-vi', w).value.trim().normalize('NFC'), en: $('.ed-en', w).value.trim(), north: $('.ed-north', w).value.trim().normalize('NFC'), note: $('.ed-note', w).value.trim() });
+  const actions = [{ label: 'Cancel', value: null }];
+  if (item.edited) actions.unshift({ label: 'Restore original', value: 'restore', kind: 'danger' });
+  actions.push({ label: 'Save', value: read, kind: 'primary' });
+  for (;;) {
+    const v = await sheet({ title: 'Edit card', html: `${field('vi', 'Vietnamese (Saigon)', '', true)}${field('en', 'English')}${field('north', 'Hanoi word, if different', '', true)}${field('note', 'Note')}
+      ${item.mine ? '' : '<p class="muted small">Your version shows on your devices. The original stays in the course, and your change is logged as a flag so it can be fixed for everyone.</p>'}`, actions });
+    if (!v) return false;
+    if (v === 'restore') {
+      C.editsMap()[item.id] = { reset: true, edited: Date.now() }; C.applyEdits(); S.save(); toast('Original restored'); return true;
+    }
+    if (!v.vi || !v.en) { draft = v; toast('Vietnamese and English can’t be empty'); continue; }
+    const problems = [...spellingProblems(v.vi), ...(v.north ? spellingProblems(v.north) : [])];
+    if (problems.length && !(await confirmSheet('Check the spelling?', `${problems.slice(0, 2).join('. ')}. Save anyway?`, 'Save anyway'))) { draft = v; continue; }
+    if (item.mine) {
+      const w = C.myWordsMap()[item.id];
+      Object.assign(w, v, { edited: Date.now(), verified: false });
+    } else {
+      const o = item.orig || item, orig = { vi: o.vi, en: o.en, north: o.north, note: o.note };   // snapshot before applying
+      const changed = Object.keys(v).filter(k => (v[k] || '') !== (orig[k] || ''));
+      if (!changed.length) { C.editsMap()[item.id] = { reset: true, edited: Date.now() }; C.applyEdits(); S.save(); return true; }
+      C.editsMap()[item.id] = { ...v, edited: Date.now() };
+      C.applyEdits();
+      S.flag({ id: item.id, vi: orig.vi, en: orig.en }, `Edited on phone: ${changed.map(k => `${k} “${orig[k] || ''}” → “${v[k]}”`).join('; ')}`);
+    }
+    S.save(); toast('Card updated ✏️');
+    return true;
+  }
 }
 
 // Keep a full-screen layer above the iPhone keyboard (so Check buttons stay visible).

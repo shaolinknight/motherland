@@ -1,6 +1,6 @@
 // Loads a language course and turns units into study items.
 import vi from '../data/vi.js';
-import { lang } from './store.js';
+import { lang, onChange } from './store.js';
 import { isDue, isMastered, isHidden } from './srs.js';
 
 // Courses that exist today. Others are listed as "coming soon" with their plan.
@@ -12,6 +12,28 @@ export const UPCOMING = [
 ];
 
 let course, items, byId, byUnit;
+
+// ── Your edits to course cards ─────────────────────────────────────────────
+// lang().edits = { [itemId]: { vi?, en?, north?, note?, edited, reset? } }. The course data is never
+// changed; edits are laid over the items at load and whenever the state changes (e.g. after a sync).
+// A reset leaves a tombstone ({ reset: true }) so a sync merge can't bring an old edit back.
+const EDITABLE = ['vi', 'en', 'north', 'note'];
+let applied = new Set();
+export function editsMap() { const l = lang(course.code); return (l.edits ||= {}); }
+export function applyEdits() {
+  const e = lang(course.code).edits || {};
+  for (const id of applied) {
+    const it = byId.get(id);
+    if (it && (!e[id] || e[id].reset)) { Object.assign(it, it.orig); it.edited = false; applied.delete(id); }
+  }
+  for (const [id, v] of Object.entries(e)) {
+    const it = byId.get(id);
+    if (!it || v.reset || it.kind === 'grammar') continue;
+    it.orig ||= Object.fromEntries(EDITABLE.map(k => [k, it[k]]));
+    Object.assign(it, it.orig, Object.fromEntries(EDITABLE.filter(k => typeof v[k] === 'string').map(k => [k, v[k]])));
+    it.edited = true; applied.add(id);
+  }
+}
 
 export function load(code = 'vi') {
   course = COURSES[code] || vi;
@@ -27,9 +49,12 @@ export function load(code = 'vi') {
     list.forEach(it => { items.push(it); byId.set(it.id, it); });
     byUnit.set(u.id, list);
   }
+  applied = new Set();
+  applyEdits();
   return course;
 }
 load();
+onChange(() => applyEdits());   // re-apply after sync merges or restores
 
 // ── My words: your own entries, stored per language in lang().myWords as
 //   { [id]: { id: 'my-…', vi, en, north, note, verified, at, edited, deleted? } }

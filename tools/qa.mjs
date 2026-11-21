@@ -127,6 +127,7 @@ for (const dev of DEVICES) {
   for (const u of ['u03', 'u05', 'u07', 'u06']) { await page.goto(BASE + '#/unit/' + u); await page.click('.learn-new'); await playSession(page, dev, 'lesson-' + u, 80, u === 'u06'); }
   // Flag from unit page (bottom sheet)
   await page.goto(BASE + '#/unit/u03'); await page.click('.flag-it'); await page.waitForSelector('.sheet-wrap.open');
+  await page.click('.sheet-actions .btn >> text=Report a problem'); await page.waitForTimeout(350); await page.waitForSelector('.flag-note');
   await shot(page, dev, 'flag-sheet'); await overflow(page, 'iphone flag sheet');
   await page.click('.chip-btn:nth-child(2)'); await page.fill('.flag-note', 'test note'); await page.click('.sheet-actions .primary'); await page.waitForTimeout(300);
   // Grammar practice from unit page
