@@ -794,6 +794,15 @@ export function diagnostics(root) {
       ${rescored ? `<p class="small">Re-scored with the stricter rules (80% per level). The old test said ${esc(r.label)}.</p>` : ''}
       <div class="lvl-steps">${C.get().levels.map((n, i) => `<span class="${i <= eff ? 'on' : ''}">${esc(n)}</span>`).join('')}</div>
     </section>
+    <section class="card"><p class="kicker">What this means</p>
+      <p><b>You can probably:</b> ${esc(P.CAN_DO[eff].can)}</p>
+      <p><b>Next you’ll learn:</b> ${esc(P.CAN_DO[eff].next)}</p>
+      ${r.t < 30 ? '<p class="small muted">The test stopped early once a level was clearly too hard, so it didn’t ask about higher ones.</p>' : ''}
+    </section>
+    ${P.mightKnow(r).length ? `<section class="card"><p class="kicker">Units you might already know</p>
+      <p class="small muted">Not marked as known. If one looks easy, open it and tap Test out to prove it.</p>
+      <ul class="mini-list">${P.mightKnow(r).map(u => `<li><a href="#/unit/${u.id}">${u.icon} ${esc(u.title)}</a><span class="grow"></span><span class="chip lvl">L${u.level}</span></li>`).join('')}</ul>
+    </section>` : ''}
     ${skipped.length ? `<section class="card recheck"><p class="kicker">Re-check what the test skipped</p>
       <p>${plural(skipped.length, 'word')} ${skipped.length === 1 ? 'was' : 'were'} marked as known by the placement test, and you haven’t reviewed ${skipped.length === 1 ? 'it' : 'any of them'} since.</p>
       <p class="small muted">Putting them back reopens their units, so lessons teach them properly. Words you’ve already reviewed stay as they are.</p>
@@ -816,8 +825,20 @@ export function diagnostics(root) {
     <section class="card"><p class="kicker">By level</p>${rows(r.levels, k => `Level ${k} questions`, 80)}</section>
     <section class="card"><p class="kicker">By skill</p>${rows(r.skills, P.skillName, 60)}</section>
     <section class="card"><p class="kicker">By topic</p>${rows(r.sections, k => k, 60)}</section>
+    <section class="card"><p class="kicker">Start over</p>
+      <p class="small">Reset removes every placement result and the words it marked as known, so lessons teach them properly. Words you’ve reviewed successfully 3+ times and units you tested out of stay.</p>
+      <button class="btn danger wide reset-placement">Reset placement</button>
+    </section>
   </div>`;
   wireHeader(root);
+  $('.reset-placement', root).onclick = async () => {
+    const { remove, keep } = P.resetPreview();
+    const msg = `Removes ${plural(tests.length, 'placement result')} and ${plural(remove.length, 'word')} ${remove.length === 1 ? 'it' : 'they'} marked as known.${keep.length ? ` ${plural(keep.length, 'word')} you’ve reviewed 3+ times stay.` : ''}`;
+    if (!(await confirmSheet('Reset placement?', msg, 'Reset', 'danger'))) return;
+    const res = P.resetPlacement();
+    toast(`Placement reset: ${plural(res.removed, 'word')} back in lessons`, 3500);
+    go('#/progress');
+  };
   $('.unskip', root)?.addEventListener('click', async () => {
     if (!(await confirmSheet('Put them back into lessons?', `${plural(skipped.length, 'word')} you never reviewed will be taught again in their units.`, 'Put back'))) return;
     toast(`${plural(P.unskip(), 'word')} back in lessons`); diagnostics(root);

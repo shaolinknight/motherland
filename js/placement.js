@@ -5,7 +5,8 @@ import { mcq, tone, gdrill, build, run } from './exercises.js';
 import { audioAvailable } from './speech.js';
 import { sample, shuffle, pct, toast } from './util.js';
 import { latestPlacement } from './focus.js';
-import { levelFrom, effectiveLevel } from './levels.js';
+import { levelFrom, effectiveLevel, shouldStop, placementCredit, CAN_DO } from './levels.js';
+export { CAN_DO };
 export { effectiveLevel };
 
 const SKILL_NAMES = { vocab: 'Vocabulary', reading: 'Reading', grammar: 'Grammar', listening: 'Listening', tones: 'Tones', speaking: 'Speaking' };
@@ -24,6 +25,7 @@ const isProd = r => PRODUCTION.has(r.ex);
 // builds, 1 phrase meaning, 1 tone, 2 grammar drills (+1 listening). Every question has “I don’t know”.
 export function buildTest() {
   const steps = [];
+  steps.blockSizes = {};
   const audio = audioAvailable(C.get().speechLang);
   for (const lvl of [1, 2, 3]) {
     const block = [];
@@ -35,14 +37,17 @@ export function buildTest() {
     for (const i of words.slice(5)) { const t = tone(i); if (t) { block.push(t); break; } }
     sample(levelItems(lvl, 'grammar'), 2).forEach(i => { const d = gdrill(i); if (d) block.push(d); });
     if (audio) words.slice(-1).forEach(i => block.push(mcq(i, 'audio2en')));
-    steps.push(...shuffle(block.filter(Boolean)));
+    const b = shuffle(block.filter(Boolean));
+    steps.blockSizes[lvl] = b.length;
+    steps.push(...b);   // levels in order (1, 2, 3) so the test can stop once one is clearly failed
   }
   return steps;
 }
 
 
 export function start(onDone) {
-  run({ title: 'Placement test', steps: buildTest(), test: true, activity: 'placement', onFinish: out => {
+  const steps = buildTest();
+  run({ title: 'Placement test', steps, test: true, activity: 'placement', stopWhen: rs => shouldStop(rs, steps.blockSizes), onFinish: out => {
     if (out.early && out.results.length < 6) return onDone && onDone(null);
     const result = score(out.results);
     result.seeded = seedKnown(out.results, result.level);
@@ -145,6 +150,30 @@ export function recommendation(result) {
   const open = u => u.level >= target && C.unitProgress(u.id).learned < C.unitItems(u.id).length;
   // Prefer units a native speaker has checked; new "needs family check" units come after.
   return units.find(u => open(u) && !u.review) || units.find(open) || C.nextUnit();
+}
+
+// Units the result says you might already know: unfinished units at or below your level. They're
+// suggestions for Test out, never credited automatically.
+export function mightKnow(result, max = 8) {
+  const lvl = effectiveLevel(result);
+  return C.get().units.filter(u => u.level <= lvl && !u.review && C.unitProgress(u.id).learned < C.unitItems(u.id).length).slice(0, max);
+}
+
+// Reset placement: delete every result and take back what placement marked as known (see
+// placementCredit in levels.js). Units reopen so lessons teach those words properly.
+export function resetPreview() { return placementCredit(C.cards()); }
+export function resetPlacement() {
+  const { remove, keep } = placementCredit(C.cards());
+  const cards = C.cards(), lessons = S.lang().lessons, units = new Set();
+  remove.forEach(id => { units.add(C.item(id)?.unit); delete cards[id]; });
+  units.forEach(u => {
+    if (!lessons[u]) return;
+    const left = C.unitItems(u).some(i => cards[i.id]);
+    if (left) lessons[u].done = false; else delete lessons[u];
+  });
+  S.lang().placements = [];
+  S.save();
+  return { removed: remove.length, kept: keep.length };
 }
 
 // What Home's "Continue learning" offers: a unit you're partway through (most recent first), otherwise

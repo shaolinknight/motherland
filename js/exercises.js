@@ -294,6 +294,7 @@ function skipItem(s, item) {
 function next(s) {
   if (s.finished) return;
   s.i++; s.done++;
+  if (s.stopWhen && s.stopWhen(s.results)) return finish(s);   // adaptive tests end early
   if (s.endless && s.i >= s.queue.length) { const n = endlessNext(); if (n) s.queue.push(n); }
   if (s.i >= s.queue.length) return finish(s);
   render(s);

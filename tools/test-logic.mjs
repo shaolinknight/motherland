@@ -219,7 +219,7 @@ t('placement focus: heavier exercise types come first more often, lighter ones s
   });
 }
 {
-  const { levelFrom, effectiveLevel } = await import('../js/levels.js');
+  const { levelFrom, effectiveLevel, shouldStop, placementCredit } = await import('../js/levels.js');
   t('placement v1.4: a level needs 80% overall', () => {
     assert.equal(levelFrom({ 1: { c: 8, t: 10 }, 2: { c: 7, t: 10 } }), 1);
     assert.equal(levelFrom({ 1: { c: 7, t: 10 } }), 0);
@@ -229,6 +229,26 @@ t('placement focus: heavier exercise types come first more often, lighter ones s
     assert.equal(levelFrom({ 1: { c: 9, t: 10 } }, { 1: { c: 2, t: 3 } }), 1);
   });
   t('placement v1.4: levels must be passed in order', () => assert.equal(levelFrom({ 1: { c: 5, t: 10 }, 2: { c: 10, t: 10 } }), 0));
+  const R = (level, correct) => ({ level, correct });
+  t('adaptive test: keeps going while a level is passable', () => {
+    assert.equal(shouldStop([...Array(10)].map(() => R(1, true)), { 1: 12, 2: 12, 3: 12 }), false);
+  });
+  t('adaptive test: stops once a level has more than half wrong', () => {
+    const rs = [...Array(12)].map(() => R(1, true)).concat([...Array(7)].map(() => R(2, false)));
+    assert.equal(shouldStop(rs, { 1: 12, 2: 12, 3: 12 }), true);
+  });
+  t('reset: takes back placement credit, keeps well-reviewed words and test-outs', () => {
+    const cards = {
+      a: { seen: 100, reps: 1, placed: 2 },          // v1.4 test credit → back to lessons
+      b: { seen: 100, reps: 4, placed: 2 },          // reviewed 3+ times → stays
+      c: { seen: 200, reps: 1, placed: 'unit' },     // tested out → stays (not listed)
+      ...Object.fromEntries([...Array(6)].map((_, i) => [`old${i}`, { seen: 300, reps: 1 }])),   // old bulk button, no marker
+      lesson: { seen: 400, reps: 1 },                // a normal lesson card → never touched
+    };
+    const { remove, keep } = placementCredit(cards);
+    assert.deepEqual(remove.sort(), ['a', 'old0', 'old1', 'old2', 'old3', 'old4', 'old5']);
+    assert.deepEqual(keep, ['b']);
+  });
   t('placement v1.4: an old generous result is re-scored down', () => {
     // 70% at every level used to mean Intermediate (level 3); under 80% it's Beginner.
     assert.equal(effectiveLevel({ level: 3, levels: { 1: { c: 7, t: 10 }, 2: { c: 7, t: 10 }, 3: { c: 7, t: 10 } } }), 0);
