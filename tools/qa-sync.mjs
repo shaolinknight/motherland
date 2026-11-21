@@ -137,21 +137,34 @@ await ctx2.close();
 
   deploy = 2; await p3.reload(); await p3.waitForSelector('.hello');
   (await build()) === '1' ? ok('launch after a deploy is served instantly from cache') : fail.push('cache-first not used');
-  await p3.waitForSelector('.update-toast.show', { timeout: 10000 }).then(() => ok('"Update ready" toast appears after a deploy')).catch(() => fail.push('no update toast after a deploy'));
-  await p3.click('.update-toast button');
-  await p3.waitForFunction(() => document.documentElement.dataset.build === '2', null, { timeout: 10000 }).then(() => ok('tapping the toast loads the new version')).catch(() => fail.push('new version not loaded after tapping the toast'));
+  // Nothing open → the new version takes over by itself within seconds, no tap needed.
+  await p3.waitForFunction(() => document.documentElement.dataset.build === '2', null, { timeout: 15000 })
+    .then(() => ok('update applies by itself at launch when nothing is open')).catch(() => fail.push('update did not apply by itself at launch'));
+  await p3.waitForSelector('.hello');
   const keys = await p3.evaluate(() => caches.keys());
   keys.length === 1 && keys[0].endsWith('-test2') ? ok('old version cache deleted') : fail.push('caches after update: ' + keys.join(', '));
 
-  deploy = 3; await p3.reload(); await p3.waitForSelector('.update-toast.show', { timeout: 10000 }).catch(() => {});
+  // Mid-lesson: the update waits (toast), even if the app is backgrounded, then applies when the lesson closes.
   await p3.click('.start-lesson'); await p3.waitForSelector('.session');
+  deploy = 3; await p3.evaluate(async () => (await navigator.serviceWorker.getRegistration()).update());
+  await p3.waitForSelector('.update-toast.show', { timeout: 15000 }).then(() => ok('"Update ready" toast appears during a lesson')).catch(() => fail.push('no update toast during a lesson'));
   await hide(); await p3.waitForTimeout(1500);
   (await p3.$('.session')) && (await build()) === '2' ? ok('update waits while a lesson is open') : fail.push('update interrupted an open lesson');
+  await p3.evaluate(() => { Object.defineProperty(document, 'visibilityState', { get: () => 'visible', configurable: true }); });
   await p3.click('.s-close'); await p3.waitForTimeout(300);
-  if (await p3.$('.sheet-wrap .danger')) { await p3.click('.sheet-wrap .danger'); await p3.waitForTimeout(300); }
-  if (await p3.$('.session .done')) await p3.click('.session .done');
-  await hide();
-  await p3.waitForFunction(() => document.documentElement.dataset.build === '3', null, { timeout: 10000 }).then(() => ok('update applies by itself when the app goes to the background')).catch(() => fail.push('waiting update never applied in the background'));
+  try {   // the page may already be reloading into the new version here
+    if (await p3.$('.sheet-wrap .danger')) { await p3.click('.sheet-wrap .danger'); await p3.waitForTimeout(300); }
+    if (await p3.$('.session .done')) await p3.click('.session .done');
+  } catch { /* navigated: that's the update applying */ }
+  await p3.waitForFunction(() => document.documentElement.dataset.build === '3', null, { timeout: 15000 })
+    .then(() => ok('update applies as soon as the lesson closes')).catch(() => fail.push('waiting update not applied after the lesson'));
+  // Tapping the toast also works (update arrives while a sheet is open).
+  await p3.waitForSelector('.hello'); await p3.goto(B2 + '#/unit/u03'); await p3.waitForSelector('.flag-it'); await p3.click('.flag-it'); await p3.waitForSelector('.sheet-wrap.open');
+  deploy = 4; await p3.evaluate(async () => (await navigator.serviceWorker.getRegistration()).update());
+  await p3.waitForSelector('.update-toast.show', { timeout: 15000 }).catch(() => {});
+  await p3.click('.update-toast button').catch(() => {});
+  await p3.waitForFunction(() => document.documentElement.dataset.build === '4', null, { timeout: 15000 })
+    .then(() => ok('tapping "Update ready" loads the new version')).catch(() => fail.push('tapping the toast did not update'));
   await ctx3.close(); srv2.close();
 }
 

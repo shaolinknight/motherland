@@ -423,7 +423,7 @@ button, .btn, .option, .tile, .m-tile, .q-tile, .tabs a { -webkit-user-select: n
 
 /* ── v1.2: update toast (top, so it never covers the tab bar or a lesson's Check button) ── */
 .update-toast {
-  position: fixed; left: 50%; top: calc(var(--safe-t) + 10px); z-index: 150;
+  position: fixed; left: 50%; top: calc(var(--safe-t) + 10px); z-index: 250;   /* above sheets (200) */
   transform: translate(-50%, -16px); opacity: 0; transition: transform .25s cubic-bezier(.2, .8, .2, 1), opacity .25s;
   width: max-content; max-width: calc(100% - 32px);
 }
