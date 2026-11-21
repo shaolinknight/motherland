@@ -18,8 +18,10 @@ export function sheet({ title = '', text = '', html = '', actions = [{ label: 'O
     document.body.appendChild(wrap);
     requestAnimationFrame(() => wrap.classList.add('open'));
     let closed = false;
+    const unfit = fitToViewport(wrap);   // a sheet with a text field stays above the keyboard
     const done = v => {
       if (closed) return; closed = true;
+      unfit();
       wrap.classList.remove('open'); setTimeout(() => wrap.remove(), 220); resolve(v);
     };
     $('.sheet-backdrop', wrap).onclick = () => done(null);
@@ -114,6 +116,9 @@ export function fitToViewport(el) {
     el.style.height = `${vv.height}px`;
     el.style.top = `${vv.offsetTop}px`;
     el.style.bottom = 'auto';
+    // Keep the field being typed in visible too (the footer's Check button is already inside the layer).
+    const f = document.activeElement;
+    if (f && el.contains(f) && f.matches('input, textarea')) f.scrollIntoView({ block: 'nearest' });
   };
   fit();
   vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit);

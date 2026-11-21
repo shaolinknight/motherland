@@ -495,3 +495,40 @@ html[data-nav="back"]::view-transition-old(root) { z-index: 2; }   /* the page b
   #toast, #toast.show { transform: translate(-50%, 0); }
   .s-bar { transition: none; }
 }
+
+/* ── v1.2: polish ── */
+/* Full-height layers follow the visible viewport (Safari tab bars, iPad split view). fitToViewport()
+   still sets an inline height while the keyboard is open. */
+body { min-height: 100vh; min-height: 100dvh; }
+.session, .layer-leaving { bottom: auto; height: 100vh; height: 100dvh; }
+.sheet { max-height: 85vh; max-height: 85dvh; }
+.sheet-wrap { bottom: auto; height: 100vh; height: 100dvh; }
+
+/* Side safe areas (landscape, iPad Stage Manager). */
+:root { --safe-l: env(safe-area-inset-left, 0px); --safe-r: env(safe-area-inset-right, 0px); }
+.top { padding-left: calc(12px + var(--safe-l)); padding-right: calc(12px + var(--safe-r)); }
+.page { padding-left: calc(14px + var(--safe-l)); padding-right: calc(14px + var(--safe-r)); }
+.s-head { padding-left: calc(8px + var(--safe-l)); padding-right: calc(8px + var(--safe-r)); }
+.s-foot { padding-left: calc(16px + var(--safe-l)); padding-right: calc(16px + var(--safe-r)); }
+.tabs { padding-left: var(--safe-l); padding-right: var(--safe-r); }
+
+/* Scrolling inside a lesson, sheet or table never drags the page behind it. */
+.s-body, .sheet, .g-table-wrap { overscroll-behavior: contain; }
+
+/* Home-screen app: no link previews or text-selection menus on controls. */
+a, button, .option, .tile, .m-tile, .q-tile, .tabs a { -webkit-touch-callout: none; }
+
+/* Follow the iPhone's Text Size setting (Settings → Display & Brightness → Text Size). Everything is
+   sized in rem, so it scales; the tab bar stays fixed like native tab bars. */
+@supports (font: -apple-system-body) {
+  html { font: -apple-system-body; }
+}
+.tabs a { font-size: 11px; }
+.tabs a span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Large text: buttons wrap instead of pushing the page sideways, segmented controls scroll. */
+.btn { white-space: normal; text-align: center; line-height: 1.2; }
+.btn-row { flex-wrap: wrap; }
+.btn-row > .btn { flex: 1 1 auto; }
+.seg { overflow-x: auto; scrollbar-width: none; }
+.seg::-webkit-scrollbar { display: none; }
+.seg button { flex: 1 0 auto; }
