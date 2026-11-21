@@ -293,23 +293,52 @@ export function unit(root, id, tab = 'words') {
   $('.read-all', root)?.addEventListener('click', () => playSeq($$('.sent', root)));
 }
 
+// Everything searchable about a grammar point, lowercased; accents removed unless keepAccents
+// (used for queries typed with accents, so “chưa” = yet doesn't also find “chua” = sour).
+function grammarSearchText(g, u, keepAccents = false) {
+  const parts = [g.title, g.explain, g.pattern || '', ...(g.table || []).flat(), ...g.examples.flat(), u.title, u.vi];
+  const text = parts.join(' ').normalize('NFC').toLowerCase().replace(/\s+/g, ' ');
+  return keepAccents ? text : stripAll(text);
+}
+
 // ── GRAMMAR GUIDE ───────────────────────────────────────────────────────────
 export function grammar(root) {
   const course = C.get(), cards = C.cards();
   root.innerHTML = `${header('Grammar guide', { back: '#/learn', sub: 'Ngữ pháp' })}
   <div class="page">
-    <p class="muted small">Each point is taught inside its unit’s first lesson, then comes back in your reviews. Tap one to read it or practice.</p>
+    <input class="search g-search" type="search" placeholder="Search grammar: là, chưa, “already”…" aria-label="Search grammar" autocomplete="off" autocorrect="off" autocapitalize="off">
+    <p class="muted small g-intro">Each point is taught inside its unit’s first lesson, then comes back in your reviews. Tap one to read it or practice.</p>
     ${course.sections.map(sec => {
       const pts = course.units.filter(u => u.section === sec).flatMap(u => C.unitItems(u.id).filter(i => i.kind === 'grammar').map(i => ({ i, u })));
       if (!pts.length) return '';
-      return `<h2 class="section-title">${esc(sec)}</h2><ul class="word-list">${pts.map(({ i, u }) => `
-        <li class="word-row g-link" data-href="#/unit/${u.id}/grammar">
+      return `<section class="g-sec"><h2 class="section-title">${esc(sec)}</h2><ul class="word-list">${pts.map(({ i, u }) => `
+        <li class="word-row g-link" data-href="#/unit/${u.id}/grammar" data-id="${i.id}" data-q="${esc(grammarSearchText(i.point, u))}" data-qa="${esc(grammarSearchText(i.point, u, true))}">
           <span class="dot ${!cards[i.id] ? 'new' : isMastered(cards[i.id]) ? 'mastered' : 'learning'}"></span>
-          <div class="grow"><b>${esc(i.point.title)}</b><div class="muted small">${u.icon} ${esc(u.title)}</div></div>${icon('chevron')}
-        </li>`).join('')}</ul>`;
+          <div class="grow"><b>${esc(i.point.title)}</b><div class="muted small">${u.icon} ${esc(u.title)}</div><div class="small g-hit hidden" lang="vi"></div></div>${icon('chevron')}
+        </li>`).join('')}</ul></section>`;
     }).join('')}
+    <p class="muted small center g-empty hidden">No grammar points match. Try a Vietnamese word without accents, like “chua”.</p>
   </div>`;
   wireHeader(root);
+  // Search title, explanation, pattern, table and examples, with or without accents. When the match
+  // is in an example sentence, show that sentence under the title.
+  const input = $('.g-search', root);
+  input.oninput = () => {
+    const raw = input.value.trim().normalize('NFC').toLowerCase(), plain = stripAll(raw);
+    const accented = raw !== plain, q = accented ? raw : plain;
+    const norm = t => (accented ? t.normalize('NFC').toLowerCase() : stripAll(t).toLowerCase());
+    let shown = 0;
+    $$('.g-link', root).forEach(li => {
+      const ok = !q || (accented ? li.dataset.qa : li.dataset.q).includes(q);
+      li.classList.toggle('hidden', !ok); if (ok) shown++;
+      const hit = $('.g-hit', li);
+      const ex = q && ok && C.item(li.dataset.id).point.examples.find(([v, en]) => norm(`${v} ${en}`).includes(q));
+      hit.textContent = ex ? `${ex[0]} — ${ex[1]}` : ''; hit.classList.toggle('hidden', !ex);
+    });
+    $$('.g-sec', root).forEach(sec => sec.classList.toggle('hidden', !$$('.g-link:not(.hidden)', sec).length));
+    $('.g-intro', root).classList.toggle('hidden', !!q);
+    $('.g-empty', root).classList.toggle('hidden', shown > 0);
+  };
   $$('.g-link', root).forEach(li => li.onclick = () => go(li.dataset.href));
 }
 
