@@ -10,9 +10,11 @@
     "test": "node tools/test-logic.mjs",
     "qa": "node tools/qa.mjs",
     "qa:sync": "node tools/qa-sync.mjs",
+    "audit": "node tools/audit.mjs",
     "check": "npm run validate && npm test && npm run qa && npm run qa:sync"
   },
   "devDependencies": {
+    "axe-core": "^4.10.3",
     "playwright": "^1.50.0"
   }
 }

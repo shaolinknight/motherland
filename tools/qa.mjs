@@ -85,6 +85,8 @@ async function playSession(page, dev, label, maxSteps = 80, shoot = true) {
     if (await page.$('.s-foot .good')) { await snap('speak'); await btn('.s-foot .good'); continue; }
     const opts = await page.$$('.options .option:not(.idk)');
     if (opts.length) { await snap(kicker.includes('fill') ? 'grammar-fill' : kicker.includes('correct') ? 'grammar-choose' : kicker.includes('tone') ? 'tone' : 'mcq'); await opts[Math.floor(Math.random() * opts.length)].click().catch(() => {}); await page.waitForTimeout(200); continue; }
+    // The session may have closed between checks (it removes itself after Done); only report a real stall.
+    if (!(await page.$('.session .s-close'))) continue;
     problems.push(`[${dev.name} ${label}] stuck on step ${i}: ${kicker}`);
     await page.click('.s-close'); await page.waitForTimeout(300);
     if (await page.$('.sheet-actions .danger')) await page.click('.sheet-actions .danger');
