@@ -20,7 +20,7 @@ import { hapticsSupported, tick } from './haptics.js';
 import { stripAll } from './vitext.js';
 import { spellingProblems } from './vispell.js';
 
-const VERSION = '1.5';
+const VERSION = '1.5.1';
 const L = () => C.get().speechLang;
 const say = (t, opts) => speak(t, L(), opts);
 const go = h => { location.hash = h; };
@@ -402,7 +402,7 @@ export function mywords(root) {
     if (act === 'edit' && !(await editMyWord(w))) return;
     if (act === 'delete') {
       if (!(await confirmSheet(`Delete “${w.vi}”?`, 'Its review history is removed too.', 'Delete', 'danger'))) return;
-      Object.assign(w, { deleted: true, edited: Date.now() }); delete C.cards()[w.id]; S.save();
+      Object.assign(w, { deleted: true, edited: Date.now() }); delete C.cards()[w.id]; S.forget('c', w.id); S.save();
     }
     if (act) mywords(root);
   }));
@@ -847,7 +847,7 @@ export function diagnostics(root) {
   });
   $('.keepskips', root)?.addEventListener('click', () => {
     // Mark them as reviewed-on-trust so they stop showing here; FSRS still checks them on schedule.
-    const cards = C.cards(); skipped.forEach(id => { cards[id].placed = 'kept'; }); S.save(); diagnostics(root);
+    const cards = C.cards(), now = Date.now(); skipped.forEach(id => { Object.assign(cards[id], { placed: 'kept', edited: now }); }); S.save(); diagnostics(root);
   });
 }
 
@@ -994,7 +994,7 @@ export function settings(root, section) {
     try { await sync({ quiet: false }); toast('Synced ✅'); } catch (err) { toast(`Sync failed: ${err.message}`, 3500); }
     settings(root);
   };
-  $$('.unflag', root).forEach(b => b.onclick = () => { S.get().flags = S.get().flags.filter(f => f.id !== b.dataset.id); S.save(); settings(root); });
+  $$('.unflag', root).forEach(b => b.onclick = () => { S.get().flags = S.get().flags.filter(f => f.id !== b.dataset.id); S.forget('f', b.dataset.id); S.save(); settings(root); });
   $('.export', root).onclick = exportBackup;
   $('.reset-demo', root)?.addEventListener('click', async () => {
     if (!(await confirmSheet('Reset sample data?', 'Everything on this preview goes back to the starting sample.', 'Reset'))) return;

@@ -10,11 +10,23 @@
 // - Lists with IDs (flags, placements, game runs, my words): union, no duplicates.
 // - Settings and anything unknown: the newer save wins. The sync URL/password always stay local.
 // - Pending session rows are never in the Sheet's copy; the local queue is kept as is.
+// - Deletions are remembered as dated tombstones (`tomb`: 'c:<card>', 'p:<placement time>',
+//   'l:<unit>' per language; 'f:<flag>' at the top), and a full "Reset progress" sets `resetAt`.
+//   Without them a union merge would bring deleted things back from the Sheet's older copy
+//   (that's how a placement reset kept undoing itself). Anything changed *after* its tombstone
+//   (e.g. a word learned again later) survives.
 
 const byNewer = (a, b) => ((b?.updatedAt || 0) > (a?.updatedAt || 0) ? b : a);
 
-// A card's latest change: a review (`last`) or a bury/suspend (`edited`).
-const touched = c => Math.max(c.last || 0, c.edited || 0);
+// A card's latest change: created (`seen`), reviewed (`last`) or buried/suspended (`edited`).
+const touched = c => Math.max(c.last || 0, c.edited || 0, c.seen || 0);
+const TOMB_DAYS = 365;   // tombstones older than this are dropped to keep the state small
+const mergeTombs = (a = {}, b = {}, now = Date.now()) => {
+  const out = {};
+  for (const [k, v] of [...Object.entries(a), ...Object.entries(b)]) if (now - v < TOMB_DAYS * 86400000) out[k] = Math.max(out[k] || 0, v);
+  return out;
+};
+const alive = (tomb, key, time) => !(tomb[key] >= (time || 0));
 function newerCard(a, b) {
   if (!a) return b; if (!b) return a;
   if (touched(b) !== touched(a)) return touched(b) > touched(a) ? b : a;
@@ -46,8 +58,9 @@ function maxDeep(a, b) {
   return b;
 }
 
+// The more recent record wins, including done: false (a unit reopened by a placement reset).
 function mergeLessons(a, b) {
-  return mergeMap(a, b, (x, y) => ({ ...((y.at || 0) > (x.at || 0) ? y : x), done: !!(x.done || y.done) }));
+  return mergeMap(a, b, (x, y) => ((y.at || 0) > (x.at || 0) ? y : x));
 }
 
 function mergeGames(a, b) {
@@ -60,11 +73,15 @@ function mergeGames(a, b) {
   });
 }
 
-function mergeLang(a = {}, b = {}, newer) {
+function mergeLang(a = {}, b = {}, newer, resetAt = 0) {
   const out = { ...(newer === b ? { ...a, ...b } : { ...b, ...a }) };   // unknown fields: newer wins
-  out.cards = mergeMap(a.cards, b.cards, newerCard);
-  out.lessons = mergeLessons(a.lessons, b.lessons);
-  out.placements = unionBy(a.placements, b.placements, p => p.at).sort((p, q) => p.at - q.at);
+  const tomb = out.tomb = mergeTombs(a.tomb, b.tomb);
+  out.cards = Object.fromEntries(Object.entries(mergeMap(a.cards, b.cards, newerCard))
+    .filter(([id, c]) => alive(tomb, `c:${id}`, touched(c)) && touched(c) >= resetAt));
+  out.lessons = Object.fromEntries(Object.entries(mergeLessons(a.lessons, b.lessons))
+    .filter(([u, l]) => alive(tomb, `l:${u}`, l.at) && (l.at || 0) >= resetAt));
+  out.placements = unionBy(a.placements, b.placements, p => p.at)
+    .filter(p => alive(tomb, `p:${p.at}`, p.at) && p.at >= resetAt).sort((p, q) => p.at - q.at);
   out.skills = maxDeep(a.skills || {}, b.skills || {});
   out.games = mergeGames(a.games, b.games);
   const newerEdit = (x, y) => ((y.edited || 0) > (x.edited || 0) ? y : x);
@@ -84,14 +101,18 @@ export function mergeStates(local, remote) {
   out.deviceId = local.deviceId;
   out.lang = local.lang;
   out.updatedAt = Math.max(local.updatedAt || 0, remote.updatedAt || 0);
+  const resetAt = out.resetAt = Math.max(local.resetAt || 0, remote.resetAt || 0);
   const langs = {};
   for (const code of new Set([...Object.keys(local.langs || {}), ...Object.keys(remote.langs || {})])) {
     const a = local.langs?.[code], b = remote.langs?.[code];
-    langs[code] = a && b ? mergeLang(a, b, newer === remote ? b : a) : (a || b);
+    // A language present on one side only still goes through mergeLang, so its tombstones/reset apply.
+    langs[code] = mergeLang(a || {}, b || {}, newer === remote ? (b || {}) : (a || {}), resetAt);
   }
   out.langs = langs;
-  out.days = mergeMap(local.days, remote.days, maxDeep);
-  out.flags = unionBy(local.flags, remote.flags, f => f.id).map(f => {
+  const resetDay = resetAt ? new Date(resetAt).toISOString().slice(0, 10) : '';
+  out.days = Object.fromEntries(Object.entries(mergeMap(local.days, remote.days, maxDeep)).filter(([k]) => !resetDay || k >= resetDay));
+  const tomb = out.tomb = mergeTombs(local.tomb, remote.tomb);
+  out.flags = unionBy(local.flags, remote.flags, f => f.id).filter(f => alive(tomb, `f:${f.id}`, f.at) && (f.at || 0) >= resetAt).map(f => {
     const l = local.flags?.find(x => x.id === f.id);
     return l ? { ...f, synced: l.synced || f.synced } : f;
   });

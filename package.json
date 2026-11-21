@@ -1,6 +1,6 @@
 {
   "name": "motherland",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "private": true,
   "type": "module",
   "description": "Personal language-learning PWA (Vietnamese first). No build step: the repo root is the site.",

@@ -69,6 +69,26 @@ adopted ? ok('newer Sheet data is pulled into the app') : fail.push('remote newe
   const pushed = JSON.parse(sheet.state).langs.vi.cards;
   pushed['u06-w1'] && pushed['u03-w0'] ? ok('merged progress is pushed back to the Sheet') : fail.push('merged state not pushed');
 }
+// Reset placement → reopen the app (which syncs with the Sheet) → the reset must still hold.
+{
+  await page.evaluate(async () => {
+    const S = await import('/js/store.js'); const C = await import('/js/course.js');
+    const t = Date.now() - 5 * 864e5, cards = C.cards();
+    ['u07', 'u08'].forEach(u => C.unitItems(u).forEach(i => { cards[i.id] = { reps: 1, ivl: 3, ease: 2.5, due: t + 6 * 864e5, lapses: 0, seen: t, last: t }; }));
+    S.lang().placements.push({ at: t, level: 3, label: 'Intermediate', score: 72, c: 21, t: 29, levels: { 1: { c: 8, t: 10 } }, skills: {}, sections: {}, weak: [] });
+    S.save();
+  });
+  await page.click('.sync-now'); await page.waitForTimeout(800);   // the Sheet now has the credit too
+  const inSheet = JSON.parse(sheet.state).langs.vi.placements.length;
+  await page.goto(BASE + '#/diagnostics'); await page.waitForSelector('.reset-placement');
+  await page.click('.reset-placement'); await page.click('.sheet-actions .danger'); await page.waitForTimeout(500);
+  await page.goto(BASE + '#/home'); await page.reload(); await page.waitForSelector('.hello'); await page.waitForTimeout(1500);   // reopen → sync runs
+  const after = await page.evaluate(async () => { const S = await import('/js/store.js'); const C = await import('/js/course.js'); return { placements: S.lang().placements.length, credit: C.unitItems('u07').filter(i => C.cards()[i.id]).length }; });
+  inSheet >= 1 && after.placements === 0 && after.credit === 0 ? ok('placement reset survives reopening the app and syncing with the Sheet') : fail.push(`placement reset undone by sync: ${JSON.stringify(after)}`);
+  const sheetNow = JSON.parse(sheet.state).langs.vi;
+  sheetNow.placements.length === 0 ? ok('the Sheet copy is cleaned up too') : fail.push('Sheet still has the old placement');
+  await page.goto(BASE + '#/settings/sync'); await page.waitForSelector('.opt-url', { state: 'visible' });
+}
 const kept = await page.evaluate(() => JSON.parse(localStorage.getItem('motherland.v1')).settings.syncKey);
 kept === 'pw' ? ok('sync settings survive a pull') : fail.push('sync key lost after pull');
 

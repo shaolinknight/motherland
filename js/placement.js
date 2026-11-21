@@ -136,8 +136,9 @@ export function unreviewedSkipped() {
 // Put them back into lessons: remove those cards (nothing was learned on them) and reopen their units.
 export function unskip() {
   const ids = unreviewedSkipped(), cards = C.cards(), lessons = S.lang().lessons, units = new Set();
-  ids.forEach(id => { units.add(C.item(id)?.unit); delete cards[id]; });
-  units.forEach(u => { if (lessons[u]) lessons[u].done = false; });
+  const now = Date.now();
+  ids.forEach(id => { units.add(C.item(id)?.unit); delete cards[id]; S.forget('c', id, now); });
+  units.forEach(u => { if (lessons[u]) Object.assign(lessons[u], { done: false, at: now }); });
   const r = latestPlacement(); if (r) r.skipsChecked = Date.now();
   S.save();
   return ids.length;
@@ -165,12 +166,14 @@ export function resetPreview() { return placementCredit(C.cards()); }
 export function resetPlacement() {
   const { remove, keep } = placementCredit(C.cards());
   const cards = C.cards(), lessons = S.lang().lessons, units = new Set();
-  remove.forEach(id => { units.add(C.item(id)?.unit); delete cards[id]; });
+  const now = Date.now();
+  remove.forEach(id => { units.add(C.item(id)?.unit); delete cards[id]; S.forget('c', id, now); });
   units.forEach(u => {
     if (!lessons[u]) return;
     const left = C.unitItems(u).some(i => cards[i.id]);
-    if (left) lessons[u].done = false; else delete lessons[u];
+    if (left) Object.assign(lessons[u], { done: false, at: now }); else { delete lessons[u]; S.forget('l', u, now); }
   });
+  S.lang().placements.forEach(p => S.forget('p', p.at, now));
   S.lang().placements = [];
   S.save();
   return { removed: remove.length, kept: keep.length };

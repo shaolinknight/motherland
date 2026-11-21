@@ -118,6 +118,33 @@ const dev = (over) => ({ v: 1, updatedAt: 1, deviceId: 'x', lang: 'vi', settings
     const a = { ...card(100), suspended: true, edited: 500 }, b = card(300);
     assert.equal(mergeStates(dev({ langs: { vi: { cards: { x: b } } } }), dev({ langs: { vi: { cards: { x: a } } } })).langs.vi.cards.x.suspended, true);
   });
+  // Deletions must survive a sync with an older copy (the "reset placement keeps coming back" bug).
+  {
+    const T = Date.now() - 30 * 86400000, at = n => T + n;   // realistic times (very old tombstones are pruned)
+    const old = { reps: 1, ivl: 3, ease: 2.5, due: 5, lapses: 0, seen: at(100), last: at(100) };
+    const sheetCopy = dev({ updatedAt: at(1000), langs: { vi: { cards: { a: old, b: old }, lessons: { u07: { at: at(100), done: true }, u08: { at: at(100), done: true } }, placements: [{ at: at(100), level: 3 }], skills: {}, games: {} } }, flags: [{ id: 'f9', at: at(100) }] });
+    const afterReset = dev({ updatedAt: at(2000), tomb: { 'f:f9': at(500) },
+      langs: { vi: { cards: { c: { ...old, seen: at(900), last: at(950) } }, lessons: { u08: { at: at(500), done: false } }, placements: [], skills: {}, games: {},
+        tomb: { 'c:a': at(500), 'c:b': at(500), [`p:${at(100)}`]: at(500), 'l:u07': at(500) } } } });
+    const m = mergeStates(afterReset, sheetCopy), L = m.langs.vi;
+    t('merge: placement reset stays reset after syncing with the older Sheet copy', () => {
+      assert.deepEqual(Object.keys(L.cards), ['c']); assert.equal(L.placements.length, 0); assert.ok(!L.lessons.u07);
+    });
+    t('merge: a reopened unit stays reopened (newer lesson record wins, even done: false)', () => assert.equal(L.lessons.u08.done, false));
+    t('merge: a removed flag stays removed', () => assert.equal(m.flags.length, 0));
+    t('merge: works in both directions (the Sheet pulling the phone copy)', () => {
+      const r = mergeStates(sheetCopy, afterReset).langs.vi; assert.deepEqual(Object.keys(r.cards), ['c']); assert.equal(r.placements.length, 0);
+    });
+    t('merge: a word learned again after it was deleted comes back', () => {
+      const relearned = dev({ updatedAt: at(3000), langs: { vi: { cards: { a: { ...old, seen: at(800), last: at(820) } }, lessons: {}, placements: [], skills: {}, games: {} } } });
+      assert.ok(mergeStates(relearned, afterReset).langs.vi.cards.a);
+    });
+    t('merge: "Reset progress" (resetAt) drops everything older from the other copy', () => {
+      const wiped = dev({ updatedAt: at(3000), resetAt: at(2500), langs: { vi: { cards: {}, lessons: {}, placements: [], skills: {}, games: {} } } });
+      const r = mergeStates(wiped, sheetCopy);
+      assert.deepEqual(Object.keys(r.langs.vi.cards), []); assert.equal(r.langs.vi.placements.length, 0); assert.equal(r.flags.length, 0);
+    });
+  }
   t('merge: no remote copy leaves local untouched', () => assert.equal(mergeStates(phone, null), phone));
 }
 

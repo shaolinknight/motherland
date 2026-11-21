@@ -42,10 +42,14 @@ export async function pull() {
   return call({ action: 'pull' });
 }
 
+// Branch previews run on sample data; never let it reach the real Sheet.
+const onPreview = () => typeof location !== 'undefined' && /-motherland\.[^.]+\.workers\.dev$/.test(location.hostname);
+
 // Pull the Sheet's copy, merge it card by card with this phone's (see merge.js), then push the result.
 // Safe to call often.
 export async function sync({ quiet = true } = {}) {
   const st = S.settings();
+  if (onPreview()) { if (!quiet) throw new Error('Sync is off on preview links, so sample data never reaches your Sheet'); return { skipped: true }; }
   if (!st.syncUrl || busy || !navigator.onLine) return { skipped: true };
   busy = true;
   try {

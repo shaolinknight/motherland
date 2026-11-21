@@ -82,7 +82,21 @@ export function replace(next) {
   listeners.forEach(fn => fn(state));
 }
 
-export function reset() { const keep = state.settings; state = defaults(); state.settings = { ...state.settings, syncUrl: keep.syncUrl, syncKey: keep.syncKey }; save(); }
+// Reset progress. resetAt tells the sync merge to drop anything older, so the Sheet's copy can't
+// bring the old progress back.
+export function reset() {
+  const keep = state.settings, now = Date.now();
+  state = defaults(); state.settings = { ...state.settings, syncUrl: keep.syncUrl, syncKey: keep.syncKey };
+  state.resetAt = now; save();
+}
+
+// Remember a deletion so a sync merge doesn't bring it back from another device or the Sheet.
+// kind: 'c' card, 'p' placement (id = its time), 'l' lesson record (id = unit) — per language;
+// 'f' flag — top level. See merge.js.
+export function forget(kind, id, at = Date.now()) {
+  const target = kind === 'f' ? state : lang();
+  (target.tomb ||= {})[`${kind}:${id}`] = at;
+}
 
 // Activity log for the dashboard.
 export function day(key = dayKey()) {

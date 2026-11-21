@@ -77,6 +77,7 @@ Unit fields: `id, section, icon, level (1–3), title, vi, tip, words[], phrases
   - **State:** chunked JSON backup.
   - **Sessions:** one row per study session, de-duplicated by ID.
   - **Flags:** de-duplicated by ID.
+- **Deletions (v1.5.1):** removed cards, placement results, lesson records and flags leave dated tombstones (`tomb`), and Reset progress sets `resetAt`, so a merge never brings deleted things back from an older copy.
 - **Conflict rule (v1.3):** merged on the phone by `js/merge.js`, never “newest save wins”: per card the latest change (review `last` or bury/suspend `edited`) wins; day logs take the larger value per field; flags, placements, game runs and My words are unioned; settings come from the newer save; the sync URL/password and unsent sessions stay local. The Apps Script contract is unchanged.
 
 ## Adding a language (checklist)
