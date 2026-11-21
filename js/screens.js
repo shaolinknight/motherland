@@ -130,6 +130,8 @@ export function home(root) {
       <div class="ring" style="--p:${ring}" role="img" aria-label="Daily goal ${today.xp} of ${goal} XP"><span><b>${today.xp}</b><small>/${goal} XP</small></span></div>
     </section>
 
+    ${P.unreviewedSkipped().length >= 5 ? `<a class="card link-card retest" href="#/diagnostics"><span aria-hidden="true" class="mode-ico">🔍</span>
+      <div class="grow"><b>Re-check what the test skipped</b><p class="muted small">The placement test now uses stricter scoring. ${plural(P.unreviewedSkipped().length, 'word')} it marked as known haven’t been reviewed yet.</p></div>${icon('chevron')}</a>` : ''}
     ${retestDue() ? `<a class="card link-card retest" href="#/placement"><span aria-hidden="true" class="mode-ico">${icon('target')}</span>
       <div class="grow"><b>Time for a check-up</b><p class="muted small">Your last placement test was ${daysSincePlacement()} days ago. Retake it so lessons focus on what you need now.</p></div>${icon('chevron')}</a>` : ''}
     ${!hasTest ? `<a class="card cta-test" href="#/placement">
@@ -270,6 +272,7 @@ export function unit(root, id, tab = 'words') {
       <div class="btn-row">
         <button class="btn primary learn-new">${remaining ? (newVocab ? `Learn ${Math.min(newVocab, S.settings().newPerLesson)} new` : 'Learn the grammar') : 'Practice unit'}</button>
         ${p.learned && remaining ? `<button class="btn ghost practice">Practice</button>` : ''}
+        ${remaining && !p.learned ? `<button class="btn ghost test-out">Test out</button>` : ''}
       </div>
     </section>
     <details class="card tip" ${p.learned ? '' : 'open'}><summary>💡 Culture & usage note</summary><p>${esc(u.tip)}</p></details>
@@ -278,6 +281,14 @@ export function unit(root, id, tab = 'words') {
   </div>`;
   wireHeader(root); wireSay(root);
   $('.learn-new', root).onclick = () => remaining ? startLesson(id) : X.run({ steps: X.practiceSteps(items, 12), activity: `practice:${id}` });
+  $('.test-out', root)?.addEventListener('click', async () => {
+    if (!(await confirmSheet('Test out of this unit?', `Up to 10 quick questions where you produce the Vietnamese. Score ${Math.round(P.TEST_OUT_PASS * 100)}% and the unit moves to your reviews.`, 'Start'))) return;
+    P.testOut(id, res => {
+      if (!res) return;
+      toast(res.passed ? `${res.pct}%: passed! ${plural(res.n, 'item')} moved to reviews` : `${res.pct}%: not quite. Learn this one with lessons.`, 3500);
+      unit(root, id, tab);
+    });
+  });
   $('.practice', root)?.addEventListener('click', () => X.run({ steps: X.practiceSteps(items.filter(i => cards[i.id]), 12), activity: `practice:${id}` }));
   $$('.practice-g', root).forEach(b => b.onclick = () => X.run({ steps: X.grammarSteps(C.item(b.dataset.id)), activity: `grammar:${b.dataset.id}` }));
   $$('.seg button', root).forEach(b => b.onclick = () => { stopAudio(); history.replaceState(null, '', `#/unit/${id}/${b.dataset.tab}`); unit(root, id, b.dataset.tab); });
@@ -623,7 +634,7 @@ export function progress(root) {
     <section class="card diag">
       <p class="kicker">Diagnostics</p>
       ${last ? `
-        <div class="row"><div class="grow"><b class="lvl-label">${esc(last.label)}</b><p class="muted small">Placement ${new Date(last.at).toLocaleDateString()} · ${last.score}% correct</p></div><span class="chip lvl">Level ${last.level}/3</span></div>
+        <div class="row"><div class="grow"><b class="lvl-label">${esc(C.get().levels[P.effectiveLevel(last)])}</b><p class="muted small">Placement ${new Date(last.at).toLocaleDateString()} · ${last.score}% correct</p></div><span class="chip lvl">Level ${P.effectiveLevel(last)}/3</span></div>
         ${last.weak.length ? `<p class="small"><b>Work on:</b> ${last.weak.map(esc).join(', ')}</p>` : '<p class="small">No weak spots found in the test. 🎉</p>'}
         ${rec ? `<p class="small"><b>Suggested next:</b> <a href="#/unit/${rec.id}">${rec.icon} ${esc(rec.title)}</a></p>` : ''}
         <div class="btn-row"><a class="btn ghost" href="#/diagnostics">Full results</a><a class="btn ghost" href="#/placement">Retake test</a></div>
@@ -668,15 +679,24 @@ export function diagnostics(root) {
   const tests = S.lang().placements, r = tests[tests.length - 1];
   if (!r) { go('#/placement'); return; }
   const rec = P.recommendation(r);
+  const eff = P.effectiveLevel(r), rescored = eff < r.level;   // tests taken before v1.4 were too generous
+  const label = C.get().levels[eff];
+  const skipped = P.unreviewedSkipped();
   const rows = (m, name, thr) => Object.entries(m).map(([k, x]) => `<div class="skill"><div class="row"><span class="grow">${esc(name(k))}</span><small>${x.c}/${x.t} · ${pct(x.c, x.t)}%</small></div>${bar(pct(x.c, x.t), pct(x.c, x.t) < thr ? 'low' : '')}</div>`).join('');
   root.innerHTML = `${header('Your results', { back: '#/progress' })}
   <div class="page">
     <section class="card result-hero">
       <p class="kicker">Your level</p>
-      <h1>${esc(r.label)}</h1>
+      <h1>${esc(label)}</h1>
       <p class="muted">${r.c} of ${r.t} correct (${r.score}%)</p>
-      <div class="lvl-steps">${C.get().levels.map((n, i) => `<span class="${i <= r.level ? 'on' : ''}">${esc(n)}</span>`).join('')}</div>
+      ${rescored ? `<p class="small">Re-scored with the stricter rules (80% per level). The old test said ${esc(r.label)}.</p>` : ''}
+      <div class="lvl-steps">${C.get().levels.map((n, i) => `<span class="${i <= eff ? 'on' : ''}">${esc(n)}</span>`).join('')}</div>
     </section>
+    ${skipped.length ? `<section class="card recheck"><p class="kicker">Re-check what the test skipped</p>
+      <p>${plural(skipped.length, 'word')} ${skipped.length === 1 ? 'was' : 'were'} marked as known by the placement test, and you haven’t reviewed ${skipped.length === 1 ? 'it' : 'any of them'} since.</p>
+      <p class="small muted">Putting them back reopens their units, so lessons teach them properly. Words you’ve already reviewed stay as they are.</p>
+      <div class="btn-row"><button class="btn primary unskip">Put them back into lessons</button><button class="btn ghost keepskips">I know these</button></div>
+    </section>` : ''}
     <section class="card"><p class="kicker">What to work on</p>
       ${r.level === 0 && r.score < 40 ? '<p>You’re early on, which is the perfect place to start. Work through the units in order and retake the test in a few weeks to see the change.</p>' : ''}
       ${r.weak.length ? `<ul class="checklist warnlist">${r.weak.map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : '<p>Nothing stood out as weak. Keep moving forward!</p>'}
@@ -689,15 +709,21 @@ export function diagnostics(root) {
         <li>Retake the test in about ${Math.round(RETEST_AFTER_DAYS / 7)} weeks; Home will remind you. Your newest result always counts.</li>
       </ul>
     </section>
-    ${r.level > 0 && !r.applied ? `<section class="card"><p class="kicker">Skip ahead?</p>
-      <p class="small">You passed level ${r.level}. Add those units to your review queue so you can confirm them quickly instead of relearning from scratch.</p>
-      <button class="btn ghost apply">Add level 1${r.level > 1 ? `–${r.level}` : ''} units to review</button></section>` : ''}
-    <section class="card"><p class="kicker">By level</p>${rows(r.levels, k => `Level ${k} questions`, 67)}</section>
+    <section class="card"><p class="kicker">Already know a unit?</p>
+      <p class="small">Open it and tap <b>Test out</b>: a short quiz where you produce the Vietnamese yourself. Score 85% and the whole unit moves to your reviews. Units are never skipped just from this test.</p></section>
+    <section class="card"><p class="kicker">By level</p>${rows(r.levels, k => `Level ${k} questions`, 80)}</section>
     <section class="card"><p class="kicker">By skill</p>${rows(r.skills, P.skillName, 60)}</section>
     <section class="card"><p class="kicker">By topic</p>${rows(r.sections, k => k, 60)}</section>
   </div>`;
   wireHeader(root);
-  $('.apply', root)?.addEventListener('click', () => { const n = P.applyLevel(r.level); r.applied = true; S.save(); toast(`${n} items added to review`); diagnostics(root); });
+  $('.unskip', root)?.addEventListener('click', async () => {
+    if (!(await confirmSheet('Put them back into lessons?', `${plural(skipped.length, 'word')} you never reviewed will be taught again in their units.`, 'Put back'))) return;
+    toast(`${plural(P.unskip(), 'word')} back in lessons`); diagnostics(root);
+  });
+  $('.keepskips', root)?.addEventListener('click', () => {
+    // Mark them as reviewed-on-trust so they stop showing here; FSRS still checks them on schedule.
+    const cards = C.cards(); skipped.forEach(id => { cards[id].placed = 'kept'; }); S.save(); diagnostics(root);
+  });
 }
 
 // ── SETTINGS ────────────────────────────────────────────────────────────────

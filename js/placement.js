@@ -1,10 +1,12 @@
 // Placement test + diagnostics: finds your level and what to work on.
 import * as C from './course.js';
 import * as S from './store.js';
-import { mcq, tone, gdrill, run } from './exercises.js';
+import { mcq, tone, gdrill, build, run } from './exercises.js';
 import { audioAvailable } from './speech.js';
-import { sample, shuffle, pct } from './util.js';
+import { sample, shuffle, pct, toast } from './util.js';
 import { latestPlacement } from './focus.js';
+import { levelFrom, effectiveLevel } from './levels.js';
+export { effectiveLevel };
 
 const SKILL_NAMES = { vocab: 'Vocabulary', reading: 'Reading', grammar: 'Grammar', listening: 'Listening', tones: 'Tones', speaking: 'Speaking' };
 export const skillName = k => SKILL_NAMES[k] || k;
@@ -13,19 +15,31 @@ function levelItems(level, kind) {
   return C.all().filter(i => i.level === level && i.kind === kind && !i.review);   // only checked content is tested
 }
 
+// Exercise types where you have to come up with the Vietnamese yourself (or hear tones), so a lucky
+// guess is much less likely than in "what does this mean?" questions.
+export const PRODUCTION = new Set(['mcq:en2vi', 'build', 'tone', 'dict']);
+const isProd = r => PRODUCTION.has(r.ex);
+
+// v1.4: harder than before. Per level: 2 recognition words, 3 “pick the Vietnamese”, 2 sentence
+// builds, 1 phrase meaning, 1 tone, 2 grammar drills (+1 listening). Every question has “I don’t know”.
 export function buildTest() {
   const steps = [];
+  const audio = audioAvailable(C.get().speechLang);
   for (const lvl of [1, 2, 3]) {
     const block = [];
-    sample(levelItems(lvl, 'word'), 3).forEach(i => block.push(mcq(i, 'vi2en')));
-    sample(levelItems(lvl, 'phrase'), 2).forEach(i => block.push(mcq(i, 'vi2en')));
-    for (const i of shuffle(levelItems(lvl, 'word'))) { const t = tone(i); if (t) { block.push(t); break; } }
+    const words = shuffle(levelItems(lvl, 'word')), phrases = shuffle(levelItems(lvl, 'phrase'));
+    words.slice(0, 2).forEach(i => block.push(mcq(i, 'vi2en')));
+    words.slice(2, 5).forEach(i => block.push(mcq(i, 'en2vi')));
+    phrases.filter(i => i.vi.split(/\s+/).length <= 8).slice(0, 2).forEach(i => block.push(build(i)));
+    phrases.slice(2, 3).forEach(i => block.push(mcq(i, 'vi2en')));
+    for (const i of words.slice(5)) { const t = tone(i); if (t) { block.push(t); break; } }
     sample(levelItems(lvl, 'grammar'), 2).forEach(i => { const d = gdrill(i); if (d) block.push(d); });
-    if (audioAvailable(C.get().speechLang)) sample(levelItems(lvl, 'word'), 1).forEach(i => block.push(mcq(i, 'audio2en')));
-    steps.push(...shuffle(block));
+    if (audio) words.slice(-1).forEach(i => block.push(mcq(i, 'audio2en')));
+    steps.push(...shuffle(block.filter(Boolean)));
   }
   return steps;
 }
+
 
 export function start(onDone) {
   run({ title: 'Placement test', steps: buildTest(), test: true, activity: 'placement', onFinish: out => {
@@ -46,8 +60,9 @@ export function score(results) {
     return m;
   };
   const levels = by('level');
-  let level = 0;
-  for (const l of [1, 2, 3]) { const x = levels[l]; if (x && x.t && x.c / x.t >= 0.67) level = l; else break; }
+  const levelsProd = {};
+  results.filter(isProd).forEach(r => { if (r.level == null) return; (levelsProd[r.level] ||= { c: 0, t: 0 }); levelsProd[r.level].t++; if (r.correct) levelsProd[r.level].c++; });
+  const level = levelFrom(levels, levelsProd);
   const skills = by('skill');
   const sectionsRaw = {};
   results.forEach(r => { const u = C.unit(r.unit); if (!u) return; const k = u.section; (sectionsRaw[k] ||= { c: 0, t: 0 }); sectionsRaw[k].t++; if (r.correct) sectionsRaw[k].c++; });
@@ -56,41 +71,77 @@ export function score(results) {
     .sort((a, b) => a[1].c / a[1].t - b[1].c / b[1].t).slice(0, max).map(([k]) => name(k));
   const weak = [...low(skills, skillName, 3), ...low(sectionsRaw, k => `${k} topics`, 2)];
   const c = results.filter(r => r.correct).length;
-  return { at: Date.now(), level, label: C.get().levels[level], score: pct(c, results.length), c, t: results.length, levels, skills, sections: sectionsRaw, weak };
+  return { at: Date.now(), level, label: C.get().levels[level], score: pct(c, results.length), c, t: results.length, levels, levelsProd, skills, sections: sectionsRaw, weak, v: 2 };
 }
 
-// Words you got right in a level you passed are "clearly known": add them to reviews (not as
-// mastered) with a short first interval, so FSRS confirms them within a few days instead of you
-// relearning them from scratch. Right answers in levels you didn't pass could be guesses, so they
-// are left alone. Grammar and items that already have a card are skipped.
+// Words you *produced* correctly (picked the Vietnamese, built the sentence, chose the tone) in a level
+// you passed are "clearly known": they go into reviews with a short first interval, so FSRS confirms
+// them within days. Recognition answers ("what does this mean?") could be guesses, so they don't count.
 export function seedKnown(results, level, now = Date.now()) {
   const cards = C.cards(); let n = 0;
   for (const r of results) {
-    if (!r.correct || !r.id || r.level > level || cards[r.id] || C.item(r.id)?.kind === 'grammar') continue;
-    cards[r.id] = { reps: 1, ivl: 2, ease: 2.5, s: 2, d: 5, due: now + (1 + Math.random() * 2) * 86400000, lapses: 0, seen: now, last: now, placed: true };
+    if (!r.correct || !r.id || !isProd(r) || r.level > level || cards[r.id] || C.item(r.id)?.kind === 'grammar') continue;
+    cards[r.id] = { reps: 1, ivl: 2, ease: 2.5, s: 2, d: 5, due: now + (1 + Math.random() * 2) * 86400000, lapses: 0, seen: now, last: now, placed: 2 };
     n++;
   }
   return n;
 }
 
-// Units the placement says you already know → put them into review (not "mastered").
-export function applyLevel(level) {
-  if (!level) return 0;
-  const cards = C.cards(); let n = 0; const now = Date.now();
-  C.get().units.filter(u => u.level <= level).forEach(u => C.unitItems(u.id).forEach(i => {
-    if (cards[i.id]) return;
-    const days = 1 + Math.random() * 5;
-    cards[i.id] = { reps: 1, ivl: 3, ease: 2.5, due: now + days * 86400000, lapses: 0, seen: now, last: now };
-    n++;
-  }));
+// ── Test out of one unit ───────────────────────────────────────────────────
+// Instead of skipping whole levels, prove a single unit: up to 10 production questions from it (pick
+// the Vietnamese, build the sentence, grammar). 85%+ moves every unseen item of the unit into reviews.
+export const TEST_OUT_PASS = 0.85;
+export function testOutSteps(unitId) {
+  const list = C.unitItems(unitId);
+  const vocab = shuffle(list.filter(i => i.kind !== 'grammar')).slice(0, 8)
+    .map(i => (i.kind === 'phrase' && i.vi.split(/\s+/).length <= 8 ? build(i) : mcq(i, 'en2vi')));
+  const gram = list.filter(i => i.kind === 'grammar').map(i => gdrill(i));
+  return shuffle([...vocab, ...gram].filter(Boolean)).slice(0, 10);
+}
+export function testOut(unitId, onDone) {
+  run({ title: 'Test out', steps: testOutSteps(unitId), test: true, activity: `testout:${unitId}`, onFinish: out => {
+    if (out.early) { onDone && onDone(null); return; }
+    const ratio = out.t ? out.c / out.t : 0, passed = ratio >= TEST_OUT_PASS;
+    let n = 0;
+    if (passed) {
+      const cards = C.cards(), now = Date.now();
+      C.unitItems(unitId).forEach(i => {
+        if (cards[i.id]) return;
+        cards[i.id] = { reps: 1, ivl: 2, ease: 2.5, s: 2, d: 5, due: now + (1 + Math.random() * 2) * 86400000, lapses: 0, seen: now, last: now, placed: 'unit' };
+        n++;
+      });
+      S.lang().lessons[unitId] = { at: now, done: true, testedOut: true };
+    }
+    S.logSession(`testout:${unitId}`, { ms: out.ms, c: out.c, t: out.t });
+    S.save();
+    onDone && onDone({ passed, n, pct: Math.round(ratio * 100) });
+  } });
+}
+
+// ── Re-check what a placement skipped ──────────────────────────────────────
+// Cards the pre-v1.4 placement (or its "add level units" button) created that you've never reviewed:
+// created and last-touched at the same moment, one rep, no misses. Real lesson cards start with
+// last = 0, and any review moves last on, so those never match. Credit from the stricter v1.4 test
+// (placed: 2) or a unit test-out (placed: 'unit') was earned under the new rules and isn't listed.
+export function unreviewedSkipped() {
+  const cards = C.cards();
+  return Object.entries(cards).filter(([, c]) => c.last > 0 && c.seen === c.last && c.reps === 1 && !c.lapses
+    && c.placed !== 2 && c.placed !== 'unit').map(([id]) => id);
+}
+// Put them back into lessons: remove those cards (nothing was learned on them) and reopen their units.
+export function unskip() {
+  const ids = unreviewedSkipped(), cards = C.cards(), lessons = S.lang().lessons, units = new Set();
+  ids.forEach(id => { units.add(C.item(id)?.unit); delete cards[id]; });
+  units.forEach(u => { if (lessons[u]) lessons[u].done = false; });
+  const r = latestPlacement(); if (r) r.skipsChecked = Date.now();
   S.save();
-  return n;
+  return ids.length;
 }
 
 export function recommendation(result) {
   if (!result) return null;
   const units = C.get().units;
-  const target = Math.min(result.level + 1, 3);
+  const target = Math.min(effectiveLevel(result) + 1, 3);
   const open = u => u.level >= target && C.unitProgress(u.id).learned < C.unitItems(u.id).length;
   // Prefer units a native speaker has checked; new "needs family check" units come after.
   return units.find(u => open(u) && !u.review) || units.find(open) || C.nextUnit();

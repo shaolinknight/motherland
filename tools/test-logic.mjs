@@ -218,6 +218,23 @@ t('placement focus: heavier exercise types come first more often, lighter ones s
     }
   });
 }
+{
+  const { levelFrom, effectiveLevel } = await import('../js/levels.js');
+  t('placement v1.4: a level needs 80% overall', () => {
+    assert.equal(levelFrom({ 1: { c: 8, t: 10 }, 2: { c: 7, t: 10 } }), 1);
+    assert.equal(levelFrom({ 1: { c: 7, t: 10 } }), 0);
+  });
+  t('placement v1.4: and 2/3 of its production questions', () => {
+    assert.equal(levelFrom({ 1: { c: 9, t: 10 } }, { 1: { c: 1, t: 3 } }), 0);   // guessed the recognition ones
+    assert.equal(levelFrom({ 1: { c: 9, t: 10 } }, { 1: { c: 2, t: 3 } }), 1);
+  });
+  t('placement v1.4: levels must be passed in order', () => assert.equal(levelFrom({ 1: { c: 5, t: 10 }, 2: { c: 10, t: 10 } }), 0));
+  t('placement v1.4: an old generous result is re-scored down', () => {
+    // 70% at every level used to mean Intermediate (level 3); under 80% it's Beginner.
+    assert.equal(effectiveLevel({ level: 3, levels: { 1: { c: 7, t: 10 }, 2: { c: 7, t: 10 }, 3: { c: 7, t: 10 } } }), 0);
+    assert.equal(effectiveLevel({ level: 2, levels: { 1: { c: 9, t: 10 }, 2: { c: 7, t: 10 } } }), 1);
+  });
+}
 // Shipping checks: a module missing from the service worker breaks offline use, and one missing from
 // the preload list brings back the slow import waterfall.
 const modules = ['js', 'data'].flatMap(d => fs.readdirSync(d).filter(f => f.endsWith('.js')).map(f => `${d}/${f}`));

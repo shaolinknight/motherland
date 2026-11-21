@@ -563,6 +563,8 @@ h1:focus, .s-body:focus, .sheet:focus { outline: none; }
 .review-chip { margin-top: 4px; }
 .retest { border-color: var(--gold); }
 @media (min-width: 768px) { .page > .retest { grid-column: 1 / -1; } }
+.recheck { border-color: var(--gold); }
+@media (min-width: 768px) { .page > .recheck { grid-column: 1 / -1; } }
 .chip.leech { background: var(--amber-soft); color: var(--amber); }
 .chip.hid { background: var(--track); color: var(--muted); }
 .word-row .opts { margin-top: -6px; }

@@ -253,7 +253,7 @@ const idkBtn = (s, attr) => s.test ? `<button class="option idk" ${attr}="__idk"
 function answer(s, st, result) {           // result: 'right' | 'close' | 'wrong'
   const correct = result !== 'wrong';
   s.t++; if (correct) s.c++;
-  s.results.push({ skill: st.skill, level: st.item?.level, unit: st.item?.unit, correct, id: st.item?.id });
+  s.results.push({ skill: st.skill, level: st.item?.level, unit: st.item?.unit, correct, id: st.item?.id, ex: st.dir ? `${st.type}:${st.dir}` : st.type });
   if (!correct && st.item && !s.missed.includes(st.item)) s.missed.push(st.item);
   if (!s.test && st.skill) {
     S.recordAnswer(st.skill, correct);
