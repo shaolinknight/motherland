@@ -9,8 +9,9 @@ import { sync } from './sync.js';
 import { speak, audioAvailable, voicesFor, voicesReady, stop as stopAudio } from './speech.js';
 import { $, $$, esc, toast, dayKey, weekKeys, pct, timeAgo } from './util.js';
 import { icon } from './icons.js';
-import { isMastered } from './srs.js';
-import { flagSheet, confirmSheet } from './ui.js';
+import { isMastered, isHidden } from './srs.js';
+import { flagSheet, confirmSheet, itemOptions } from './ui.js';
+import { ankiText } from './ankiexport.js';
 import { hapticsSupported, tick } from './haptics.js';
 import { stripAll } from './vitext.js';
 
@@ -65,14 +66,18 @@ export function startLesson(unitId) {
   } });
 }
 
+function download(name, text, type) {
+  const blob = new Blob([text], { type });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
 // Download all progress as a JSON file (Settings → Backup, and the Home reminder).
 // The sync password is left out: the file may end up in Files, iCloud or a chat.
 function exportBackup() {
   const st = S.get();
   const copy = { ...st, settings: { ...st.settings, syncKey: '' } };
-  const blob = new Blob([JSON.stringify(copy, null, 1)], { type: 'application/json' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `motherland-backup-${dayKey()}.json`; a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  download(`motherland-backup-${dayKey()}.json`, JSON.stringify(copy, null, 1), 'application/json');
   st.settings.lastBackup = Date.now(); S.save({ touch: false });
 }
 
@@ -301,17 +306,19 @@ export function grammar(root) {
 export function words(root, filter = 'all') {
   const cards = C.cards(), now = Date.now();
   const learned = C.seenItems().filter(i => i.kind !== 'grammar').sort((a, b) => (cards[b.id].seen || 0) - (cards[a.id].seen || 0));
-  const counts = { all: learned.length, learning: learned.filter(i => !isMastered(cards[i.id])).length, mastered: learned.filter(i => isMastered(cards[i.id])).length, missed: learned.filter(i => cards[i.id].lapses > 0).length };
+  const hidden = c => isHidden(c, now);
+  const counts = { all: learned.length, learning: learned.filter(i => !isMastered(cards[i.id])).length, mastered: learned.filter(i => isMastered(cards[i.id])).length, missed: learned.filter(i => cards[i.id].lapses > 0).length, hidden: learned.filter(i => hidden(cards[i.id])).length };
   const when = c => { const d = Math.round((c.due - now) / 86400000); return c.due <= now ? 'due now' : d < 1 ? 'later today' : `in ${d}d`; };
   root.innerHTML = `${header('Word bank', { back: '#/progress', sub: `${learned.length} learned` })}
   <div class="page">
     <input class="search" type="search" placeholder="Search Vietnamese or English…" aria-label="Search words" autocomplete="off" autocorrect="off" autocapitalize="off">
-    <nav class="seg filters">${[['all', 'All'], ['learning', 'Learning'], ['mastered', 'Mastered'], ['missed', 'Missed']].map(([k, n]) => `<button class="${k === filter ? 'on' : ''}" data-f="${k}">${n} <small>${counts[k]}</small></button>`).join('')}</nav>
+    <nav class="seg filters">${[['all', 'All'], ['learning', 'Learning'], ['mastered', 'Mastered'], ['missed', 'Missed'], ['hidden', 'Hidden']].map(([k, n]) => `<button class="${k === filter ? 'on' : ''}" data-f="${k}">${n} <small>${counts[k]}</small></button>`).join('')}</nav>
     ${learned.length ? `<ul class="word-list bank">${learned.map(it => { const c = cards[it.id], u = C.unit(it.unit); return `
-      <li class="word-row" data-say="${esc(it.vi)}" data-st="${isMastered(c) ? 'mastered' : 'learning'}${c.lapses ? ' missed' : ''}" data-q="${esc(stripAll(`${it.vi} ${it.en} ${it.north}`).toLowerCase())}">
+      <li class="word-row" data-say="${esc(it.vi)}" data-id="${it.id}" data-st="${isMastered(c) ? 'mastered' : 'learning'}${c.lapses ? ' missed' : ''}${hidden(c) ? ' hidden-card' : ''}" data-q="${esc(stripAll(`${it.vi} ${it.en} ${it.north}`).toLowerCase())}">
         <span class="dot ${isMastered(c) ? 'mastered' : 'learning'}"></span>
         <div class="grow"><div class="vi" lang="vi">${esc(it.vi)}</div><div class="muted">${esc(it.en)}</div>
-          <div class="small muted">${u.icon} ${esc(u.title)} · review ${when(c)}${c.lapses ? ` · missed ×${c.lapses}` : ''}</div></div>
+          <div class="small muted">${u.icon} ${esc(u.title)} · ${c.suspended ? 'suspended' : (c.buriedUntil || 0) > now ? 'buried until tomorrow' : `review ${when(c)}`}${c.lapses ? ` · missed ×${c.lapses}` : ''}${c.leech ? ' · 🐌 leech' : ''}</div></div>
+        <button class="icon-btn opts" aria-label="Options for ${esc(it.vi)}">${icon('more')}</button>
       </li>`; }).join('')}</ul><p class="muted small center empty-msg hidden">No matches.</p>`
       : `<p class="muted center pad">Words you learn in lessons will collect here.</p><a class="btn primary" href="#/learn">Start a lesson</a>`}
   </div>`;
@@ -321,12 +328,20 @@ export function words(root, filter = 'all') {
     const q = stripAll(input.value.trim()).toLowerCase(), f = $('.filters .on', root).dataset.f;
     let shown = 0;
     $$('.bank .word-row', root).forEach(li => {
-      const ok = (!q || li.dataset.q.includes(q)) && (f === 'all' || li.dataset.st.includes(f));
+      const ok = (!q || li.dataset.q.includes(q)) && (f === 'all' || li.dataset.st.split(' ').includes(f === 'hidden' ? 'hidden-card' : f));
       li.classList.toggle('hidden', !ok); if (ok) shown++;
     });
     $('.empty-msg', root)?.classList.toggle('hidden', shown > 0 || !learned.length);
   };
   input.oninput = apply;
+  $$('.bank .opts', root).forEach(b => b.addEventListener('click', async e => {
+    e.stopPropagation();
+    const act = await itemOptions(C.item(b.closest('.word-row').dataset.id));
+    if (act && act !== 'report') {   // re-draw with the same filter, search and scroll
+      const f = $('.filters .on', root).dataset.f, q = input.value, y = scrollY;
+      words(root, f); const s2 = $('.search', root); s2.value = q; s2.dispatchEvent(new Event('input')); scrollTo(0, y);
+    }
+  }));
   $$('.filters button', root).forEach(b => b.onclick = () => { $$('.filters button', root).forEach(x => x.classList.remove('on')); b.classList.add('on'); apply(); });
   apply();
 }
@@ -336,7 +351,7 @@ export function review(root) {
   const due = C.dueItems().length, seen = C.seenItems().length, mastered = C.masteredCount();
   const cards = C.cards();
   const upcoming = Object.values(cards).filter(c => c.due > Date.now()).sort((a, b) => a.due - b.due)[0];
-  const weak = C.seenItems().filter(i => cards[i.id].lapses > 0).sort((a, b) => cards[b.id].lapses - cards[a.id].lapses).slice(0, 12);
+  const weak = C.weakItems(12);
   const gSeen = C.seenItems().filter(i => i.kind === 'grammar');
   root.innerHTML = `${header('Review', { sub: 'Spaced repetition: right before you forget' })}
   <div class="page">
@@ -350,7 +365,7 @@ export function review(root) {
     <button class="card mode" data-mode="quiz" ${due ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('check')}</span><div class="grow"><b>Quiz review</b><p class="muted">Due cards as mixed exercises: meaning, grammar, tones, listening, typing.</p></div>${icon('chevron')}</button>
     <button class="card mode" data-mode="endless" ${seen ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('infinity')}</span><div class="grow"><b>Endless review</b><p class="muted">Keeps going as long as you want. Focuses on what you miss.</p></div>${icon('chevron')}</button>
     <button class="card mode" data-mode="grammar" ${gSeen.length ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('book')}</span><div class="grow"><b>Grammar drills</b><p class="muted">${gSeen.length ? `Mixed drills from the ${plural(gSeen.length, 'grammar point')} you’ve learned.` : 'Unlocks after your first lesson.'}</p></div>${icon('chevron')}</button>
-    <button class="card mode" data-mode="weak" ${weak.length ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('target')}</span><div class="grow"><b>Weak spots</b><p class="muted">${weak.length ? `${plural(weak.length, 'item')} you’ve missed before.` : 'Things you miss will show up here.'}</p></div>${icon('chevron')}</button>
+    <button class="card mode" data-mode="weak" ${weak.length ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('target')}</span><div class="grow"><b>Weak spots</b><p class="muted">${weak.length ? `${plural(weak.length, 'item')} you’ve missed before${weak.some(i => cards[i.id].leech) ? ', leeches first' : ''}.` : 'Things you miss will show up here.'}</p></div>${icon('chevron')}</button>
     ${!seen ? `<p class="muted center pad">Finish your first lesson to unlock reviews.</p>` : ''}
   </div>`;
   wireHeader(root);
@@ -443,7 +458,7 @@ export function progress(root) {
   const tests = S.lang().placements;
   const last = tests[tests.length - 1];
   const cards = C.cards();
-  const weak = C.seenItems().filter(i => cards[i.id].lapses > 0).sort((a, b) => cards[b.id].lapses - cards[a.id].lapses).slice(0, 6);
+  const weak = C.weakItems(6);
   const rec = last ? P.recommendation(last) : null;
   const growth = T.growth(30), heat = T.heatmap(12);
   const gained = growth[growth.length - 1].n - growth[0].n;
@@ -511,7 +526,7 @@ export function progress(root) {
     ${lessons.length ? `<section class="card"><p class="kicker">Recent lessons</p><ul class="mini-list">${lessons.map(l => `<li><a href="#/unit/${l.unit.id}">${l.unit.icon} ${esc(l.unit.title)}</a><span class="grow"></span>${l.done ? '<span class="chip ok">complete</span>' : ''}<small class="muted">${timeAgo(l.at)}</small></li>`).join('')}</ul></section>` : ''}
 
     ${weak.length ? `<section class="card"><p class="kicker">What you miss most</p>
-      <ul class="mini-list">${weak.map(i => `<li data-say="${esc(i.vi)}"><span class="vi" lang="vi">${esc(i.vi)}</span><span class="muted grow ellip">${esc(i.en)}</span><span class="chip warn">×${cards[i.id].lapses}</span></li>`).join('')}</ul></section>` : ''}
+      <ul class="mini-list">${weak.map(i => `<li data-say="${esc(i.vi)}"><span class="vi" lang="vi">${esc(i.vi)}</span><span class="muted grow ellip">${esc(i.en)}</span>${cards[i.id].leech ? '<span class="chip leech">🐌 leech</span>' : ''}<span class="chip warn">×${cards[i.id].lapses}</span></li>`).join('')}</ul></section>` : ''}
 
     <section class="card">
       <p class="kicker">Units</p>
@@ -608,6 +623,8 @@ export function settings(root) {
     <section class="card">
       <p class="kicker">Study</p>
       <label class="field"><span>Daily goal</span><select class="opt-goal">${[30, 60, 100, 150].map(n => `<option value="${n}" ${n === st.dailyGoal ? 'selected' : ''}>${n} XP (${{ 30: 'casual', 60: 'regular', 100: 'serious', 150: 'intense' }[n]})</option>`).join('')}</select></label>
+      <label class="field"><span>Remember target</span><select class="opt-retention">${[[0.8, '80% (fewer reviews)'], [0.85, '85%'], [0.9, '90% (recommended)'], [0.95, '95% (more reviews)']].map(([v, n]) => `<option value="${v}" ${v === (st.retention || 0.9) ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+      <p class="muted small">Reviews are scheduled with FSRS, the method modern Anki uses: each word comes back when your chance of remembering it drops to this level.</p>
       <label class="field"><span>New items per lesson</span><select class="opt-new">${[5, 8, 10, 12].map(n => `<option value="${n}" ${n === st.newPerLesson ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
       <label class="switch row"><span class="grow">Haptic tap on right answers</span><input type="checkbox" class="opt-haptics" ${st.haptics !== false ? 'checked' : ''}></label>
       ${hapticsSupported() ? '' : '<p class="muted small">Needs iOS 17.4 or later on iPhone.</p>'}
@@ -640,6 +657,7 @@ export function settings(root) {
       <p class="kicker">Your data</p>
       <div class="btn-row wrap">
         <button class="btn ghost export">Export backup</button>
+        <button class="btn ghost export-anki">Export for Anki</button>
         <label class="btn ghost import">Import backup<input type="file" accept="application/json,.json" hidden></label>
         <button class="btn danger reset">Reset progress</button>
       </div>
@@ -656,6 +674,7 @@ export function settings(root) {
   $('.test-voice', root).onclick = () => say('Xin chào! Chúc bạn một ngày vui vẻ.');
   $('.opt-goal', root).onchange = e => set('dailyGoal', +e.target.value);
   $('.opt-new', root).onchange = e => set('newPerLesson', +e.target.value);
+  $('.opt-retention', root).onchange = e => set('retention', +e.target.value);
   $('.opt-url', root).onchange = e => set('syncUrl', e.target.value.trim());
   $('.opt-key', root).onchange = e => set('syncKey', e.target.value);
   $('.sync-now', root).onclick = async (e) => {
@@ -667,6 +686,12 @@ export function settings(root) {
   };
   $$('.unflag', root).forEach(b => b.onclick = () => { S.get().flags = S.get().flags.filter(f => f.id !== b.dataset.id); S.save(); settings(root); });
   $('.export', root).onclick = exportBackup;
+  $('.export-anki', root).onclick = () => {
+    const learned = C.seenItems();
+    if (!learned.length) { toast('Learn some words first'); return; }
+    download(`motherland-anki-${dayKey()}.txt`, ankiText(learned, C.cards()), 'text/plain');
+    toast(`${learned.filter(i => i.kind !== 'grammar').length} items exported. In Anki: File → Import.`, 3500);
+  };
   $('.import input', root).onchange = async e => {
     const f = e.target.files[0]; if (!f) return;
     try {

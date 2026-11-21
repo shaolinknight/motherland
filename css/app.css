@@ -550,3 +550,11 @@ h1:focus, .s-body:focus, .sheet:focus { outline: none; }
 .backup-nudge { border-color: var(--gold); background: var(--gold-soft); }
 .backup-nudge p { margin: 0 0 4px; }
 @media (min-width: 768px) { .page > .backup-nudge { grid-column: 1 / -1; } }
+
+.sheet-actions.stack { flex-direction: column; }
+.sheet-actions.stack .btn { flex: none; width: 100%; }
+.chip.leech { background: var(--amber-soft); color: var(--amber); }
+.chip.hid { background: #EFE4D8; color: var(--muted); }
+.word-row .opts { margin-top: -6px; }
+.grades .btn { flex-direction: column; gap: 0; line-height: 1.1; }
+.grades .btn small { font-size: .68rem; font-weight: 600; opacity: .8; }

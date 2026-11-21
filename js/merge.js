@@ -13,9 +13,11 @@
 
 const byNewer = (a, b) => ((b?.updatedAt || 0) > (a?.updatedAt || 0) ? b : a);
 
+// A card's latest change: a review (`last`) or a bury/suspend (`edited`).
+const touched = c => Math.max(c.last || 0, c.edited || 0);
 function newerCard(a, b) {
   if (!a) return b; if (!b) return a;
-  if ((b.last || 0) !== (a.last || 0)) return (b.last || 0) > (a.last || 0) ? b : a;
+  if (touched(b) !== touched(a)) return touched(b) > touched(a) ? b : a;
   if ((b.reps || 0) !== (a.reps || 0)) return (b.reps || 0) > (a.reps || 0) ? b : a;
   return (b.lapses || 0) > (a.lapses || 0) ? b : a;
 }

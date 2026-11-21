@@ -2,10 +2,12 @@
 // place in a home-screen app) + keyboard-aware full-screen layers.
 import { esc, $, $$ } from './util.js';
 import * as S from './store.js';
+import * as C from './course.js';
+import { tomorrow } from './srs.js';
 import { toast } from './util.js';
 
 // sheet({ title, text, html, actions: [{ label, value, kind }] }) → Promise<value | null>
-export function sheet({ title = '', text = '', html = '', actions = [{ label: 'OK', value: true, kind: 'primary' }], onOpen } = {}) {
+export function sheet({ title = '', text = '', html = '', actions = [{ label: 'OK', value: true, kind: 'primary' }], onOpen, stack = false } = {}) {
   return new Promise(resolve => {
     const wrap = document.createElement('div');
     wrap.className = 'sheet-wrap';
@@ -13,7 +15,7 @@ export function sheet({ title = '', text = '', html = '', actions = [{ label: 'O
       <div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title || text || 'Options')}" tabindex="-1">
         <div class="sheet-grip" aria-hidden="true"></div>
         ${title ? `<h2>${esc(title)}</h2>` : ''}${text ? `<p class="muted">${esc(text)}</p>` : ''}${html}
-        <div class="sheet-actions">${actions.map((a, i) => `<button class="btn ${a.kind || 'ghost'}" data-i="${i}">${esc(a.label)}</button>`).join('')}</div>
+        <div class="sheet-actions${stack ? ' stack' : ''}">${actions.map((a, i) => `<button class="btn ${a.kind || 'ghost'}" data-i="${i}">${esc(a.label)}</button>`).join('')}</div>
       </div>`;
     document.body.appendChild(wrap);
     requestAnimationFrame(() => wrap.classList.add('open'));
@@ -127,6 +129,30 @@ export async function flagSheet(item) {
   S.flag(item, res);
   toast('Flagged for review 🚩');
   return true;
+}
+
+// Per-item options, like Anki's card menu: bury (hide until tomorrow), suspend (hide until you
+// un-suspend), or report a problem. Returns what was done, so a lesson can skip the item.
+export async function itemOptions(item) {
+  const card = C.card(item.id), now = Date.now();
+  const buried = card && (card.buriedUntil || 0) > now;
+  const actions = [];
+  if (card && card.suspended) actions.push({ label: 'Unsuspend', value: 'unsuspend', kind: 'primary' });
+  else if (card) {
+    actions.push(buried ? { label: 'Unbury', value: 'unbury' } : { label: 'Bury until tomorrow', value: 'bury' });
+    actions.push({ label: 'Suspend (stop showing it)', value: 'suspend' });
+  }
+  actions.push({ label: '🚩 Report a problem', value: 'report' }, { label: 'Cancel', value: null });
+  const act = await sheet({ title: item.vi, text: item.en, actions, stack: true });
+  if (act === 'report') { await flagSheet(item); return 'report'; }
+  if (!act || !card) return null;
+  if (act === 'bury') { card.buriedUntil = tomorrow(); toast('Buried until tomorrow'); }
+  if (act === 'unbury') { delete card.buriedUntil; toast('Back in your reviews'); }
+  if (act === 'suspend') { card.suspended = true; toast('Suspended. Find it in Word bank → Hidden'); }
+  if (act === 'unsuspend') { delete card.suspended; toast('Back in your reviews'); }
+  card.edited = now;   // so a sync merge keeps this choice (not `last`, which FSRS reads as a review)
+  S.save();
+  return act;
 }
 
 // Keep a full-screen layer above the iPhone keyboard (so Check buttons stay visible).

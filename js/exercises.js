@@ -2,13 +2,13 @@
 // endless mode and the placement test.
 import * as C from './course.js';
 import * as S from './store.js';
-import { newCard, grade as srsGrade } from './srs.js';
+import { newCard, grade as srsGrade, nextInterval } from './srs.js';
 import { speak, audioAvailable, canRecord, record, stop as stopAudio } from './speech.js';
 import { compare, syllableDiff, toneVariants, toneOf, TONE_NAMES, tokens, clean } from './vitext.js';
 import { $, $$, esc, shuffle, sample, pick, toast, pct } from './util.js';
 import { tick } from './haptics.js';
 import { icon } from './icons.js';
-import { flagSheet, confirmSheet, fitToViewport, dismissLayer, trapFocus } from './ui.js';
+import { confirmSheet, fitToViewport, dismissLayer, trapFocus, itemOptions } from './ui.js';
 
 const L = () => C.get().speechLang;
 const hasAudio = () => audioAvailable(L());
@@ -126,6 +126,22 @@ export function practiceSteps(list, n = 12) {
   return sample(list, Math.min(n, list.length)).map(i => choose(i, 2)).filter(Boolean);
 }
 
+// Grade a card with FSRS at your desired retention. A card that just became a leech gets a notice.
+function gradeCard(it, g) {
+  const cards = C.cards();
+  const next = srsGrade(cards[it.id] || newCard(), g, Date.now(), { retention: S.settings().retention || 0.9 });
+  if (next.leechNew) { delete next.leechNew; toast(`🐌 “${it.vi}” keeps slipping. It’s now in Weak spots; try a memory trick.`, 3500); }
+  cards[it.id] = next;
+}
+// "10m", "1d", "3w", "4mo": what each grade button would do, like Anki's buttons.
+function ivlLabel(days) {
+  if (days < 1) return `${Math.max(1, Math.round(days * 1440))}m`;
+  if (days < 14) return `${Math.round(days)}d`;
+  if (days < 60) return `${Math.round(days / 7)}w`;
+  if (days < 365) return `${Math.round(days / 30)}mo`;
+  return `${(days / 365).toFixed(1)}y`;
+}
+
 const byDue = (a, b) => C.card(a.id).due - C.card(b.id).due;
 export const reviewSteps = (limit = 20) => C.dueItems().sort(byDue).slice(0, limit).map(i => choose(i, 2)).filter(Boolean);
 export const flashSteps = (limit = 30) => C.dueItems().sort(byDue).slice(0, limit).map(flash).filter(Boolean);
@@ -134,9 +150,9 @@ export const flashSteps = (limit = 30) => C.dueItems().sort(byDue).slice(0, limi
 export function endlessNext() {
   const due = C.dueItems();
   if (due.length) return choose(pick(due), 2);
-  const seen = C.seenItems();
+  const seen = C.activeItems();
   if (!seen.length) return null;
-  const weighted = seen.flatMap(i => Array(1 + Math.min(4, C.card(i.id).lapses)).fill(i));
+  const weighted = seen.flatMap(i => Array(1 + Math.min(4, C.card(i.id).lapses) + (C.card(i.id).leech ? 3 : 0)).fill(i));
   return choose(pick(weighted), 2);
 }
 
@@ -159,7 +175,7 @@ export function run(opts) {
     <header class="s-head">
       <button class="icon-btn s-close" aria-label="Close">${icon('x')}</button>
       <div class="s-progress"><div class="s-bar"></div></div>
-      <button class="icon-btn s-flag" aria-label="Report a problem with this item">${icon('flag')}</button>
+      <button class="icon-btn s-flag" aria-label="Options for this item: bury, suspend or report">${icon('more')}</button>
     </header>
     <main class="s-body" tabindex="-1"></main>
     <footer class="s-foot"></footer>`;
@@ -172,7 +188,11 @@ export function run(opts) {
     if (s.finished) { close(s); s.onFinish && s.onFinish(s.out); return; }   // X on the results screen
     (s.done && !s.test) || s.endless ? finish(s) : confirmClose(s);
   };
-  $('.s-flag', root).onclick = () => { const st = s.queue[s.i]; st?.item && flagSheet(st.item); };
+  $('.s-flag', root).onclick = async () => {
+    const st = s.queue[s.i]; if (!st?.item) return;
+    const act = await itemOptions(st.item);
+    if (act === 'bury' || act === 'suspend') skipItem(s, st.item);
+  };
   // If the screen changes underneath (Back gesture, a link), end the session quietly instead of
   // leaving it stranded on top of the wrong page. Answers so far are already saved.
   s.onNav = () => {
@@ -235,9 +255,7 @@ function answer(s, st, result) {           // result: 'right' | 'close' | 'wrong
     if (correct) s.xp += 10;
   }
   if (!s.test && st.item) {
-    const cards = C.cards();
-    const prev = cards[st.item.id] || newCard();
-    cards[st.item.id] = srsGrade(prev, result === 'right' ? 2 : result === 'close' ? 1 : 0);
+    gradeCard(st.item, result === 'right' ? 2 : result === 'close' ? 1 : 0);
   }
   // Missed items come back once at the end with a different exercise.
   if (!correct && !s.test && !s.endless && st.item && !s.retried.has(st.item.id)) {
@@ -255,6 +273,13 @@ function feedback(s, foot, result, html = '') {
   foot.className = `s-foot fb ${cls}`;
   foot.innerHTML = `<div class="fb-msg"><strong>${msg}</strong>${html}</div><button class="btn primary next">Continue</button>`;
   const b = $('.next', foot); b.focus({ preventScroll: true }); b.onclick = () => next(s);
+}
+
+// Buried/suspended mid-session: drop its remaining steps and move on without grading it.
+function skipItem(s, item) {
+  if (s.finished) return;
+  s.queue = [...s.queue.slice(0, s.i + 1), ...s.queue.slice(s.i + 1).filter(x => x.item?.id !== item.id)];
+  next(s);
 }
 
 function next(s) {
@@ -551,14 +576,14 @@ const RENDER = {
       if (card.classList.contains('flipped')) return;
       card.classList.add('flipped'); $('.back', card).classList.remove('hidden'); $('.tap-hint', card)?.remove();
       if (reverse && hasAudio()) speak(it.vi, L());
-      foot.innerHTML = `<div class="grades">
-        <button class="btn g0" data-g="0">Again</button><button class="btn g1" data-g="1">Hard</button>
-        <button class="btn g2" data-g="2">Good</button><button class="btn g3" data-g="3">Easy</button></div>`;
+      const c0 = C.cards()[it.id] || newCard(), ret = S.settings().retention || 0.9;
+      const lbl = g => ivlLabel(nextInterval(c0, g, { retention: ret }));
+      foot.innerHTML = `<div class="grades">${['Again', 'Hard', 'Good', 'Easy'].map((n, g) =>
+        `<button class="btn g${g}" data-g="${g}" aria-label="${n}, next in ${lbl(g)}">${n}<small>${lbl(g)}</small></button>`).join('')}</div>`;
       $$('[data-g]', foot).forEach(b => b.onclick = () => {
         if (!lockOnce(body)) return;
         const g = +b.dataset.g;
-        const cards = C.cards();
-        cards[it.id] = srsGrade(cards[it.id] || newCard(), g);
+        gradeCard(it, g);
         s.t++; if (g > 0) { s.c++; s.xp += 10; } else if (!s.missed.includes(it)) s.missed.push(it);
         S.recordAnswer('vocab', g > 0);   // also adds the day's XP
         if (g === 0 && !s.retried.has(it.id)) { s.retried.add(it.id); s.queue.push(flash(it)); }

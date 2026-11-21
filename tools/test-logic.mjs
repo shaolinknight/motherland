@@ -1,9 +1,10 @@
 // Unit tests for pure logic — run: node tools/test-logic.mjs
 import assert from 'node:assert/strict';
 import { compare, toneVariants, toneOf, stripTones, syllableDiff } from '../js/vitext.js';
-import { newCard, grade, nextInterval } from '../js/srs.js';
+import { newCard, grade, nextInterval, fromSM2, fuzzRange, isDue, tomorrow } from '../js/srs.js';
 import fs from 'node:fs';
 import { mergeStates } from '../js/merge.js';
+import { ankiText } from '../js/ankiexport.js';
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log('✓', name); };
 
@@ -26,16 +27,63 @@ t('syllable diff flags tone-only mistakes', () => {
   assert.equal(d[0].tonesOnly, true); assert.equal(d[1].ok, true);
 });
 t('SRS: forget = ~10 minutes', () => assert.ok(nextInterval(newCard(), 0) < 0.01));
-t('SRS: intervals grow', () => {
-  let c = newCard(); const ivls = [];
-  for (let i = 0; i < 5; i++) { c = grade(c, 2, 0); ivls.push(c.ivl); }
+const mid = () => 0.5;   // fixed "random" so fuzz is repeatable
+const D = 86400000;
+t('FSRS: first answers give Anki-like intervals (Hard 1d, Good 3d, Easy ~16d)', () => {
+  assert.deepEqual([1, 2, 3].map(g => nextInterval(newCard(), g)), [1, 3, 16]);
+});
+t('FSRS: intervals grow when answered Good on time', () => {
+  let c = newCard(), now = 0; const ivls = [];
+  for (let i = 0; i < 6; i++) { c = grade(c, 2, now, { rng: mid }); ivls.push(c.ivl); now = c.due; }
   for (let i = 1; i < ivls.length; i++) assert.ok(ivls[i] > ivls[i - 1], ivls.join(','));
 });
-t('SRS: lapse resets reps and lowers ease', () => {
-  let c = grade(grade(newCard(), 2), 2); const e = c.ease;
-  c = grade(c, 0); assert.equal(c.reps, 0); assert.equal(c.lapses, 1); assert.ok(c.ease < e);
+t('FSRS: Easy > Good > Hard for the same card', () => {
+  const c = grade(newCard(), 2, 0, { rng: mid }), at = c.due;
+  const [h, g, e] = [1, 2, 3].map(x => nextInterval(c, x, { now: at }));
+  assert.ok(h < g && g < e, `${h} ${g} ${e}`);
 });
-t('SRS: ease never below 1.3', () => { let c = newCard(); for (let i = 0; i < 30; i++) c = grade(c, 0); assert.ok(c.ease >= 1.3); });
+t('FSRS: a lapse lowers stability, raises difficulty, resets reps', () => {
+  let c = newCard(), now = 0;
+  for (let i = 0; i < 3; i++) { c = grade(c, 2, now, { rng: mid }); now = c.due; }
+  const f = grade(c, 0, now);
+  assert.ok(f.s < c.s && f.d > c.d); assert.equal(f.reps, 0); assert.equal(f.lapses, 1); assert.ok(f.ivl < 0.01);
+});
+t('FSRS: difficulty stays within 1–10', () => {
+  let c = newCard(), now = 0; for (let i = 0; i < 30; i++) { c = grade(c, 0, now); now += D; } assert.ok(c.d <= 10);
+  c = newCard(); now = 0; for (let i = 0; i < 30; i++) { c = grade(c, 3, now, { rng: mid }); now = c.due; } assert.ok(c.d >= 1);
+});
+t('FSRS: higher desired retention means shorter intervals', () => {
+  const c = grade(grade(newCard(), 2, 0, { rng: mid }), 2, 3 * D, { rng: mid });
+  assert.ok(nextInterval(c, 2, { now: c.due, retention: 0.95 }) < nextInterval(c, 2, { now: c.due, retention: 0.8 }));
+});
+t('FSRS: interval never exceeds a year', () => { let c = newCard(), now = 0; for (let i = 0; i < 25; i++) { c = grade(c, 3, now, { rng: mid }); now = c.due; } assert.ok(c.ivl <= 365); });
+t('FSRS: old SM-2 card converts (interval → stability, ease → difficulty)', () => {
+  const old = { reps: 4, ivl: 20, ease: 2.5, due: 20 * D, lapses: 1, seen: 1, last: 0 };
+  const f = fromSM2(old); assert.equal(f.s, 20); assert.equal(f.d, 5);
+  assert.ok(fromSM2({ ...old, ease: 1.3 }).d > 8);
+  const g = grade(old, 2, 20 * D, { rng: mid });   // graded on time
+  assert.ok(g.ivl > 20 && g.reps === 5 && g.lapses === 1 && g.s > 20, JSON.stringify(g));
+});
+t('fuzz: none under 2.5 days, about ±15% at a week, ±5% at 100 days', () => {
+  assert.deepEqual(fuzzRange(2), [2, 2]);
+  const [a, b] = fuzzRange(7); assert.ok(a >= 5 && b <= 9 && b - a >= 2);
+  const [c, d] = fuzzRange(100); assert.ok(c >= 92 && d <= 108);
+});
+t('fuzz: cards learned together spread over several days', () => {
+  let r = 0; const rng = () => (r = (r * 9301 + 49297) % 233280) / 233280;
+  const dues = new Set(Array.from({ length: 20 }, () => grade({ ...newCard(), s: 30, d: 5, reps: 3, last: 0 }, 2, 30 * D, { rng }).ivl));
+  assert.ok(dues.size >= 3, [...dues].join(','));
+});
+t('leech: flagged at 8 lapses, again at 12', () => {
+  let c = newCard(); const at = [];
+  for (let i = 1; i <= 12; i++) { c = grade({ ...c, leechNew: false }, 0, i * D); if (c.leechNew) at.push(i); }
+  assert.deepEqual(at, [8, 12]); assert.ok(c.leech);
+});
+t('bury/suspend hide a card from reviews', () => {
+  const c = { ...newCard(), due: 0 };
+  assert.ok(isDue(c, 10)); assert.ok(!isDue({ ...c, suspended: true }, 10));
+  assert.ok(!isDue({ ...c, buriedUntil: tomorrow(10) }, 10)); assert.ok(isDue({ ...c, buriedUntil: 5 }, 10));
+});
 
 // Sync merge: two devices' progress must combine, not overwrite each other.
 const card = (last, reps = 1) => ({ reps, ivl: 1, ease: 2.5, due: last + 1, lapses: 0, seen: 1, last });
@@ -63,8 +111,27 @@ const dev = (over) => ({ v: 1, updatedAt: 1, deviceId: 'x', lang: 'vi', settings
   t('merge: newer settings win but sync URL/password stay local', () => { assert.equal(m.settings.dailyGoal, 100); assert.equal(m.settings.syncUrl, 'U'); assert.equal(m.settings.syncKey, 'K'); });
   t('merge: device id and unsent sessions stay local', () => { assert.equal(m.deviceId, 'phone'); assert.deepEqual(m.pending, [{ id: 'p1' }]); });
   t('merge: is symmetric for progress', () => { const r = mergeStates(ipad, phone).langs.vi; assert.deepEqual(Object.keys(r.cards).sort(), ['a', 'b', 'c']); assert.equal(r.cards.b.last, 300); });
+  t('merge: a later suspend on the other device wins over an older review', () => {
+    const a = { ...card(100), suspended: true, edited: 500 }, b = card(300);
+    assert.equal(mergeStates(dev({ langs: { vi: { cards: { x: b } } } }), dev({ langs: { vi: { cards: { x: a } } } })).langs.vi.cards.x.suspended, true);
+  });
   t('merge: no remote copy leaves local untouched', () => assert.equal(mergeStates(phone, null), phone));
 }
+
+t('Anki export: headers, one tab-separated note per item, grammar skipped, tags', () => {
+  const txt = ankiText([
+    { id: 'u03-w0', unit: 'u03', kind: 'word', vi: 'đám cưới', en: 'wedding', north: '', note: '' },
+    { id: 'u03-w1', unit: 'u03', kind: 'word', vi: 'trái\tcây', en: 'fruit', north: 'quả', note: 'line\nbreak' },
+    { id: 'u03-g0', unit: 'u03', kind: 'grammar', vi: 'x', en: 'y' },
+  ], { 'u03-w1': { leech: true } });
+  const lines = txt.trim().split('\n');
+  assert.equal(lines[0], '#separator:tab'); assert.ok(lines.includes('#notetype:Basic (and reversed card)'));
+  const notes = lines.filter(l => !l.startsWith('#'));
+  assert.equal(notes.length, 2);
+  assert.deepEqual(notes[0].split('\t'), ['đám cưới', 'wedding', 'motherland u03 word']);
+  const [front, back, tags] = notes[1].split('\t');
+  assert.equal(front, 'trái cây'); assert.equal(back, 'fruit · Hanoi: quả · line break'); assert.ok(tags.endsWith('leech'));
+});
 
 // Shipping checks: a module missing from the service worker breaks offline use, and one missing from
 // the preload list brings back the slow import waterfall.

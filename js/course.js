@@ -1,7 +1,7 @@
 // Loads a language course and turns units into study items.
 import vi from '../data/vi.js';
 import { lang } from './store.js';
-import { isDue, isMastered } from './srs.js';
+import { isDue, isMastered, isHidden } from './srs.js';
 
 // Courses that exist today. Others are listed as "coming soon" with their plan.
 export const COURSES = { vi };
@@ -43,6 +43,14 @@ export const card = id => cards()[id];
 
 // Items you've been introduced to (they have a review card).
 export function seenItems() { const c = cards(); return items.filter(i => c[i.id]); }
+// Seen items that aren't buried or suspended: what practice modes may draw from.
+export function activeItems(now = Date.now()) { const c = cards(); return items.filter(i => c[i.id] && !isHidden(c[i.id], now)); }
+// Items you keep missing: leeches first, then most lapses.
+export function weakItems(n = 12) {
+  const c = cards();
+  return activeItems().filter(i => c[i.id].lapses > 0)
+    .sort((a, b) => (c[b.id].leech ? 1 : 0) - (c[a.id].leech ? 1 : 0) || c[b.id].lapses - c[a.id].lapses).slice(0, n);
+}
 export function dueItems(now = Date.now()) { const c = cards(); return items.filter(i => c[i.id] && isDue(c[i.id], now)); }
 export function masteredCount() { const c = cards(); return items.filter(i => isMastered(c[i.id])).length; }
 

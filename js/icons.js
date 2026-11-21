@@ -19,6 +19,7 @@ const P = {
   bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
   infinity: '<path d="M6 8c-4 0-4 8 0 8 3 0 4-3 6-4s3-4 6-4c4 0 4 8 0 8-3 0-4-3-6-4S9 8 6 8z"/>',
   target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+  more: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
   lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
 };
 export const icon = (name, cls = '') =>
