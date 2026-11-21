@@ -13,14 +13,20 @@
 | `js/placement.js` | Placement test builder, scoring (level, skills, topics, weak areas), "skip ahead" seeding. |
 | `js/stats.js` | Dashboard and leaderboard aggregations: weeks/months ranked, fair same-point comparison, records, 30-day growth, 12-week heatmap. |
 | `js/course.js` | Loads a course and turns units into study **items** (word / phrase / grammar). Progress helpers. |
-| `js/srs.js` | Spaced repetition (SM-2 style). `nextInterval()` is the tuning point. |
+| `js/srs.js` | Spaced repetition with **FSRS-5** (the scheduler modern Anki uses, written fresh from the published formulas): stability/difficulty per card, desired retention, Anki-style fuzz, leeches (8 lapses), bury/suspend. Old SM-2 cards convert on their next review (`fromSM2`). |
+| `js/merge.js` | Sync merge: combines this phone's state with the Sheet's copy card by card (latest review wins, day logs take the max, lists union). Pure, unit-tested. |
+| `js/streak.js` | Streak with one forgiven missed day per Monday–Sunday week; computed from the day log. |
+| `js/focus.js` | Reads the latest placement: skill weights that tilt lesson exercise types, retest timing. |
+| `js/vispell.js` | Vietnamese spelling/tone rules shared by `tools/validate.mjs` and the app (typo warning in My words). |
+| `js/ankiexport.js` | Tab-separated export with Anki's import headers (Basic and reversed card). |
+| `js/theme.js` | Light / dark / match-iPhone theme; `index.html` applies a forced theme before first paint. |
 | `js/store.js` | App state, saved to `localStorage['motherland.v1']`. Day logs, XP, streaks, flags, pending sessions. |
 | `js/sync.js` | Google Sheet sync: pull if the Sheet is newer, then push. `text/plain` POST to avoid CORS preflight. |
 | `js/speech.js` | Built-in voices (Web Speech API), iOS speech unlock on first tap, mic recording for "compare yourself". |
 | `js/vitext.js` | Vietnamese text tools: answer comparison (exact / tones / letters), tone variants, syllable diff. |
 | `js/ui.js` | Bottom sheets (replace browser dialogs, drag down to close), the flag/report sheet, keyboard-aware full-screen layers, `trapFocus()` for modal layers, `dismissLayer()` exit animation. |
 | `js/icons.js`, `js/util.js` | Inline SVG icons and small helpers. |
-| `data/vi.js` | Vietnamese course entry: metadata + units (from `vi-a.js`, `vi-b.js`) + grammar (`vi-grammar.js`). |
+| `data/vi.js` | Vietnamese course entry: metadata + units (from `vi-a.js`, `vi-b.js`, `vi-c.js`) + grammar (`vi-grammar.js`). Units with `review: true` (u25–u31) are shown as “needs family check” and left out of the placement test. |
 | `apps-script/Code.gs` | The Google Apps Script web app for sync. It lives in my Google account, not on Cloudflare. |
 | `tools/` | `validate.mjs` (content checker), `test-logic.mjs`, `qa.mjs`, `qa-sync.mjs` (also simulates deploys), `audit.mjs` (perf/a11y numbers, see `docs/AUDIT.md`), `serve.mjs`. Dev only. |
 
@@ -41,9 +47,11 @@ Unit fields: `id, section, icon, level (1–3), title, vi, tip, words[], phrases
 ```js
 {
   v: 1, updatedAt, deviceId, lang: 'vi',
-  settings: { showHanoi, rate, voiceURI, forceAudio, haptics, dailyGoal, newPerLesson, syncUrl, syncKey, lastSync, syncError },
+  settings: { showHanoi, rate, voiceURI, forceAudio, haptics, retention, theme, dailyGoal, newPerLesson, syncUrl, syncKey, lastSync, syncError, lastBackup, backupSnooze },
   langs: { vi: {
-    cards: { [itemId]: { reps, ivl, ease, due, lapses, seen, last } },   // SRS
+    cards: { [itemId]: { reps, ivl, ease, due, lapses, seen, last,     // SRS (ease is legacy SM-2, kept for old cards)
+                         s, d, leech?, suspended?, buriedUntil?, edited?, placed? } },   // FSRS stability/difficulty + card state
+    myWords: { ['my-…']: { id, vi, en, north, note, verified, at, edited, deleted? } },   // your own words; deletes are tombstones
     lessons: { [unitId]: { at, done } },
     placements: [{ at, level, label, score, c, t, levels, skills, sections, weak, applied? }],
     skills: { vocab|reading|grammar|listening|tones|speaking: { c, t } },
@@ -63,7 +71,7 @@ Unit fields: `id, section, icon, level (1–3), title, vi, tip, words[], phrases
   - **State:** chunked JSON backup.
   - **Sessions:** one row per study session, de-duplicated by ID.
   - **Flags:** de-duplicated by ID.
-- **Conflict rule:** the newer `updatedAt` wins, and local unsent sessions are kept.
+- **Conflict rule (v1.3):** merged on the phone by `js/merge.js`, never “newest save wins”: per card the latest change (review `last` or bury/suspend `edited`) wins; day logs take the larger value per field; flags, placements, game runs and My words are unioned; settings come from the newer save; the sync URL/password and unsent sessions stay local. The Apps Script contract is unchanged.
 
 ## Adding a language (checklist)
 1. Create `data/<code>.js` (+ part files), with the same unit format. Add `speechLang`, `levels` and `sections`.

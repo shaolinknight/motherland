@@ -117,3 +117,13 @@ Notes, honestly:
 - Cold load got ~0.25 s slower between Phase 1 and the end on slow 3G because two small modules (`pwa.js`, `haptics.js`) and ~5 KB of CSS were added. Warm launches, which is what you do every day, are unaffected.
 - With the update toast, the new version shows when you tap it, or by itself the next time the app goes to the background with no lesson or game open.
 - The haptic tick, transitions, Dynamic Type and VoiceOver were verified only by emulation here. They need a check on the iPhone.
+
+## v1.3 (same method, Chromium, Nov 21, 2026)
+| | v1.2 | v1.3 |
+|---|---|---|
+| Slow 3G, warm launch | 0.05 s | 0.06 s |
+| Slow 3G, first-ever load | 3.20 s | **4.10 s** |
+| Fast 3G, first-ever load | 1.06 s | 1.40 s |
+| Requests / bytes, first load | 23 / 90 KB | 30 / 117 KB |
+
+The first-ever load is ~0.9 s slower on slow 3G because v1.3 adds 7 small modules and the content of 7 new units. Everyday launches are served from the phone and are unchanged, and after a deploy the new files download in the background, so this cost is paid once per install. If it ever matters, the new modules could be merged into fewer files without a build step.

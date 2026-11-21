@@ -8,7 +8,8 @@
 4. Haptics: checkbox-switch trick, single pulse, with a setting to turn it off
 5. Accessibility fixes from the audit
 
-## Now: v1.3 (agreed Nov 21, 2026). Each item gets its own commit, tests, and a preview before `main`.
+## Done: v1.3 (agreed and built Nov 21, 2026; one commit per item, on preview until confirmed on the phone)
+Still open from v1.3: family check of units u25–u31 (remove `review: true` per unit once confirmed).
 Order: the progress-touching work first (sync merge, then FSRS), each kept separate.
 1. **Safety**
    - Per-card sync merge instead of "newest save wins": keep the most recent review of each card, combine day logs, flags and lessons. Done on the phone; the Apps Script contract does not change.
