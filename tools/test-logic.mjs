@@ -5,6 +5,7 @@ import { newCard, grade, nextInterval, fromSM2, fuzzRange, isDue, tomorrow } fro
 import fs from 'node:fs';
 import { mergeStates } from '../js/merge.js';
 import { ankiText } from '../js/ankiexport.js';
+import { streakInfo, longestStreak } from '../js/streak.js';
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log('✓', name); };
 
@@ -132,6 +133,35 @@ t('Anki export: headers, one tab-separated note per item, grammar skipped, tags'
   const [front, back, tags] = notes[1].split('\t');
   assert.equal(front, 'trái cây'); assert.equal(back, 'fruit · Hanoi: quả · line break'); assert.ok(tags.endsWith('leech'));
 });
+
+// Streak freeze: one missed day per Monday–Sunday week is forgiven.
+{
+  const log = (...keys) => Object.fromEntries(keys.map(k => [k, { xp: 10 }]));
+  const wed = new Date('2026-11-18T09:00:00');   // a Wednesday
+  t('streak: consecutive days count, today pending does not break it', () => {
+    assert.equal(streakInfo(log('2026-11-16', '2026-11-17'), wed).n, 2);
+    assert.equal(streakInfo(log('2026-11-16', '2026-11-17', '2026-11-18'), wed).n, 3);
+  });
+  t('streak: one missed day in a week is frozen, not counted', () => {
+    const r = streakInfo(log('2026-11-14', '2026-11-15', '2026-11-17'), wed);   // missed Mon 16th
+    assert.equal(r.n, 3); assert.deepEqual(r.frozen, ['2026-11-16']); assert.equal(r.freezeLeft, false);
+  });
+  t('streak: two missed days in the same week break it', () => {
+    assert.equal(streakInfo(log('2026-11-10', '2026-11-11', '2026-11-14'), new Date('2026-11-15T09:00:00')).n, 1);
+  });
+  t('streak: a freeze in a past week leaves this week\'s freeze ready', () => {
+    const r = streakInfo(log('2026-11-12', '2026-11-14', '2026-11-15', '2026-11-16', '2026-11-17'), wed);   // missed Fri 13th
+    assert.equal(r.n, 5); assert.equal(r.freezeLeft, true);
+  });
+  t('streak: no activity → 0, and leading missed days are not counted', () => {
+    assert.equal(streakInfo({}, wed).n, 0);
+    assert.equal(streakInfo(log('2026-11-10'), wed).n, 0);
+  });
+  t('longest streak bridges one missed day per week', () => {
+    assert.equal(longestStreak(log('2026-11-02', '2026-11-03', '2026-11-05', '2026-11-06')), 4);
+    assert.equal(longestStreak(log('2026-11-02', '2026-11-05')), 1);
+  });
+}
 
 // Shipping checks: a module missing from the service worker breaks offline use, and one missing from
 // the preload list brings back the slow import waterfall.

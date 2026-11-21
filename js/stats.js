@@ -2,6 +2,7 @@
 import * as S from './store.js';
 import * as C from './course.js';
 import { dayKey, weekKeys, pct } from './util.js';
+import { longestStreak as longestFrom } from './streak.js';
 
 const empty = () => ({ xp: 0, ms: 0, c: 0, t: 0, words: 0, days: 0 });
 function add(a, d) { a.xp += d.xp || 0; a.ms += d.ms || 0; a.c += d.c || 0; a.t += d.t || 0; a.words += d.words || 0; if ((d.xp || 0) > 0) a.days++; return a; }
@@ -43,16 +44,7 @@ export function periods(kind) {
   return { ranked, cur, prev, prevSoFar, change: prev && prevSoFar ? Math.round(((cur.xp - prevSoFar) / prevSoFar) * 100) : null };
 }
 
-export function longestStreak() {
-  const keys = Object.keys(S.get().days).filter(k => S.get().days[k].xp > 0).sort();
-  let best = 0, run = 0, prev = null;
-  for (const k of keys) {
-    const d = new Date(`${k}T12:00:00`);
-    run = prev && (d - prev) / 86400000 < 1.5 ? run + 1 : 1;
-    best = Math.max(best, run); prev = d;
-  }
-  return best;
-}
+export const longestStreak = () => longestFrom(S.get().days);
 
 export function records() {
   const days = Object.entries(S.get().days);

@@ -12,6 +12,7 @@ import { icon } from './icons.js';
 import { isMastered, isHidden } from './srs.js';
 import { flagSheet, confirmSheet, itemOptions } from './ui.js';
 import { ankiText } from './ankiexport.js';
+import { applyTheme } from './theme.js';
 import { hapticsSupported, tick } from './haptics.js';
 import { stripAll } from './vitext.js';
 
@@ -90,6 +91,14 @@ function backupDue() {
   return Date.now() - Math.max(st.lastBackup || 0, st.backupSnooze || 0) > BACKUP_EVERY;
 }
 
+// "🔥 12-day streak · 🧊 freeze ready": one missed day a week is forgiven.
+function streakLine() {
+  const { n, freezeLeft } = S.streakDetails();
+  if (!n) return 'Start a streak today';
+  const freeze = freezeLeft ? '🧊 freeze ready' : '🧊 freeze used this week';
+  return `🔥 ${n}-day streak · <span title="One missed day a week won’t break your streak">${freeze}</span>`;
+}
+
 // ── HOME ────────────────────────────────────────────────────────────────────
 export function home(root) {
   const st = S.get(), today = S.day(dayKey()), goal = st.settings.dailyGoal;
@@ -113,7 +122,7 @@ export function home(root) {
     <section class="hello card">
       <div>
         <h1 lang="vi">${greet}</h1>
-        <p class="muted">${C.get().flag} ${C.get().native} · ${S.streak() ? `🔥 ${S.streak()}-day streak` : 'Start a streak today'}</p>
+        <p class="muted">${C.get().flag} ${C.get().native} · ${streakLine()}</p>
         ${wk.change != null ? `<p class="small ${wk.change >= 0 ? 'up' : 'down'}">${wk.change >= 0 ? '▲' : '▼'} ${Math.abs(wk.change)}% XP vs this point last week</p>` : ''}
       </div>
       <div class="ring" style="--p:${ring}" role="img" aria-label="Daily goal ${today.xp} of ${goal} XP"><span><b>${today.xp}</b><small>/${goal} XP</small></span></div>
@@ -621,6 +630,11 @@ export function settings(root) {
     </section>
 
     <section class="card">
+      <p class="kicker">Appearance</p>
+      <label class="field"><span>Theme</span><select class="opt-theme">${[['auto', 'Match iPhone'], ['light', 'Light'], ['dark', 'Dark']].map(([v, n]) => `<option value="${v}" ${v === (st.theme || 'auto') ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+    </section>
+
+    <section class="card">
       <p class="kicker">Study</p>
       <label class="field"><span>Daily goal</span><select class="opt-goal">${[30, 60, 100, 150].map(n => `<option value="${n}" ${n === st.dailyGoal ? 'selected' : ''}>${n} XP (${{ 30: 'casual', 60: 'regular', 100: 'serious', 150: 'intense' }[n]})</option>`).join('')}</select></label>
       <label class="field"><span>Remember target</span><select class="opt-retention">${[[0.8, '80% (fewer reviews)'], [0.85, '85%'], [0.9, '90% (recommended)'], [0.95, '95% (more reviews)']].map(([v, n]) => `<option value="${v}" ${v === (st.retention || 0.9) ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
@@ -675,6 +689,7 @@ export function settings(root) {
   $('.opt-goal', root).onchange = e => set('dailyGoal', +e.target.value);
   $('.opt-new', root).onchange = e => set('newPerLesson', +e.target.value);
   $('.opt-retention', root).onchange = e => set('retention', +e.target.value);
+  $('.opt-theme', root).onchange = e => { set('theme', e.target.value); applyTheme(); };
   $('.opt-url', root).onchange = e => set('syncUrl', e.target.value.trim());
   $('.opt-key', root).onchange = e => set('syncKey', e.target.value);
   $('.sync-now', root).onclick = async (e) => {

@@ -92,7 +92,6 @@ export function mergeStates(local, remote) {
     const l = local.flags?.find(x => x.id === f.id);
     return l ? { ...f, synced: l.synced || f.synced } : f;
   });
-  if (local.freezes || remote.freezes) out.freezes = [...new Set([...(local.freezes || []), ...(remote.freezes || [])])].sort();
   out.pending = local.pending || [];
   return out;
 }

@@ -1,5 +1,6 @@
 // App state: saved on the phone (localStorage) and optionally mirrored to a Google Sheet.
 import { dayKey, uid } from './util.js';
+import { streakInfo } from './streak.js';
 
 const KEY = 'motherland.v1';
 const listeners = new Set();
@@ -11,7 +12,7 @@ function defaults() {
     deviceId: uid(),
     lang: 'vi',
     settings: {
-      showHanoi: true, rate: 0.85, voiceURI: '', forceAudio: false, haptics: true, retention: 0.9,
+      showHanoi: true, rate: 0.85, voiceURI: '', forceAudio: false, haptics: true, retention: 0.9, theme: 'auto',
       dailyGoal: 60, newPerLesson: 8, syncUrl: '', syncKey: '', lastSync: 0, syncError: '',
       lastBackup: 0, backupSnooze: 0,
     },
@@ -104,13 +105,9 @@ export function logSession(activity, { ms = 0, xp = 0, c = 0, t = 0 } = {}) {
   if (state.pending.length > 500) state.pending = state.pending.slice(-500);
 }
 
-export function streak() {
-  let n = 0; const d = new Date();
-  // Today counts if active; otherwise the streak can still be alive from yesterday.
-  if (!(state.days[dayKey(d)]?.xp > 0)) d.setDate(d.getDate() - 1);
-  while (state.days[dayKey(d)]?.xp > 0) { n++; d.setDate(d.getDate() - 1); }
-  return n;
-}
+// Current streak in days (one missed day per week is forgiven; see streak.js).
+export const streak = () => streakInfo(state.days).n;
+export const streakDetails = () => streakInfo(state.days);
 
 export function flag(item, note) {
   state.flags.push({ id: uid(), at: Date.now(), lang: state.lang, itemId: item.id, vi: item.vi, en: item.en, note: note || '', synced: false });
