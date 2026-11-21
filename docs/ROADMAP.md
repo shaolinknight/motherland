@@ -8,6 +8,28 @@
 4. Haptics: checkbox-switch trick, single pulse, with a setting to turn it off
 5. Accessibility fixes from the audit
 
+## Now: v1.3 (agreed Nov 21, 2026). Each item gets its own commit, tests, and a preview before `main`.
+Order: the progress-touching work first (sync merge, then FSRS), each kept separate.
+1. **Safety**
+   - Per-card sync merge instead of "newest save wins": keep the most recent review of each card, combine day logs, flags and lessons. Done on the phone; the Apps Script contract does not change.
+   - Close any open lesson/game overlay when the route changes underneath it.
+   - Backup reminder every ~2 weeks when Sheet sync isn't set up.
+2. **Anki-style review (ideas re-implemented in plain JS; Anki's code is AGPL and Rust, so nothing is copied)**
+   - FSRS scheduler replacing SM-2 in `js/srs.js`, with existing cards migrated (old-shape fixture test).
+   - Desired-retention setting (e.g. 90%).
+   - Fuzz so cards learned together don't all come due the same day.
+   - Leeches: cards missed repeatedly are flagged and fed to Weak spots.
+   - Suspend (hide for good) and bury (hide until tomorrow).
+   - Export a tab-separated file that Anki can import.
+3. **Habits and comfort**
+   - Streak freeze: one free missed day per week.
+   - Dark mode: follows the iPhone, with a Settings override.
+4. **My words deck**: add your own words/phrases (IDs `my-…`, never positional), marked "unverified" until checked with family, reviewed like course items, synced with the state.
+5. **Grammar guide search**, with or without accents.
+6. **Seven new Vietnamese units**, appended: wedding day logistics, family gatherings and đám giỗ, phone calls with relatives, ordering for a group, bargaining, healthcare, texting slang. Saigon-first, one grammar point each, validator must pass, and every new unit marked "needs family check" in the app.
+7. **Placement keeps shaping lessons**: latest result sets the starting unit, marks clearly-known words as learned, tilts each lesson's exercise mix toward weak skills, and suggests a retest after a few weeks.
+- Held for later: review planner / daily review cap.
+
 ## Next: content and learning
 - **More Vietnamese units.** Append only (IDs are positional), and every unit gets a grammar point. Possible topics:
   - Wedding day logistics
