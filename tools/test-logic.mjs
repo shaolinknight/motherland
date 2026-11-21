@@ -43,4 +43,22 @@ const sw = fs.readFileSync('sw.js', 'utf8'), html = fs.readFileSync('index.html'
 t('every module is cached by the service worker', () => modules.forEach(m => assert.ok(sw.includes(`'./${m}'`), `${m} missing from FILES in sw.js`)));
 t('every module is preloaded', () => modules.forEach(m => assert.ok(html.includes(`<link rel="modulepreload" href="${m}">`), `${m} missing from modulepreload in index.html`)));
 t('service worker shell is not the redirecting /index.html', () => assert.ok(!sw.includes("'./index.html'")));
+
+// State contract: a v1.1 save (no haptics setting) must load with progress intact and new defaults filled in.
+const v11 = { v: 1, updatedAt: 1700000000000, deviceId: 'old', lang: 'vi',
+  settings: { showHanoi: false, rate: 0.7, voiceURI: '', forceAudio: false, dailyGoal: 100, newPerLesson: 8, syncUrl: 'https://x', syncKey: 'k', lastSync: 1, syncError: '' },
+  langs: { vi: { cards: { 'u03-w0': { reps: 2, ivl: 3, ease: 2.5, due: 1, lapses: 0, seen: 2, last: 1 } }, lessons: {}, placements: [], skills: {}, games: {} } },
+  days: { '2026-11-01': { xp: 40, ms: 1, c: 4, t: 5, words: 2, skills: {} } }, flags: [], pending: [] };
+const mem = { 'motherland.v1': JSON.stringify(v11) };
+globalThis.localStorage = { getItem: k => mem[k] ?? null, setItem: (k, v) => { mem[k] = v; }, removeItem: k => { delete mem[k]; } };
+const S = await import('../js/store.js');
+t('v1.1 state loads: progress kept', () => { assert.equal(S.lang().cards['u03-w0'].reps, 2); assert.equal(S.get().days['2026-11-01'].xp, 40); });
+t('v1.1 state loads: user settings kept, haptics defaults on', () => {
+  const st = S.settings(); assert.equal(st.showHanoi, false); assert.equal(st.dailyGoal, 100); assert.equal(st.syncKey, 'k'); assert.equal(st.haptics, true);
+});
+t('saving keeps the storage key and shape', () => { S.saveNow(); const back = JSON.parse(mem['motherland.v1']); assert.equal(back.v, 1); assert.equal(back.settings.haptics, true); assert.ok(back.langs.vi.cards['u03-w0']); });
+mem['motherland.v1'] = '{not json';
+const S2 = await import('../js/store.js?corrupt');   // fresh module instance reads storage again
+t('corrupted storage: app starts with a fresh state', () => { assert.equal(S2.get().v, 1); assert.deepEqual(S2.get().langs, {}); });
+t('corrupted storage: the unreadable data is kept, not overwritten', () => assert.equal(mem['motherland.v1.unreadable'], '{not json'));
 console.log(`\n${n} tests passed`);

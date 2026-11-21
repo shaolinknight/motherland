@@ -43,4 +43,3 @@ export function timeAgo(ts) {
   return `${Math.round(s / 86400)} d ago`;
 }
 
-export function haptic() { try { navigator.vibrate && navigator.vibrate(12); } catch { /* not supported on iOS */ } }

@@ -11,7 +11,7 @@ function defaults() {
     deviceId: uid(),
     lang: 'vi',
     settings: {
-      showHanoi: true, rate: 0.85, voiceURI: '', forceAudio: false,
+      showHanoi: true, rate: 0.85, voiceURI: '', forceAudio: false, haptics: true,
       dailyGoal: 60, newPerLesson: 8, syncUrl: '', syncKey: '', lastSync: 0, syncError: '',
     },
     langs: {},
@@ -31,14 +31,19 @@ function langDefaults() {
 let state = load();
 
 function load() {
+  let raw = null;
   try {
-    const raw = localStorage.getItem(KEY);
+    raw = localStorage.getItem(KEY);
     if (raw) {
       const s = JSON.parse(raw);
       const d = defaults();
       return { ...d, ...s, settings: { ...d.settings, ...(s.settings || {}) } };
     }
-  } catch (e) { console.warn('State load failed', e); }
+  } catch (e) {
+    console.warn('State load failed', e);
+    // The next save would overwrite unreadable data; keep a copy so it can still be recovered by hand.
+    if (raw) try { localStorage.setItem(`${KEY}.unreadable`, raw); } catch { /* storage full */ }
+  }
   return defaults();
 }
 

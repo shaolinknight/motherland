@@ -5,7 +5,8 @@ import * as S from './store.js';
 import { newCard, grade as srsGrade } from './srs.js';
 import { speak, audioAvailable, canRecord, record, stop as stopAudio } from './speech.js';
 import { compare, syllableDiff, toneVariants, toneOf, TONE_NAMES, tokens, clean } from './vitext.js';
-import { $, $$, esc, shuffle, sample, pick, toast, haptic, pct } from './util.js';
+import { $, $$, esc, shuffle, sample, pick, toast, pct } from './util.js';
+import { tick } from './haptics.js';
 import { icon } from './icons.js';
 import { flagSheet, confirmSheet, fitToViewport, dismissLayer } from './ui.js';
 
@@ -231,7 +232,7 @@ function answer(s, st, result) {           // result: 'right' | 'close' | 'wrong
     const again = choose(st.item, 2); if (again) s.queue.push(again);
   }
   S.save();
-  haptic();
+  if (correct && !s.test) tick();   // one pulse type, only for right answers (silent during the placement test)
 }
 
 function feedback(s, foot, result, html = '') {

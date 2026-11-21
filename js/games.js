@@ -4,7 +4,8 @@ import * as C from './course.js';
 import * as S from './store.js';
 import { mcq, tone, clash } from './exercises.js';
 import { speak, audioAvailable, stop as stopAudio } from './speech.js';
-import { $, $$, esc, shuffle, pick, toast, haptic } from './util.js';
+import { $, $$, esc, shuffle, pick, toast } from './util.js';
+import { tick } from './haptics.js';
 import { icon } from './icons.js';
 import { dismissLayer } from './ui.js';
 import { TONE_NAMES, toneOf, stripTones } from './vitext.js';
@@ -143,7 +144,7 @@ export function match() {
       if (!sel || sel.dataset.side === b.dataset.side) { sel && sel.classList.remove('sel'); sel = b; b.classList.add('sel'); return; }
       if (sel.dataset.id === b.dataset.id) {
         [sel, b].forEach(x => { x.classList.remove('sel'); x.classList.add('done'); x.disabled = true; });
-        matched++; haptic();
+        matched++; tick();
         S.recordAnswer('vocab', true);
         if (matched === words.length) {
           const secs = +elapsed().toFixed(1);
@@ -205,7 +206,7 @@ function timedQuiz({ key, seconds, makeStep, label }) {
         answered++;
         b.classList.add(ok ? 'right' : 'wrong');
         if (!ok) $$('.option', g.body).find(x => x.dataset.v === answer)?.classList.add('right');
-        if (ok) { right++; streak++; score += streak >= 3 ? 2 : 1; haptic(); } else { streak = 0; missed.push(st.item); }
+        if (ok) { right++; streak++; score += streak >= 3 ? 2 : 1; tick(); } else { streak = 0; missed.push(st.item); }
         S.recordAnswer(isTone ? 'tones' : 'vocab', ok);
         tick();
         g.timers.push(setTimeout(ask, ok ? 350 : 1000));
@@ -246,7 +247,7 @@ export function listen() {
         const ok = b.dataset.v === st.answer;
         b.classList.add(ok ? 'right' : 'wrong');
         if (!ok) { $$('.option', g.body).find(x => x.dataset.v === st.answer)?.classList.add('right'); missed.push(st.item); }
-        if (ok) { score++; haptic(); }
+        if (ok) { score++; tick(); }
         S.recordAnswer('listening', ok);
         g.foot.className = `s-foot fb ${ok ? 'good' : 'bad'}`;
         g.foot.innerHTML = `<div class="fb-msg"><strong>${ok ? 'Đúng rồi!' : 'Not quite'}</strong><div class="fb-ans"><span lang="vi">${esc(st.item.vi)}</span> — ${esc(st.item.en)}</div></div><button class="btn primary">${i + 1 < words.length ? 'Next' : 'See results'}</button>`;

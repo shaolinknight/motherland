@@ -11,9 +11,10 @@ import { $, $$, esc, toast, dayKey, weekKeys, pct, timeAgo } from './util.js';
 import { icon } from './icons.js';
 import { isMastered } from './srs.js';
 import { flagSheet, confirmSheet } from './ui.js';
+import { hapticsSupported, tick } from './haptics.js';
 import { stripAll } from './vitext.js';
 
-const VERSION = '1.1';
+const VERSION = '1.2';
 const L = () => C.get().speechLang;
 const say = (t, opts) => speak(t, L(), opts);
 const go = h => { location.hash = h; };
@@ -581,6 +582,8 @@ export function settings(root) {
       <p class="kicker">Study</p>
       <label class="field"><span>Daily goal</span><select class="opt-goal">${[30, 60, 100, 150].map(n => `<option value="${n}" ${n === st.dailyGoal ? 'selected' : ''}>${n} XP (${{ 30: 'casual', 60: 'regular', 100: 'serious', 150: 'intense' }[n]})</option>`).join('')}</select></label>
       <label class="field"><span>New items per lesson</span><select class="opt-new">${[5, 8, 10, 12].map(n => `<option value="${n}" ${n === st.newPerLesson ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+      <label class="switch row"><span class="grow">Haptic tap on right answers</span><input type="checkbox" class="opt-haptics" ${st.haptics !== false ? 'checked' : ''}></label>
+      ${hapticsSupported() ? '' : '<p class="muted small">Needs iOS 17.4 or later on iPhone.</p>'}
     </section>
 
     <section class="card">
@@ -620,6 +623,7 @@ export function settings(root) {
   const set = (k, v) => { st[k] = v; S.save(); };
   $('.opt-hanoi', root).onchange = e => set('showHanoi', e.target.checked);
   $('.opt-force', root).onchange = e => set('forceAudio', e.target.checked);
+  $('.opt-haptics', root).onchange = e => { set('haptics', e.target.checked); tick(); };   // feel it once when turned on
   $('.opt-voice', root)?.addEventListener('change', e => set('voiceURI', e.target.value));
   $('.opt-rate', root).oninput = e => { $('.rate-val', root).textContent = `${(+e.target.value).toFixed(2)}×`; set('rate', +e.target.value); };
   $('.test-voice', root).onclick = () => say('Xin chào! Chúc bạn một ngày vui vẻ.');
