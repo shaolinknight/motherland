@@ -14,8 +14,8 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="css/app.css">
-  <!-- Apply a forced light/dark theme before first paint (the rest of the app is a module and runs later). -->
-  <script>try { const t = JSON.parse(localStorage.getItem('motherland.v1'))?.settings?.theme; if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch { /* first launch */ }</script>
+  <!-- Apply the theme and the language palette before first paint (the rest of the app is a module and runs later). -->
+  <script>try { const s = JSON.parse(localStorage.getItem('motherland.v1')), t = s?.settings?.theme; if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; document.documentElement.dataset.lang = s?.lang || 'vi'; } catch { document.documentElement.dataset.lang = 'vi'; }</script>
   <!-- Fetch every module at once instead of discovering them import by import (keep in sync; npm test checks). -->
   <link rel="modulepreload" href="js/main.js">
   <link rel="modulepreload" href="js/ankiexport.js">

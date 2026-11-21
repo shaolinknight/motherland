@@ -26,7 +26,7 @@ const page = await ctx.newPage();
 page.on('pageerror', e => fail.push('JS error: ' + e.message));
 page.on('dialog', d => d.accept());
 
-await page.goto(BASE + '#/settings'); await page.waitForSelector('.opt-url');
+await page.goto(BASE + '#/settings/sync'); await page.waitForSelector('.opt-url', { state: 'visible' });
 // wrong password
 await page.fill('.opt-url', URL_); await page.fill('.opt-key', 'nope');
 await page.click('.sync-now'); await page.waitForTimeout(600);
@@ -73,6 +73,9 @@ const kept = await page.evaluate(() => JSON.parse(localStorage.getItem('motherla
 kept === 'pw' ? ok('sync settings survive a pull') : fail.push('sync key lost after pull');
 
 // Export backup → import into fresh profile
+// Settings rows are collapsed; one open at a time. Opening "Your data" closes "Google Sheet sync".
+await page.click('.set-sec[data-sec="data"] summary'); await page.waitForTimeout(150);
+(await page.$$eval('.set-sec[open]', d => d.map(x => x.dataset.sec))).join() === 'data' ? ok('settings: only one section open at a time') : fail.push('settings: more than one section open');
 const [dl] = await Promise.all([page.waitForEvent('download'), page.click('.export')]);
 const path = await dl.path();
 ok('backup exported: ' + dl.suggestedFilename());

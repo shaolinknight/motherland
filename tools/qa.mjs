@@ -108,7 +108,7 @@ for (const dev of DEVICES) {
   page.on('console', m => { if (m.type() === 'error') problems.push(`[${dev.name}] console: ${m.text()}`); });
   page.on('dialog', d => { problems.push(`[${dev.name}] browser dialog shown: ${d.message().slice(0, 60)}`); d.accept(); });
   await page.goto(BASE + '#/home'); await page.waitForSelector('.hello');
-  for (const r of ['home', 'learn', 'unit/u03', 'unit/u03/phrases', 'unit/u07/grammar', 'unit/u20/grammar', 'unit/u06/dialogue', 'unit/u04/reading', 'unit/u26', 'unit/u31/grammar', 'unit/u28/grammar', 'grammar', 'words', 'review', 'play', 'progress', 'leaderboard', 'leaderboard/month', 'leaderboard/games', 'leaderboard/records', 'placement', 'settings', 'mywords']) {
+  for (const r of ['home', 'learn', 'unit/u03', 'unit/u03/phrases', 'unit/u07/grammar', 'unit/u20/grammar', 'unit/u06/dialogue', 'unit/u04/reading', 'unit/u26', 'unit/u31/grammar', 'unit/u28/grammar', 'grammar', 'words', 'review', 'play', 'progress', 'leaderboard', 'leaderboard/month', 'leaderboard/games', 'leaderboard/records', 'placement', 'settings', 'settings/audio', 'settings/study', 'settings/sync', 'settings/data', 'mywords']) {
     await page.goto(BASE + '#/' + r); await page.waitForTimeout(200);
     await overflow(page, `${dev.name} ${r}`); await shot(page, dev, r.replace(/\//g, '_'));
   }

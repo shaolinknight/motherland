@@ -207,6 +207,17 @@ t('placement focus: heavier exercise types come first more often, lighter ones s
   assert.ok(lightFirst > 0);
 });
 
+{
+  const { COURSES, UPCOMING } = await import('../js/course.js?palette');
+  const css = fs.readFileSync('css/app.css', 'utf8');
+  t('palettes: Vietnamese uses the :root defaults; ko/ja/es have light + dark blocks', () => {
+    assert.ok(COURSES.vi && /--brand: #C8102E/.test(css));
+    for (const { code } of UPCOMING) {
+      assert.ok(css.includes(`:root[data-lang="${code}"] {`), `${code}: no light palette`);
+      assert.ok(css.includes(`:root[data-lang="${code}"][data-theme="dark"]`), `${code}: no dark palette`);
+    }
+  });
+}
 // Shipping checks: a module missing from the service worker breaks offline use, and one missing from
 // the preload list brings back the slow import waterfall.
 const modules = ['js', 'data'].flatMap(d => fs.readdirSync(d).filter(f => f.endsWith('.js')).map(f => `${d}/${f}`));

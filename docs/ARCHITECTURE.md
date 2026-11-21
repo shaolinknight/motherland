@@ -19,7 +19,7 @@
 | `js/focus.js` | Reads the latest placement: skill weights that tilt lesson exercise types, retest timing. |
 | `js/vispell.js` | Vietnamese spelling/tone rules shared by `tools/validate.mjs` and the app (typo warning in My words). |
 | `js/ankiexport.js` | Tab-separated export with Anki's import headers (Basic and reversed card). |
-| `js/theme.js` | Light / dark / match-iPhone theme; `index.html` applies a forced theme before first paint. |
+| `js/theme.js` | Light / dark / match-iPhone theme and the **language palette** (`data-lang` on `<html>`; palettes for vi/ko/ja/es live at the end of `css/app.css`, tokens `--brand*` and `--gold*`). `index.html` applies both before first paint. Adding a language: add its palette block (light + dark, 4.5:1 contrast); `npm test` checks every upcoming language has one. |
 | `js/store.js` | App state, saved to `localStorage['motherland.v1']`. Day logs, XP, streaks, flags, pending sessions. |
 | `js/sync.js` | Google Sheet sync: pull if the Sheet is newer, then push. `text/plain` POST to avoid CORS preflight. |
 | `js/speech.js` | Built-in voices (Web Speech API), iOS speech unlock on first tap, mic recording for "compare yourself". |

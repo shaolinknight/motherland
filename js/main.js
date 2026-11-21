@@ -34,7 +34,7 @@ function render() {
     progress: () => V.progress(root),
     placement: () => V.placement(root),
     diagnostics: () => V.diagnostics(root),
-    settings: () => V.settings(root),
+    settings: () => V.settings(root, a),
     mywords: () => V.mywords(root),
   };
   (screens[name] || screens.home)();
