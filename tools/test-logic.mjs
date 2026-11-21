@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import { mergeStates } from '../js/merge.js';
 import { ankiText } from '../js/ankiexport.js';
 import { streakInfo, longestStreak } from '../js/streak.js';
+import { spellingProblems } from '../js/vispell.js';
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log('✓', name); };
 
@@ -162,6 +163,20 @@ t('Anki export: headers, one tab-separated note per item, grammar skipped, tags'
     assert.equal(longestStreak(log('2026-11-02', '2026-11-05')), 1);
   });
 }
+
+t('spelling: valid Vietnamese passes, impossible spellings are caught', () => {
+  assert.deepEqual(spellingProblems('ba má, cảm ơn nghen'), []);
+  assert.equal(spellingProblems('ci').length, 1);          // k- before i
+  assert.equal(spellingProblems('mat').length, 1);         // -t needs sắc/nặng
+  assert.equal(spellingProblems('mãá').length >= 1, true); // two tone marks
+  assert.deepEqual(spellingProblems('wifi ok'), []);       // allowed loanwords
+});
+t('merge: deleted My words stay deleted across devices', () => {
+  const w = { id: 'my-1', vi: 'ba', en: 'dad', at: 1, edited: 1 };
+  const a = dev({ langs: { vi: { cards: {}, myWords: { 'my-1': { ...w, deleted: true, edited: 9 } } } } });
+  const b = dev({ langs: { vi: { cards: {}, myWords: { 'my-1': w, 'my-2': { ...w, id: 'my-2' } } } } });
+  const m = mergeStates(b, a).langs.vi.myWords; assert.equal(m['my-1'].deleted, true); assert.ok(m['my-2']);
+});
 
 // Shipping checks: a module missing from the service worker breaks offline use, and one missing from
 // the preload list brings back the slow import waterfall.

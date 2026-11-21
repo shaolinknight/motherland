@@ -7,14 +7,15 @@ import * as P from './placement.js';
 import * as T from './stats.js';
 import { sync } from './sync.js';
 import { speak, audioAvailable, voicesFor, voicesReady, stop as stopAudio } from './speech.js';
-import { $, $$, esc, toast, dayKey, weekKeys, pct, timeAgo } from './util.js';
+import { $, $$, esc, toast, dayKey, weekKeys, pct, timeAgo, uid } from './util.js';
 import { icon } from './icons.js';
 import { isMastered, isHidden } from './srs.js';
-import { flagSheet, confirmSheet, itemOptions } from './ui.js';
+import { flagSheet, confirmSheet, itemOptions, sheet } from './ui.js';
 import { ankiText } from './ankiexport.js';
 import { applyTheme } from './theme.js';
 import { hapticsSupported, tick } from './haptics.js';
 import { stripAll } from './vitext.js';
+import { spellingProblems } from './vispell.js';
 
 const VERSION = '1.2';
 const L = () => C.get().speechLang;
@@ -186,6 +187,7 @@ export function learn(root) {
       <a class="card link-card" href="#/grammar"><span aria-hidden="true" class="mode-ico">${icon('book')}</span><div class="grow"><b>Grammar guide</b><p class="muted small">${gLearned}/${gCount} learned</p></div></a>
       <a class="card link-card" href="#/words"><span aria-hidden="true" class="mode-ico">${icon('cards')}</span><div class="grow"><b>Word bank</b><p class="muted small">${C.seenItems().filter(i => i.kind !== 'grammar').length} learned</p></div></a>
     </div>
+    <a class="card link-card my-link" href="#/mywords"><span aria-hidden="true" class="mode-ico">📝</span><div class="grow"><b>My words</b><p class="muted small">${C.myItems().length ? `${plural(C.myItems().length, 'word')} you added${C.myItems().some(i => !i.verified) ? ` · ${C.myItems().filter(i => !i.verified).length} to check with family` : ''}` : 'Add words you hear from family'}</p></div>${icon('chevron')}</a>
     ${groups.map(g => `<h2 class="section-title">${esc(g.sec)}</h2>
       <div class="unit-list">${g.units.map(u => { const p = C.unitProgress(u.id); return `
         <a class="unit-row card" href="#/unit/${u.id}">
@@ -309,6 +311,69 @@ export function grammar(root) {
   </div>`;
   wireHeader(root);
   $$('.g-link', root).forEach(li => li.onclick = () => go(li.dataset.href));
+}
+
+// ── MY WORDS ────────────────────────────────────────────────────────────────
+// Your own words and phrases. They are reviewed like course items but marked "not yet checked"
+// until you confirm them with family, because nothing here has been through the content checks.
+export function mywords(root) {
+  const list = C.myItems(), cards = C.cards();
+  const fresh = list.filter(i => !cards[i.id]).length;
+  root.innerHTML = `${header('My words', { back: '#/learn', sub: 'Từ của tôi' })}
+  <div class="page">
+    <section class="card">
+      <p class="muted small">Add words and phrases you hear from family. They join your reviews like any other word. Mark each one checked once someone in the family confirms it.</p>
+      <div class="btn-row"><button class="btn primary add-word">+ Add a word</button>${list.length ? `<button class="btn ghost practice-mine">${fresh ? `Learn ${fresh} new` : 'Practice'}</button>` : ''}</div>
+    </section>
+    ${list.length ? `<ul class="word-list mine">${list.map(it => { const c = cards[it.id]; return `
+      <li class="word-row" data-say="${esc(it.vi)}" data-id="${it.id}">
+        <span class="dot ${!c ? 'new' : isMastered(c) ? 'mastered' : 'learning'}"></span>
+        <div class="grow"><div class="vi" lang="vi">${esc(it.vi)}</div><div class="muted">${esc(it.en)}</div>
+          ${it.north ? `<div class="hanoi">Hanoi: <b lang="vi">${esc(it.north)}</b></div>` : ''}${it.note ? `<div class="note">💡 ${esc(it.note)}</div>` : ''}
+          <span class="chip ${it.verified ? 'ok' : 'warn'}">${it.verified ? '✓ checked with family' : 'not yet checked'}</span></div>
+        <button class="icon-btn opts" aria-label="Options for ${esc(it.vi)}">${icon('more')}</button>
+      </li>`; }).join('')}</ul>` : '<p class="muted center pad">Nothing yet. Tap “Add a word” the next time you hear something new.</p>'}
+  </div>`;
+  wireHeader(root); wireSay(root);
+  $('.add-word', root).onclick = async () => { if (await editMyWord()) mywords(root); };
+  $('.practice-mine', root)?.addEventListener('click', () => X.run({ steps: X.lessonSteps('my'), activity: 'lesson:my' }));
+  $$('.mine .opts', root).forEach(b => b.addEventListener('click', async e => {
+    e.stopPropagation();
+    const w = C.myWordsMap()[b.closest('.word-row').dataset.id];
+    const act = await sheet({ title: w.vi, text: w.en, stack: true, actions: [
+      { label: w.verified ? 'Mark as not checked' : '✓ Checked with family', value: 'verify', kind: 'primary' },
+      { label: 'Edit', value: 'edit' }, { label: 'Delete', value: 'delete', kind: 'danger' }, { label: 'Cancel', value: null }] });
+    if (act === 'verify') { w.verified = !w.verified; w.edited = Date.now(); S.save(); }
+    if (act === 'edit' && !(await editMyWord(w))) return;
+    if (act === 'delete') {
+      if (!(await confirmSheet(`Delete “${w.vi}”?`, 'Its review history is removed too.', 'Delete', 'danger'))) return;
+      Object.assign(w, { deleted: true, edited: Date.now() }); delete C.cards()[w.id]; S.save();
+    }
+    if (act) mywords(root);
+  }));
+}
+
+// Add or edit one of your own words. Warns (doesn't block) on spelling that can't be Vietnamese.
+async function editMyWord(w) {
+  const field = (cls, label, val = '', ph = '', viLang = false) => `<label class="field"><span>${label}</span><input class="${cls}" ${viLang ? 'lang="vi"' : ''} value="${esc(val)}" placeholder="${esc(ph)}" autocomplete="off" autocorrect="off" ${viLang ? 'autocapitalize="off" spellcheck="false"' : ''}></label>`;
+  const read = wrap => ({ vi: $('.mw-vi', wrap).value.trim().normalize('NFC'), en: $('.mw-en', wrap).value.trim(), north: $('.mw-north', wrap).value.trim().normalize('NFC'), note: $('.mw-note', wrap).value.trim() });
+  for (;;) {
+    const v = await sheet({ title: w ? 'Edit word' : 'Add a word',
+      html: `${field('mw-vi', 'Vietnamese (Saigon)', w?.vi, 'e.g. ba má', true)}${field('mw-en', 'English', w?.en, 'e.g. mom and dad')}
+        ${field('mw-north', 'Hanoi word, if different (optional)', w?.north, 'e.g. bố mẹ', true)}${field('mw-note', 'Note (optional)', w?.note, 'Who says it, when…')}
+        <p class="muted small mw-warn"></p>`,
+      actions: [{ label: 'Cancel', value: null }, { label: 'Save', kind: 'primary', value: read }],
+      onOpen: wrap => setTimeout(() => $('.mw-vi', wrap).focus(), 250) });
+    if (!v) return false;
+    if (!v.vi || !v.en) { toast('Add both the Vietnamese and the English'); continue; }
+    const problems = [...spellingProblems(v.vi), ...(v.north ? spellingProblems(v.north) : [])];
+    if (problems.length && !(await confirmSheet('Check the spelling?', `${problems.slice(0, 2).join('. ')}. Save it anyway?`, 'Save anyway'))) { w = { ...(w || {}), ...v }; continue; }
+    const map = C.myWordsMap(), now = Date.now();
+    if (w?.id && map[w.id]) Object.assign(map[w.id], v, { edited: now, verified: false });   // an edited word needs re-checking
+    else { const id = `my-${uid()}`; map[id] = { id, ...v, verified: false, at: now, edited: now }; }
+    S.save(); toast(w?.id ? 'Saved' : 'Added to My words 📝');
+    return true;
+  }
 }
 
 // ── WORD BANK ───────────────────────────────────────────────────────────────
@@ -471,7 +536,7 @@ export function progress(root) {
   const rec = last ? P.recommendation(last) : null;
   const growth = T.growth(30), heat = T.heatmap(12);
   const gained = growth[growth.length - 1].n - growth[0].n;
-  const seenV = C.seenItems().filter(i => i.kind !== 'grammar').length;
+  const seenV = C.seenItems().filter(i => i.kind !== 'grammar' && !i.mine).length;   // of the course's total
   const gDone = C.grammarItems().filter(i => cards[i.id]).length;
   const lessons = T.recentLessons();
   const wkCmp = T.periods('week');

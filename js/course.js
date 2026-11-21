@@ -29,11 +29,26 @@ export function load(code = 'vi') {
 }
 load();
 
+// ── My words: your own entries, stored per language in lang().myWords as
+//   { [id]: { id: 'my-…', vi, en, north, note, verified, at, edited, deleted? } }
+// IDs are random ('my-…'), never positional, so they can't collide with course items. Deleting
+// leaves a tombstone so a sync merge with another device can't bring the word back.
+export const MY_UNIT = { id: 'my', icon: '📝', title: 'My words', vi: 'Từ của tôi', level: 1, section: 'My words' };
+export function myWordsMap() { const l = lang(course.code); return (l.myWords ||= {}); }
+export function myItems() {
+  return Object.values(myWordsMap()).filter(w => !w.deleted).sort((a, b) => a.at - b.at).map(w => ({
+    id: w.id, unit: 'my', kind: w.vi.trim().split(/\s+/).length > 2 ? 'phrase' : 'word',
+    vi: w.vi, en: w.en, north: w.north || '', note: w.note || '', level: 1, mine: true, verified: !!w.verified,
+  }));
+}
+// Course items plus your own: everything that can have a review card.
+const studyItems = () => [...items, ...myItems()];
+
 export const get = () => course;
-export const all = () => items;
-export const item = id => byId.get(id);
-export const unit = id => course.units.find(u => u.id === id);
-export const unitItems = id => byUnit.get(id) || [];
+export const all = () => items;   // course content only (placement test, wrong-answer choices, word of the day)
+export const item = id => byId.get(id) || (id?.startsWith('my-') ? myItems().find(i => i.id === id) : undefined);
+export const unit = id => (id === 'my' ? MY_UNIT : course.units.find(u => u.id === id));
+export const unitItems = id => (id === 'my' ? myItems() : byUnit.get(id) || []);
 export const words = () => items.filter(i => i.kind === 'word');
 export const grammarItems = () => items.filter(i => i.kind === 'grammar');
 export const vocabItems = () => items.filter(i => i.kind !== 'grammar');
@@ -42,17 +57,17 @@ export function cards() { return lang(course.code).cards; }
 export const card = id => cards()[id];
 
 // Items you've been introduced to (they have a review card).
-export function seenItems() { const c = cards(); return items.filter(i => c[i.id]); }
+export function seenItems() { const c = cards(); return studyItems().filter(i => c[i.id]); }
 // Seen items that aren't buried or suspended: what practice modes may draw from.
-export function activeItems(now = Date.now()) { const c = cards(); return items.filter(i => c[i.id] && !isHidden(c[i.id], now)); }
+export function activeItems(now = Date.now()) { const c = cards(); return studyItems().filter(i => c[i.id] && !isHidden(c[i.id], now)); }
 // Items you keep missing: leeches first, then most lapses.
 export function weakItems(n = 12) {
   const c = cards();
   return activeItems().filter(i => c[i.id].lapses > 0)
     .sort((a, b) => (c[b.id].leech ? 1 : 0) - (c[a.id].leech ? 1 : 0) || c[b.id].lapses - c[a.id].lapses).slice(0, n);
 }
-export function dueItems(now = Date.now()) { const c = cards(); return items.filter(i => c[i.id] && isDue(c[i.id], now)); }
-export function masteredCount() { const c = cards(); return items.filter(i => isMastered(c[i.id])).length; }
+export function dueItems(now = Date.now()) { const c = cards(); return studyItems().filter(i => c[i.id] && isDue(c[i.id], now)); }
+export function masteredCount() { const c = cards(); return studyItems().filter(i => isMastered(c[i.id])).length; }
 
 export function unitProgress(id) {
   const list = unitItems(id), c = cards();

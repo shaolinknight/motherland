@@ -357,6 +357,7 @@ const RENDER = {
         <div class="en">${esc(it.en)}</div>
         ${hanoiLine(it)}
         ${it.note ? `<div class="note">💡 ${esc(it.note)}</div>` : ''}
+        ${it.mine ? `<span class="chip ${it.verified ? 'ok' : 'warn'}">📝 Your word${it.verified ? ' · checked' : ' · not yet checked with family'}</span>` : ''}
       </div>`;
     wireAudio(body);
     if (hasAudio()) setTimeout(() => speak(it.vi, L()), 250);

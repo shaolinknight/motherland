@@ -557,6 +557,8 @@ h1:focus, .s-body:focus, .sheet:focus { outline: none; }
 
 .sheet-actions.stack { flex-direction: column; }
 .sheet-actions.stack .btn { flex: none; width: 100%; }
+.my-link { padding: 12px; }
+.word-row .chip { margin-top: 6px; }
 .chip.leech { background: var(--amber-soft); color: var(--amber); }
 .chip.hid { background: var(--track); color: var(--muted); }
 .word-row .opts { margin-top: -6px; }

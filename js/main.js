@@ -35,9 +35,10 @@ function render() {
     placement: () => V.placement(root),
     diagnostics: () => V.diagnostics(root),
     settings: () => V.settings(root),
+    mywords: () => V.mywords(root),
   };
   (screens[name] || screens.home)();
-  const tab = ['unit', 'grammar'].includes(name) ? 'learn' : ['placement', 'diagnostics', 'words', 'leaderboard'].includes(name) ? 'progress' : name;
+  const tab = ['unit', 'grammar', 'mywords'].includes(name) ? 'learn' : ['placement', 'diagnostics', 'words', 'leaderboard'].includes(name) ? 'progress' : name;
   $$('a', nav).forEach(x => {
     const on = x.dataset.tab === tab;
     x.classList.toggle('on', on);
