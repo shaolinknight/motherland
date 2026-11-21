@@ -5,6 +5,7 @@ import * as S from './store.js';
 import * as C from './course.js';
 import { tomorrow } from './srs.js';
 import { spellingProblems } from './vispell.js';
+import * as D from './decks.js';
 import { toast } from './util.js';
 
 // sheet({ title, text, html, actions: [{ label, value, kind }] }) → Promise<value | null>
@@ -134,11 +135,12 @@ export async function flagSheet(item) {
 
 // Per-item options, like Anki's card menu: bury (hide until tomorrow), suspend (hide until you
 // un-suspend), or report a problem. Returns what was done, so a lesson can skip the item.
-export async function itemOptions(item) {
+export async function itemOptions(item, { deckId } = {}) {
   const card = C.card(item.id), now = Date.now();
   const buried = card && (card.buriedUntil || 0) > now;
   const actions = [];
-  if (item.kind !== 'grammar') actions.push({ label: '✏️ Edit card', value: 'edit' });
+  if (item.kind !== 'grammar') actions.push({ label: '✏️ Edit card', value: 'edit' }, { label: '➕ Add to deck…', value: 'deck' });
+  if (deckId) actions.push({ label: 'Remove from this deck', value: 'undeck' });
   if (card && card.suspended) actions.push({ label: 'Unsuspend', value: 'unsuspend', kind: 'primary' });
   else if (card) {
     actions.push(buried ? { label: 'Unbury', value: 'unbury' } : { label: 'Bury until tomorrow', value: 'bury' });
@@ -148,6 +150,8 @@ export async function itemOptions(item) {
   const act = await sheet({ title: item.vi, text: item.en, actions, stack: true });
   if (act === 'report') { await flagSheet(item); return 'report'; }
   if (act === 'edit') return (await editCard(item)) ? 'edit' : null;
+  if (act === 'deck') return (await chooseDeck([item.id])) ? 'deck' : null;
+  if (act === 'undeck') { D.removeItem(deckId, item.id); toast('Removed from the deck'); return 'undeck'; }
   if (!act || !card) return null;
   if (act === 'bury') { card.buriedUntil = tomorrow(); toast('Buried until tomorrow'); }
   if (act === 'unbury') { delete card.buriedUntil; toast('Back in your reviews'); }
@@ -156,6 +160,28 @@ export async function itemOptions(item) {
   card.edited = now;   // so a sync merge keeps this choice (not `last`, which FSRS reads as a review)
   S.save();
   return act;
+}
+
+// Add items to one of your decks, or to a new one. Resolves to the deck id (or null).
+export async function chooseDeck(itemIds) {
+  const decks = D.list();
+  const pick = await sheet({ title: 'Add to deck', stack: true, actions: [
+    ...decks.map(d => ({ label: `${itemIds.every(id => D.has(d.id, id)) ? '✓ ' : ''}${d.name}`, value: d.id })),
+    { label: '+ New deck…', value: 'new', kind: 'primary' }, { label: 'Cancel', value: null }] });
+  if (!pick) return null;
+  let id = pick;
+  if (pick === 'new') { const name = await askText('New deck', 'Deck name', 'e.g. Wedding speech'); if (!name) return null; id = D.create(name).id; }
+  const n = D.add(id, itemIds);
+  toast(n ? `Added to ${D.get(id).name}` : `Already in ${D.get(id).name}`);
+  return id;
+}
+
+// One-line text prompt as a sheet (browser prompt() looks out of place in a home-screen app).
+export async function askText(title, label, placeholder = '', value = '') {
+  const v = await sheet({ title, html: `<label class="field"><span>${esc(label)}</span><input class="ask-text" value="${esc(value)}" placeholder="${esc(placeholder)}" autocomplete="off"></label>`,
+    actions: [{ label: 'Cancel', value: null }, { label: 'Save', kind: 'primary', value: w => $('.ask-text', w).value.trim() }],
+    onOpen: w => setTimeout(() => $('.ask-text', w).focus(), 250) });
+  return v || null;
 }
 
 // Edit the text of any card. Course cards keep their original data; your version is laid over it on
