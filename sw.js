@@ -5,7 +5,7 @@
 // network. A new deploy changes this file; the browser notices on the next launch and installs the new
 // version in the background. The page (js/pwa.js) then shows "Update ready" and, on tap, tells the new
 // worker to take over and reloads. Nothing is ever mixed between versions: each version has its own cache.
-const VERSION = 'motherland-v1.6.2';
+const VERSION = 'motherland-v1.6.3';
 const FILES = [
   './', './manifest.webmanifest', './css/app.css',
   './js/main.js', './js/screens.js', './js/screens/home.js', './js/screens/learn.js', './js/screens/play.js', './js/screens/progress.js', './js/screens/review.js', './js/screens/settings.js', './js/screens/shared.js', './js/screens/words.js', './js/exercises.js', './js/games.js', './js/placement.js',

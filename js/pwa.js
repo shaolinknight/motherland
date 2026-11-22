@@ -44,7 +44,7 @@ function watch(reg) {
   // Quiet moments: a lesson/game/sheet just closed, or the app comes back to the foreground.
   window.addEventListener('motherland:refresh', () => setTimeout(() => offer(reg), 300));
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') { offer(reg); reg.update().catch(() => {}); checkStalled(reg); }
+    if (document.visibilityState === 'visible') { offer(reg); reg.update().catch(() => {}); }
     else if (reg.waiting && !document.querySelector('.session')) apply(reg);
   });
 }
@@ -73,14 +73,17 @@ async function rescue() {
   location.reload();
 }
 
-async function checkStalled(reg) {
+// Runs on its own, never inside register().then(): register() waits on the same updater, and in the
+// stuck state it never resolves. getRegistration() is only a lookup, but is time-boxed anyway.
+async function checkStalled() {
   if (checking || !navigator.onLine || !navigator.serviceWorker.controller) return;
   checking = true;
   try {
+    const reg = await Promise.race([navigator.serviceWorker.getRegistration(), new Promise(r => setTimeout(r, 2000))]);
     const latest = await deployedVersion();
     if (!latest || (await caches.has(latest))) return;   // up to date, or the update is already installing
     await new Promise(r => setTimeout(r, STALL_MS));     // give the browser's own updater its chance
-    if ((await caches.has(latest)) || reg.waiting || reg.installing) return;
+    if ((await caches.has(latest)) || reg?.waiting || reg?.installing) return;
     let done = null; try { done = localStorage.getItem(RESCUE_KEY); } catch { /* private mode */ }
     if (done === latest) return;                          // already rescued into this version once
     try { localStorage.setItem(RESCUE_KEY, latest); } catch { /* private mode */ }
@@ -108,9 +111,11 @@ export function registerSW() {
     if (reloading || !hadController) return;
     reloading = true; reloadWhenActivated(navigator.serviceWorker.controller);
   });
+  // Safety net at launch and on every return to the app (see checkStalled).
+  checkStalled();
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkStalled(); });
   navigator.serviceWorker.register('./sw.js').then(reg => {
     watch(reg);
     reg.update().catch(() => {});   // iOS can skip its own check on launch; ask explicitly
-    checkStalled(reg);
   }).catch(e => console.warn('SW failed', e));
 }
