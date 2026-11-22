@@ -15,7 +15,13 @@ const fail = []; const ok = m => console.log('✓', m);
 watchdog('qa:sync', 6);
 // Ask the service worker to look for a new version without waiting on it in the page: WebKit can
 // leave update() unsettled while a sheet is open, and the checks that follow wait with timeouts anyway.
-const checkForUpdate = p => p.evaluate(() => { navigator.serviceWorker.getRegistration().then(r => r?.update()).catch(() => {}); });
+const updateLog = [];
+const checkForUpdate = p => p.evaluate(() => {
+  window.__upd = 'pending';
+  navigator.serviceWorker.getRegistration()
+    .then(r => r ? r.update().then(() => { window.__upd = `ok (installing: ${r.installing?.state}, waiting: ${r.waiting?.state})`; }) : (window.__upd = 'no registration'))
+    .catch(e => { window.__upd = `error: ${e.message}`; });
+});
 // Keep asking until the "Update ready" toast shows. The app runs its own update check at every launch;
 // a check asked for while that one is still running joins it (per the Service Worker spec) and can
 // miss a deploy made a moment later. WebKit is slow enough to hit this; the phone would catch the
@@ -24,6 +30,7 @@ async function untilUpdateToast(p, tries = 10) {
   for (let i = 0; i < tries; i++) {
     await checkForUpdate(p);
     if (await p.waitForSelector('.update-toast.show', { timeout: 1500 }).then(() => true, () => false)) return true;
+    updateLog.push(await p.evaluate(() => window.__upd).catch(e => `page: ${e.message.split('\n')[0]}`));
   }
   return false;
 }
@@ -210,7 +217,7 @@ await ctx2.close();
     .then(() => ok('tapping "Update ready" loads the new version')).catch(async () => {
       // Say what happened, so a failure in CI (WebKit) can be understood without a rerun.
       const sw = await p3.evaluate(async () => { const r = await navigator.serviceWorker.getRegistration(); return { waiting: r?.waiting?.state, installing: r?.installing?.state, active: r?.active?.state, build: document.documentElement.dataset.build }; }).catch(e => e.message);
-      fail.push(`tapping the toast did not update (toast: ${toasted}, click: ${clicked}, sw: ${JSON.stringify(sw)})`);
+      fail.push(`tapping the toast did not update (toast: ${toasted}, click: ${clicked}, sw: ${JSON.stringify(sw)}, update checks: ${[...new Set(updateLog)].join(' | ')})`);
     });
   await ctx3.close(); srv2.close();
 }
