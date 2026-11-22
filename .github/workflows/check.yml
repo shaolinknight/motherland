@@ -1,0 +1,43 @@
+# Runs `npm run check` (content validator, logic tests, click-through QA, sync/offline/update QA and
+# feature tests) on every push and pull request, in WebKit (the engine behind iPhone Safari) and
+# Chromium. Cloudflare deploys independently; a red check here means "don't merge to main yet".
+name: Check
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: npm run check (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [webkit, chromium]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install ${{ matrix.browser }}
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Checks
+        run: npm run check
+        env:
+          BROWSER: ${{ matrix.browser }}
+      - name: Screenshots and audit output on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.browser }}
+          path: test-results/
+          retention-days: 7
