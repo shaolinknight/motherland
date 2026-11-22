@@ -4,6 +4,9 @@ import * as S from './store.js';
 import { mergeStates } from './merge.js';
 
 let busy = false;
+export const isSyncing = () => busy;
+// Tell the screen (Home's sync status line) that a sync started or finished.
+const announce = () => { if (typeof window !== 'undefined') window.dispatchEvent(new Event('motherland:sync-state')); };
 
 async function call(payload) {
   const { syncUrl, syncKey } = S.settings();
@@ -51,7 +54,7 @@ export async function sync({ quiet = true } = {}) {
   const st = S.settings();
   if (onPreview()) { if (!quiet) throw new Error('Sync is off on preview links, so sample data never reaches your Sheet'); return { skipped: true }; }
   if (!st.syncUrl || busy || !navigator.onLine) return { skipped: true };
-  busy = true;
+  busy = true; announce();
   try {
     const remote = await pull();
     if (remote.state) {
@@ -71,7 +74,7 @@ export async function sync({ quiet = true } = {}) {
     S.save({ touch: false });
     if (!quiet) throw e;
     return { ok: false, error: e.message };
-  } finally { busy = false; }
+  } finally { busy = false; announce(); }
 }
 
 let timer;

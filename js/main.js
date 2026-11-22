@@ -130,6 +130,8 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') { S.saveNow(); }
   else sync();
 });
+// Back online after being offline: sync what was saved on the phone meanwhile.
+window.addEventListener('online', () => syncSoon(1000));
 
 seedIfEmpty();   // preview links start with sample data (never the real app)
 applyTheme();

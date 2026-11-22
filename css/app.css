@@ -117,9 +117,25 @@ a.card:active, button.card:not(:disabled):active { transform: scale(.99); }
 }
 .ring span { width: 66px; height: 66px; border-radius: 50%; background: var(--paper); display: grid; place-content: center; text-align: center; line-height: 1.05; }
 .ring b { font-size: 1.2rem; } .ring small { font-size: .65rem; color: var(--muted); }
-.cta-test { background: var(--brand); color: #fff !important; border-color: var(--brand-deep); }
-.cta-test .muted { color: rgba(255, 255, 255, .85); }
-.cta-ico { width: 44px; height: 44px; border-radius: 12px; background: rgba(255, 255, 255, .18); display: grid; place-items: center; color: var(--gold); flex-shrink: 0; }
+/* Sync status under the greeting. */
+.sync-line { margin: 4px 0 0; color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; }
+.link-btn { background: none; border: 0; padding: 0; font: inherit; color: var(--accent); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; min-height: 32px; display: inline-flex; align-items: center; position: relative; }
+.link-btn::after { content: ""; position: absolute; inset: -6px; }   /* a 44px touch area around 32px text */
+/* Next up: one main action, with the other option as a quieter row underneath. */
+.next-up .btn-row { margin-top: 12px; }
+.next-alt {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; margin-top: 12px; padding: 8px 2px 0;
+  background: none; border: 0; border-top: 1px solid var(--line); text-align: left; font: inherit; font-weight: 600; color: var(--ink); cursor: pointer;
+}
+/* Needs attention: a short list instead of a stack of banners. */
+.att-list { list-style: none; margin: 0; padding: 0; }
+.att-list > li + li { border-top: 1px solid var(--line); }
+.att-row { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 0; color: var(--ink); text-decoration: none; }
+.att-row b { display: block; }
+.att-row small { display: block; color: var(--muted); font-size: .8rem; line-height: 1.3; }
+.att-ico { width: 36px; height: 36px; border-radius: 10px; background: var(--gold-soft); color: var(--gold-ink); display: grid; place-items: center; flex-shrink: 0; font-size: 1.1rem; }
+.att-row.cta-test .att-ico { background: var(--brand); color: #fff; }
+.att-row.backup-nudge .btn { flex-shrink: 0; }
 .unit-ico { width: 48px; height: 48px; border-radius: 14px; background: var(--gold-soft); display: grid; place-items: center; font-size: 1.6rem; flex-shrink: 0; }
 .unit-ico.big { width: 60px; height: 60px; font-size: 2rem; }
 .vi { font-weight: 650; }
@@ -128,9 +144,6 @@ a.card:active, button.card:not(:disabled):active { transform: scale(.99); }
 .q-tile { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 4px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: .8rem; font-weight: 700; cursor: pointer; box-shadow: var(--shadow); min-height: 72px; }
 .q-tile span { font-size: 1.5rem; }
 .q-tile:active { transform: scale(.96); }
-.backup-nudge { border-color: var(--gold); background: var(--gold-soft); }
-.backup-nudge p { margin: 0 0 4px; }
-.retest { border-color: var(--gold); }
 .recheck { border-color: var(--gold); }
 
 /* ── Learn ── */
@@ -594,10 +607,10 @@ button.flip-card.flipped:not(:disabled):active { transform: rotateY(180deg) scal
   .page { max-width: 900px; display: grid; grid-template-columns: 1fr 1fr; align-items: start; padding: 20px calc(14px + var(--safe-r)) 20px calc(14px + var(--safe-l)); gap: 16px; }
   /* Full-width rows in the two-column grid */
   .page > .hello, .page > .banner, .page > .kicker.pad, .page > .quick, .page > .section-title, .page > .seg,
-  .page > .panel, .page > .unit-hero, .page > .tip, .page > p, .page > .unit-list, .page > .cta-test,
+  .page > .panel, .page > .unit-hero, .page > .tip, .page > p, .page > .unit-list,
   .page > .link-row, .page > .search, .page > .filters, .page > .bank, .page > .word-list,
   .page > .g-sec, .page > .g-empty, .page > .g-intro, .page > .my-link, .page > .set-sec,
-  .page > .backup-nudge, .page > .retest, .page > .recheck, .page > .preview-banner,
+  .page > .recheck, .page > .preview-banner,
   .page > .week-plan, .page > .decks-sec, .page > .pick-list, .page > .deck-cards, .page > .pick-search, .page > .field, .page > .add-unit, .page > .pick-more { grid-column: 1 / -1; }
   .unit-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .tabs { justify-content: center; gap: 24px; }

@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import { chromium, webkit } from 'playwright';
 import { ensureServer } from './serve.mjs';
+import { watchdog } from './watchdog.mjs';
 
 const engine = (process.env.BROWSER || 'webkit') === 'chromium' ? chromium : webkit;
 const launchOpts = process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH, args: ['--no-sandbox'] } : {};
@@ -25,6 +26,7 @@ const fakeSpeech = () => {
   try { window.SpeechSynthesisUtterance = function (t) { this.text = t; }; } catch { /* ignore */ }
 };
 
+watchdog('qa:features', 12);
 const browser = await engine.launch(launchOpts);
 async function scenario(name, fn, ctxOpts = {}) {
   const ctx = await browser.newContext({ viewport: { width: 393, height: 852 }, hasTouch: true, ...ctxOpts });
@@ -182,6 +184,30 @@ await scenario('Undo for small changes', async p => {
   await p.waitForSelector('.delete'); await p.click('.delete');
   ok(await p.isVisible('.sheet >> text=Delete “Temp”?'), 'deleting a deck still asks “are you sure”');
 });
+
+await scenario('Home: next up, needs attention, sync status', async p => {
+  // A slow simulated Sheet, so "Syncing…" is visible while it works.
+  let fail = true;
+  await p.route('https://sheet.test/**', async r => { await new Promise(res => setTimeout(res, 600)); await r.fulfill({ contentType: 'application/json', body: JSON.stringify(fail ? { ok: false, error: 'Wrong password' } : { ok: true, state: null }) }); });
+  await p.goto(BASE + '#/home'); await p.waitForSelector('.hello');
+  ok(await p.isVisible('.next-up .start-lesson.primary') && !(await p.$('.sync-line')), 'new profile: next up is a lesson; no sync line before sync is set up');
+  ok(await p.isVisible('.attention .cta-test'), 'new profile: “Find your level” is in Needs attention');
+  await seed(p, dueCards, { unit: 'u03', n: 4 });
+  await seed(p, async () => { const S = await import('/js/store.js'); S.settings().syncUrl = 'https://sheet.test/exec'; S.settings().syncKey = 'k'; S.saveNow(); });
+  await p.reload(); await p.waitForSelector('.sync-line');
+  ok(await p.isVisible('.next-up .do-flash') && /Review 4 cards/.test(await p.textContent('.next-up')), 'with cards due: next up is the review');
+  ok(await p.isVisible('.next-up .start-lesson'), 'the lesson is still one tap away');
+  await p.waitForSelector('.sync-retry', { timeout: 5000 });
+  ok(/didn’t work/.test(await p.textContent('.sync-line')), 'a failed sync shows on Home with Retry');
+  fail = false; await p.click('.sync-retry');
+  await p.waitForFunction(() => /Syncing/.test(document.querySelector('.sync-line').textContent), null, { timeout: 2000 });
+  ok(true, 'shows “Syncing…” while it works');
+  await p.waitForFunction(() => /Synced just now/.test(document.querySelector('.sync-line').textContent), null, { timeout: 5000 });
+  ok(true, 'then “Synced just now”');
+  await p.context().setOffline(true); await p.waitForTimeout(200);
+  ok(/Offline/.test(await p.textContent('.sync-line')), 'going offline updates the line');
+  await p.context().setOffline(false);
+}, { serviceWorkers: 'block' });   // WebKit routes requests from SW-controlled pages around Playwright
 
 await scenario('Grammar search with and without accents', async p => {
   await p.goto(BASE + '#/grammar'); await p.waitForSelector('.g-search');
