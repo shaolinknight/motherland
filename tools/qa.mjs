@@ -119,8 +119,10 @@ for (const dev of DEVICES) {
   const ctx = await browser.newContext({ viewport: { width: dev.width, height: dev.height }, deviceScaleFactor: dev.dpr, hasTouch: true, isMobile: dev.name !== 'ipad' });
   await ctx.addInitScript(fakeSpeech);
   const page = await ctx.newPage();
-  page.on('pageerror', e => problems.push(`[${dev.name}] JS error: ${e.message}`));
-  page.on('console', m => { if (m.type() === 'error') problems.push(`[${dev.name}] console: ${m.text()}`); });
+  // WebKit logs a request cancelled by a reload (often the sw.js update check) as an error; it isn't one.
+  const real = t => !/sw\.js due to access control checks/.test(t);
+  page.on('pageerror', e => { if (real(e.message)) problems.push(`[${dev.name}] JS error: ${e.message}`); });
+  page.on('console', m => { if (m.type() === 'error' && real(m.text())) problems.push(`[${dev.name}] console: ${m.text()}`); });
   page.on('dialog', d => { problems.push(`[${dev.name}] browser dialog shown: ${d.message().slice(0, 60)}`); d.accept(); });
   await page.goto(BASE + '#/home'); await page.waitForSelector('.hello');
   for (const r of ['home', 'learn', 'unit/u03', 'unit/u03/phrases', 'unit/u07/grammar', 'unit/u20/grammar', 'unit/u06/dialogue', 'unit/u04/reading', 'unit/u26', 'unit/u31/grammar', 'unit/u28/grammar', 'grammar', 'words', 'review', 'play', 'progress', 'leaderboard', 'leaderboard/month', 'leaderboard/games', 'leaderboard/records', 'placement', 'settings', 'settings/audio', 'settings/study', 'settings/sync', 'settings/data', 'mywords']) {

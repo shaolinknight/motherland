@@ -21,6 +21,8 @@ export function report(err, where = '') {
     const msg = String(err?.message || err || 'Unknown error').slice(0, 300);
     // "Script error." carries no details (another origin, e.g. a browser extension); nothing to act on.
     if (/^Script error\.?$/.test(msg) || /ResizeObserver loop/.test(msg)) return false;
+    // WebKit's wording when a request is cancelled by a reload (e.g. an update check of sw.js). Not a bug.
+    if (/due to access control checks/.test(msg)) return false;
     const stack = String(err?.stack || '').split('\n').find(l => /\.js/.test(l)) || '';
     const source = where || short(stack.trim().replace(/^at\s+/, '').replace(/^.*?@/, '')).slice(0, 120);
     const today = new Date().toDateString();

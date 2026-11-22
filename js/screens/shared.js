@@ -8,7 +8,7 @@ import { speak, audioAvailable, voicesReady } from '../speech.js';
 import { $, $$, esc, dayKey } from '../util.js';
 import { icon } from '../icons.js';
 
-export const VERSION = '1.6.3';
+export const VERSION = '1.6.4';
 export const L = () => C.get().speechLang;
 export const say = (t, opts) => speak(t, L(), opts);
 export const go = h => { location.hash = h; };

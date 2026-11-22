@@ -32,7 +32,9 @@ async function scenario(name, fn, ctxOpts = {}, { allowErrors = false } = {}) {
   const ctx = await browser.newContext({ viewport: { width: 393, height: 852 }, hasTouch: true, ...ctxOpts });
   await ctx.addInitScript(fakeSpeech);
   const p = await ctx.newPage(); const errs = [];
-  p.on('pageerror', e => errs.push(e.message)); p.on('console', m => m.type() === 'error' && errs.push(m.text()));
+  // WebKit logs a request cancelled by a reload (often the sw.js update check) as an error; it isn't one.
+  const real = t => !/sw\.js due to access control checks/.test(t);
+  p.on('pageerror', e => real(e.message) && errs.push(e.message)); p.on('console', m => m.type() === 'error' && real(m.text()) && errs.push(m.text()));
   console.log(`\n— ${name}`);
   try { await fn(p); } catch (e) { fails.push(`${name}: crashed: ${e.message.split('\n')[0]}`); console.log('✗ crashed:', e.message.split('\n')[0]); }
   if (!allowErrors) ok(!errs.length, `${name}: no console errors`, errs.slice(0, 2).join(' | '));
@@ -40,7 +42,13 @@ async function scenario(name, fn, ctxOpts = {}, { allowErrors = false } = {}) {
 }
 const seed = (p, fn, arg) => p.evaluate(fn, arg);
 const swipe = (p, fromX = 6, dist = 140) => p.evaluate(({ fromX, dist }) => {
-  const t = (type, x) => { const touch = new Touch({ identifier: 7, target: document.body, clientX: x, clientY: 400 }); document.dispatchEvent(new TouchEvent(type, { touches: type === 'touchend' ? [] : [touch], changedTouches: [touch], bubbles: true, cancelable: true })); };
+  // Plain events carrying touch points: WebKit doesn't allow `new Touch()` outside a real touch screen.
+  const t = (type, x) => {
+    const touch = { identifier: 7, target: document.body, clientX: x, clientY: 400 };
+    const ev = new Event(type, { bubbles: true, cancelable: true });
+    Object.defineProperties(ev, { touches: { value: type === 'touchend' ? [] : [touch] }, changedTouches: { value: [touch] } });
+    document.dispatchEvent(ev);
+  };
   t('touchstart', fromX); for (let i = 1; i <= 7; i++) t('touchmove', fromX + (dist * i) / 7); t('touchend', fromX + dist);
 }, { fromX, dist });
 const dueCards = async ({ unit, n }) => { const C = await import('/js/course.js'); const S = await import('/js/store.js'); C.unitItems(unit).slice(0, n).forEach(i => { C.cards()[i.id] = { reps: 1, ivl: 1, ease: 2.5, due: 0, lapses: 0, seen: Date.now() - 864e5, last: Date.now() - 864e5 }; }); S.saveNow(); };
