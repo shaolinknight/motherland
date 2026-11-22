@@ -41,7 +41,7 @@ function defaults() {
     lang: 'vi',
     settings: {
       showHanoi: true, rate: 0.85, voiceURI: '', forceAudio: false, haptics: true, retention: 0.9, theme: 'auto',
-      dailyGoal: 60, newPerLesson: 8, syncUrl: '', syncKey: '', lastSync: 0, syncError: '',
+      dailyGoal: 60, newPerLesson: 8, reviewCap: 0, syncUrl: '', syncKey: '', lastSync: 0, syncError: '',
       lastBackup: 0, backupSnooze: 0,
     },
     langs: {},

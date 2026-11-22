@@ -2,7 +2,8 @@
 // endless mode and the placement test.
 import * as C from './course.js';
 import * as S from './store.js';
-import { newCard, grade as srsGrade, nextInterval } from './srs.js';
+import { newCard, grade as srsGrade, nextInterval, isDue } from './srs.js';
+import { capLeft } from './planner.js';
 import { speak, audioAvailable, canRecord, record, stop as stopAudio } from './speech.js';
 import { compare, syllableDiff, toneVariants, toneOf, TONE_NAMES, tokens, clean } from './vitext.js';
 import { $, $$, esc, shuffle, sample, pick, toast, pct } from './util.js';
@@ -134,6 +135,7 @@ export function practiceSteps(list, n = 12) {
 // Grade a card with FSRS at your desired retention. A card that just became a leech gets a notice.
 function gradeCard(it, g) {
   const cards = C.cards();
+  if (isDue(cards[it.id])) { const d = S.day(); d.rev = (d.rev || 0) + 1; }   // counts toward the daily review cap
   const next = srsGrade(cards[it.id] || newCard(), g, Date.now(), { retention: S.settings().retention || 0.9 });
   if (next.leechNew) { delete next.leechNew; toast(`🐌 “${it.vi}” keeps slipping. It’s now in Weak spots; try a memory trick.`, 3500); }
   cards[it.id] = next;
@@ -148,8 +150,10 @@ function ivlLabel(days) {
 }
 
 const byDue = (a, b) => C.card(a.id).due - C.card(b.id).due;
-export const reviewSteps = (limit = 20) => C.dueItems().sort(byDue).slice(0, limit).map(i => choose(i, 2)).filter(Boolean);
-export const flashSteps = (limit = 30) => C.dueItems().sort(byDue).slice(0, limit).map(flash).filter(Boolean);
+// Most overdue first, and never past what's left of the daily review cap (Settings → Study).
+const dueToday = limit => C.dueItems().sort(byDue).slice(0, Math.min(limit, capLeft()));
+export const reviewSteps = (limit = 20) => dueToday(limit).map(i => choose(i, 2)).filter(Boolean);
+export const flashSteps = (limit = 30) => dueToday(limit).map(flash).filter(Boolean);
 
 // Endless: due first, then learned items weighted toward ones you miss.
 export function endlessNext() {

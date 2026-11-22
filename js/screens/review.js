@@ -6,13 +6,15 @@ import { icon } from '../icons.js';
 import { isMastered } from '../srs.js';
 import { confirmSheet, itemOptions, sheet, askText } from '../ui.js';
 import * as D from '../decks.js';
+import * as P from '../planner.js';
 import { stripAll } from '../vitext.js';
 import { spellingProblems } from '../vispell.js';
 import { say, go, wireSay, bar, plural, header, wireHeader } from './shared.js';
 
 // ── REVIEW ──────────────────────────────────────────────────────────────────
 export function review(root) {
-  const due = C.dueItems().length, seen = C.seenItems().length, mastered = C.masteredCount();
+  const dueAll = C.dueItems().length, left = P.capLeft(), due = Math.min(dueAll, left), waiting = dueAll - due;
+  const seen = C.seenItems().length, mastered = C.masteredCount();
   const cards = C.cards();
   const upcoming = Object.values(cards).filter(c => c.due > Date.now()).sort((a, b) => a.due - b.due)[0];
   const weak = C.weakItems(12);
@@ -24,7 +26,9 @@ export function review(root) {
       <div class="stat"><b>${seen}</b><span>learning</span></div>
       <div class="stat"><b>${mastered}</b><span>mastered</span></div>
     </section>
-    ${!due && upcoming ? `<p class="muted center small">Next card due ${new Date(upcoming.due).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}</p>` : ''}
+    ${waiting ? `<p class="muted center small cap-note">${left ? `Today’s limit leaves room for ${due}.` : 'You’ve reached today’s review limit.'} ${waiting} more waiting for tomorrow · <a href="#/settings/study">Change</a></p>` : ''}
+    ${!dueAll && upcoming ? `<p class="muted center small">Next card due ${new Date(upcoming.due).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}</p>` : ''}
+    ${seen ? weekChart() : ''}
     <button class="card mode" data-mode="flash" ${due ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('cards')}</span><div class="grow"><b>Flashcards</b><p class="muted">Flip and rate how well you knew it. Classic and fast.</p></div>${icon('chevron')}</button>
     <button class="card mode" data-mode="quiz" ${due ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('check')}</span><div class="grow"><b>Quiz review</b><p class="muted">Due cards as mixed exercises: meaning, grammar, tones, listening, typing.</p></div>${icon('chevron')}</button>
     <button class="card mode" data-mode="endless" ${seen ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('infinity')}</span><div class="grow"><b>Endless review</b><p class="muted">Keeps going as long as you want. Focuses on what you miss.</p></div>${icon('chevron')}</button>
@@ -49,6 +53,21 @@ export function review(root) {
     weak: () => X.run({ steps: weak.map(i => X.choose(i, 2)), activity: 'weak' }),
   };
   $$('[data-mode]', root).forEach(b => b.onclick = () => modes[b.dataset.mode]());
+}
+
+// Reviews due on each of the next 7 days, as a small bar chart. Today includes anything overdue.
+function weekChart() {
+  const days = P.forecast(7), max = Math.max(1, ...days.map(d => d.n)), total = days.reduce((a, d) => a + d.n, 0);
+  const name = d => (d.today ? 'Today' : d.date.toLocaleDateString([], { weekday: 'short' }));
+  const full = d => (d.today ? 'today' : d.date.toLocaleDateString([], { weekday: 'long' }));
+  return `<section class="card week-plan">
+    <div class="row"><h2 class="section-title grow">This week</h2><span class="muted small">${plural(total, 'review')}</span></div>
+    <ol class="wp-bars">${days.map(d => `<li class="${d.today ? 'today' : ''}" aria-label="${plural(d.n, 'review')} ${full(d)}">
+      <span class="wp-n" aria-hidden="true">${d.n || ''}</span>
+      <span class="wp-bar" aria-hidden="true"><i style="height:${d.n ? Math.max(6, Math.round(d.n / max * 100)) : 0}%"></i></span>
+      <span class="wp-day" aria-hidden="true">${name(d)}</span></li>`).join('')}</ol>
+    ${P.cap() ? `<p class="muted small">Limit: ${P.cap()} a day. ${P.reviewedToday()} done today.</p>` : ''}
+  </section>`;
 }
 
 // ── DECK ────────────────────────────────────────────────────────────────────

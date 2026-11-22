@@ -303,6 +303,31 @@ t('placement focus: heavier exercise types come first more often, lighter ones s
     assert.equal(mergeStates(a, b).langs.vi.edits['u03-w0'].reset, true);
   });
 }
+{
+  const C = await import('../js/course.js'), S0 = await import('../js/store.js'), P = await import('../js/planner.js');
+  const now = new Date(2026, 10, 20, 15, 0).getTime(), H = 3600e3, D = 24 * H;
+  const cards = C.cards();
+  const put = (id, c) => { cards[id] = { ...newCard(), reps: 1, ...c }; };
+  put('u01-w0', { due: now - 3 * D });            // overdue → today
+  put('u01-w1', { due: now + 2 * H });            // later today
+  put('u01-w2', { due: now + D });                 // tomorrow
+  put('u01-w3', { due: now + 3 * D, suspended: true });   // suspended → never counted
+  put('u01-w4', { due: now - D, buriedUntil: now + 9 * H });   // buried until tomorrow morning
+  put('u01-w5', { due: now + 30 * D });            // beyond the week
+  t('planner: forecast puts overdue in today, buried cards on the day they return, skips suspended', () => {
+    const f = P.forecast(7, now);
+    assert.equal(f.length, 7); assert.equal(f[0].today, true);
+    assert.deepEqual(f.map(d => d.n), [2, 2, 0, 0, 0, 0, 0]);
+  });
+  t('planner: no cap by default; a cap counts down with reviews done today', () => {
+    assert.equal(P.capLeft(), Infinity);
+    S0.settings().reviewCap = 50; S0.day().rev = 48;
+    assert.equal(P.capLeft(), 2);
+    S0.day().rev = 60; assert.equal(P.capLeft(), 0);   // never negative
+    S0.settings().reviewCap = 0; S0.day().rev = 0;
+  });
+  for (const id of ['u01-w0', 'u01-w1', 'u01-w2', 'u01-w3', 'u01-w4', 'u01-w5']) delete cards[id];
+}
 // Shipping checks: a module missing from the service worker breaks offline use, and one missing from
 // the preload list brings back the slow import waterfall.
 const modules = ['js', 'js/screens', 'data'].flatMap(d => fs.readdirSync(d).filter(f => f.endsWith('.js')).map(f => `${d}/${f}`));

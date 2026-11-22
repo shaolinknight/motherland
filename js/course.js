@@ -69,7 +69,7 @@ export function myItems() {
   }));
 }
 // Course items plus your own: everything that can have a review card.
-const studyItems = () => [...items, ...myItems()];
+export const studyItems = () => [...items, ...myItems()];
 
 export const get = () => course;
 export const all = () => items;   // course content only (placement test, wrong-answer choices, word of the day)

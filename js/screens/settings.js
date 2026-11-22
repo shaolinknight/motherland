@@ -10,6 +10,7 @@ import { ankiText } from '../ankiexport.js';
 import { isPreview, resetDemo } from '../demo.js';
 import { applyTheme } from '../theme.js';
 import { hapticsSupported, tick } from '../haptics.js';
+import { CAP_CHOICES } from '../planner.js';
 import { VERSION, L, say, go, plural, header, wireHeader, download, exportBackup } from './shared.js';
 
 // ── SETTINGS ────────────────────────────────────────────────────────────────
@@ -73,11 +74,13 @@ export function settings(root, section) {
     </details>
 
     <details class="card set-sec" name="settings" data-sec="study" ${openSection === 'study' ? 'open' : ''}>
-      <summary><span class="set-ico" aria-hidden="true">📚</span><span class="grow"><b>Study</b><small class="muted">${st.dailyGoal} XP a day · remember ${Math.round((st.retention || 0.9) * 100)}%</small></span><span class="set-chev" aria-hidden="true">${icon('chevron')}</span></summary>
+      <summary><span class="set-ico" aria-hidden="true">📚</span><span class="grow"><b>Study</b><small class="muted">${st.dailyGoal} XP a day · remember ${Math.round((st.retention || 0.9) * 100)}%${st.reviewCap ? ` · ${st.reviewCap} reviews max` : ''}</small></span><span class="set-chev" aria-hidden="true">${icon('chevron')}</span></summary>
       <div class="set-body">
       <label class="field"><span>Daily goal</span><select class="opt-goal">${[30, 60, 100, 150].map(n => `<option value="${n}" ${n === st.dailyGoal ? 'selected' : ''}>${n} XP (${{ 30: 'casual', 60: 'regular', 100: 'serious', 150: 'intense' }[n]})</option>`).join('')}</select></label>
       <label class="field"><span>Remember target</span><select class="opt-retention">${[[0.8, '80% (fewer reviews)'], [0.85, '85%'], [0.9, '90% (recommended)'], [0.95, '95% (more reviews)']].map(([v, n]) => `<option value="${v}" ${v === (st.retention || 0.9) ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
       <p class="muted small">Reviews are scheduled with FSRS, the method modern Anki uses: each word comes back when your chance of remembering it drops to this level.</p>
+      <label class="field"><span>Daily review limit</span><select class="opt-cap">${CAP_CHOICES.map(n => `<option value="${n}" ${n === (st.reviewCap || 0) ? 'selected' : ''}>${n ? `${n} reviews a day` : 'No limit (recommended)'}</option>`).join('')}</select></label>
+      <p class="muted small">For busy days. Cards past the limit wait until tomorrow. A limit keeps sessions short, but a long backlog then takes longer to clear.</p>
       <label class="field"><span>New items per lesson</span><select class="opt-new">${[5, 8, 10, 12].map(n => `<option value="${n}" ${n === st.newPerLesson ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
       <label class="switch row"><span class="grow">Haptic tap on right answers</span><input type="checkbox" class="opt-haptics" ${st.haptics !== false ? 'checked' : ''}></label>
       ${hapticsSupported() ? '' : '<p class="muted small">Needs iOS 17.4 or later on iPhone.</p>'}
@@ -143,6 +146,7 @@ export function settings(root, section) {
   $('.opt-rate', root).oninput = e => { $('.rate-val', root).textContent = `${(+e.target.value).toFixed(2)}×`; set('rate', +e.target.value); };
   $('.test-voice', root).onclick = () => say('Xin chào! Chúc bạn một ngày vui vẻ.');
   $('.opt-goal', root).onchange = e => set('dailyGoal', +e.target.value);
+  $('.opt-cap', root).onchange = e => set('reviewCap', +e.target.value);
   $('.opt-new', root).onchange = e => set('newPerLesson', +e.target.value);
   $('.opt-retention', root).onchange = e => set('retention', +e.target.value);
   $('.opt-theme', root).onchange = e => { set('theme', e.target.value); applyTheme(); };

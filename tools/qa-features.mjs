@@ -57,6 +57,23 @@ await scenario('Flashcards flip both ways, grades appear', async p => {
   ok(!(await st()).g, 'next card starts on its front');
 });
 
+await scenario('Review planner: week chart and daily limit', async p => {
+  await p.goto(BASE + '#/home'); await p.waitForSelector('.hello');
+  await seed(p, dueCards, { unit: 'u03', n: 6 });
+  await seed(p, async () => { const S = await import('/js/store.js'); S.settings().reviewCap = 50; S.day().rev = 47; S.saveNow(); });
+  await p.reload(); await p.evaluate(() => { location.hash = '#/review'; }); await p.waitForSelector('.week-plan');
+  const r = await p.evaluate(async () => ({
+    due: document.querySelector('.stats3 .stat b').textContent, note: document.querySelector('.cap-note')?.textContent || '',
+    today: document.querySelector('.wp-bars .today .wp-n').textContent, steps: (await import('/js/exercises.js')).flashSteps().length,
+  }));
+  ok(r.due === '3' && r.steps === 3, 'the limit caps due-now and the flashcard session', JSON.stringify(r));
+  ok(/3 more waiting/.test(r.note), 'says how many wait for tomorrow', r.note);
+  ok(r.today === '6', 'the week chart still shows everything due today', r.today);
+  await p.click('[data-mode="flash"]'); await p.waitForSelector('.flip-card');
+  await p.mouse.click(196, 300); await p.waitForSelector('.grades'); await p.click('.grades .g2'); await p.waitForTimeout(300);
+  ok(await p.evaluate(async () => (await import('/js/store.js')).day().rev) === 48, 'grading a due card counts toward the limit');
+});
+
 await scenario('Question mid-screen, answers at the bottom', async p => {
   await p.goto(BASE + '#/unit/u03'); await p.click('.learn-new'); await p.waitForSelector('.session');
   // Step until a multiple-choice question with a word prompt (skip intros and other exercise types).

@@ -185,6 +185,16 @@ a.card:active, button.card:not(:disabled):active { transform: scale(.99); }
 .stats4 { grid-template-columns: repeat(4, 1fr); margin-top: 12px; }
 .stat b { display: block; font-size: 1.4rem; color: var(--brand-dark); }
 .stat span { font-size: .75rem; color: var(--muted); }
+/* Review planner: reviews due on each of the next 7 days. */
+.week-plan .section-title { margin: 0; }
+.wp-bars { list-style: none; margin: 10px 0 0; padding: 0; display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
+.wp-bars li { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.wp-n { font-size: .75rem; font-weight: 700; color: var(--brand-dark); min-height: 1em; }
+.wp-bar { display: flex; align-items: flex-end; width: 100%; max-width: 30px; height: 64px; background: var(--track); border-radius: 6px; overflow: hidden; }
+.wp-bar i { display: block; width: 100%; background: var(--brand-mid); border-radius: 6px 6px 0 0; }
+.wp-bars .today .wp-bar i { background: var(--brand); }
+.wp-day { font-size: .7rem; color: var(--muted); }
+.wp-bars .today .wp-day { color: var(--ink); font-weight: 700; }
 .mode, .game-card { padding: 14px; }
 .mode-ico { width: 44px; height: 44px; border-radius: 12px; background: var(--brand-soft); color: var(--accent); display: grid; place-items: center; flex-shrink: 0; }
 .g-emoji { font-size: 2rem; width: 48px; text-align: center; flex-shrink: 0; }
@@ -583,7 +593,7 @@ button.flip-card.flipped:not(:disabled):active { transform: rotateY(180deg) scal
   .page > .link-row, .page > .search, .page > .filters, .page > .bank, .page > .word-list,
   .page > .g-sec, .page > .g-empty, .page > .g-intro, .page > .my-link, .page > .set-sec,
   .page > .backup-nudge, .page > .retest, .page > .recheck, .page > .preview-banner,
-  .page > .decks-sec, .page > .pick-list, .page > .deck-cards, .page > .pick-search, .page > .field, .page > .add-unit, .page > .pick-more { grid-column: 1 / -1; }
+  .page > .week-plan, .page > .decks-sec, .page > .pick-list, .page > .deck-cards, .page > .pick-search, .page > .field, .page > .add-unit, .page > .pick-more { grid-column: 1 / -1; }
   .unit-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .tabs { justify-content: center; gap: 24px; }
   .tabs a { flex: 0 0 90px; }
