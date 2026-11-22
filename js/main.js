@@ -9,6 +9,10 @@ import { registerSW } from './pwa.js';
 import { applyTheme } from './theme.js';
 import { enableEdgeSwipe } from './gestures.js';
 import { seedIfEmpty } from './demo.js';
+import { installErrorReporting } from './errors.js';
+
+// First, so an error anywhere after this is caught and shows up as a flag (Settings → Flagged items).
+installErrorReporting(V.VERSION);
 
 const TABS = [
   ['home', 'Home', 'home'],

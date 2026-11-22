@@ -1,5 +1,5 @@
 // All app screens, one module per area in js/screens/. Each renders into #app and wires its own events.
-export { startLesson } from './screens/shared.js';
+export { startLesson, VERSION } from './screens/shared.js';
 export { home } from './screens/home.js';
 export { learn, unit, grammar, mywords } from './screens/learn.js';
 export { words } from './screens/words.js';

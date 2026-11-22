@@ -108,7 +108,7 @@ export function settings(root, section) {
     <details class="card set-sec" name="settings" data-sec="flags" ${openSection === 'flags' ? 'open' : ''}>
       <summary><span class="set-ico" aria-hidden="true">🚩</span><span class="grow"><b>Flagged items</b><small class="muted">${flags.length ? plural(flags.length, 'item') : 'None'}</small></span><span class="set-chev" aria-hidden="true">${icon('chevron')}</span></summary>
       <div class="set-body">
-      ${flags.length ? `<ul class="mini-list">${flags.slice().reverse().map(f => `<li><div class="grow"><span class="vi" lang="vi">${esc(f.vi)}</span> <span class="muted">${esc(f.en)}</span>${f.note ? `<div class="small">“${esc(f.note)}”</div>` : ''}</div><button class="icon-btn unflag" data-id="${f.id}" aria-label="Remove flag">${icon('x')}</button></li>`).join('')}</ul>
+      ${flags.length ? `<ul class="mini-list">${flags.slice().reverse().map(f => `<li><div class="grow"><span class="vi"${f.itemId === 'app-error' ? '' : ' lang="vi"'}>${esc(f.vi)}</span> <span class="muted">${esc(f.en)}</span>${f.note ? `<div class="small">“${esc(f.note)}”</div>` : ''}</div><button class="icon-btn unflag" data-id="${f.id}" aria-label="Remove flag">${icon('x')}</button></li>`).join('')}</ul>
         <p class="muted small">Share these with Claude to get the lesson content fixed. They also sync to the Flags tab of your Sheet.</p>`
         : '<p class="muted small">Tap 🚩 on any word or exercise that sounds off to you or your family.</p>'}
       </div>

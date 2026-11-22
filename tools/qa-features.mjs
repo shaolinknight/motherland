@@ -28,14 +28,14 @@ const fakeSpeech = () => {
 
 watchdog('qa:features', 12);
 const browser = await engine.launch(launchOpts);
-async function scenario(name, fn, ctxOpts = {}) {
+async function scenario(name, fn, ctxOpts = {}, { allowErrors = false } = {}) {
   const ctx = await browser.newContext({ viewport: { width: 393, height: 852 }, hasTouch: true, ...ctxOpts });
   await ctx.addInitScript(fakeSpeech);
   const p = await ctx.newPage(); const errs = [];
   p.on('pageerror', e => errs.push(e.message)); p.on('console', m => m.type() === 'error' && errs.push(m.text()));
   console.log(`\n— ${name}`);
   try { await fn(p); } catch (e) { fails.push(`${name}: crashed: ${e.message.split('\n')[0]}`); console.log('✗ crashed:', e.message.split('\n')[0]); }
-  ok(!errs.length, `${name}: no console errors`, errs.slice(0, 2).join(' | '));
+  if (!allowErrors) ok(!errs.length, `${name}: no console errors`, errs.slice(0, 2).join(' | '));
   await ctx.close();
 }
 const seed = (p, fn, arg) => p.evaluate(fn, arg);
@@ -208,6 +208,23 @@ await scenario('Home: next up, needs attention, sync status', async p => {
   ok(/Offline/.test(await p.textContent('.sync-line')), 'going offline updates the line');
   await p.context().setOffline(false);
 }, { serviceWorkers: 'block' });   // WebKit routes requests from SW-controlled pages around Playwright
+
+await scenario('Errors on the phone become flags', async p => {
+  await p.goto(BASE + '#/review'); await p.waitForSelector('.page');
+  await p.evaluate(() => {
+    setTimeout(() => { throw new Error('test boom'); });
+    setTimeout(() => { throw new Error('test boom'); }, 20);   // same message again: recorded once
+    Promise.reject(new Error('test rejected'));
+  });
+  await p.waitForTimeout(400);
+  const fl = await p.evaluate(async () => (await import('/js/store.js')).get().flags.filter(f => f.itemId === 'app-error'));
+  ok(fl.length === 2, 'an uncaught error and a rejected promise are recorded, duplicates once a day', JSON.stringify(fl.map(f => f.en)));
+  ok(fl.every(f => /^v\d+\.\d+\.\d+ · #\/review/.test(f.note) && !f.synced), 'each notes the version and screen, ready to sync', fl[0]?.note);
+  await p.evaluate(() => { for (let i = 0; i < 8; i++) setTimeout(() => { throw new Error(`loop ${i}`); }, i); }); await p.waitForTimeout(300);
+  ok((await p.evaluate(async () => (await import('/js/store.js')).get().flags.filter(f => f.itemId === 'app-error').length)) === 5, 'at most 5 a day');
+  await p.goto(BASE + '#/settings/flags'); await p.waitForSelector('.unflag', { state: 'visible' });
+  ok(/test boom/.test(await p.textContent('.mini-list')), 'they show in Settings → Flagged items');
+}, {}, { allowErrors: true });
 
 await scenario('Grammar search with and without accents', async p => {
   await p.goto(BASE + '#/grammar'); await p.waitForSelector('.g-search');
