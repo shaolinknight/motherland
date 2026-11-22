@@ -1,6 +1,7 @@
 // Tests Google Sheet sync against a simulated Apps Script, plus offline mode.
 import { chromium, webkit } from 'playwright';
 import { ensureServer, startServer } from './serve.mjs';
+import { watchdog } from './watchdog.mjs';
 
 // BROWSER=webkit (default, closest to iPhone Safari) or chromium. CHROME_PATH lets you use an installed Chrome.
 const engine = (process.env.BROWSER || 'webkit') === 'chromium' ? chromium : webkit;
@@ -11,6 +12,10 @@ const URL_ = 'https://script.google.com/macros/s/TEST/exec';
 const sheet = { state: null, updatedAt: 0, sessions: [], flags: [], calls: [] };
 const fail = []; const ok = m => console.log('✓', m);
 
+watchdog('qa:sync', 6);
+// Ask the service worker to look for a new version without waiting on it in the page: WebKit can
+// leave update() unsettled while a sheet is open, and the checks that follow wait with timeouts anyway.
+const checkForUpdate = p => p.evaluate(() => { navigator.serviceWorker.getRegistration().then(r => r?.update()).catch(() => {}); });
 const browser = await engine.launch(launchOpts);
 // Service worker blocked for the sync checks: in WebKit, requests from a SW-controlled page skip
 // Playwright's routing, so they'd hit the real Google URL instead of the simulated Sheet. The offline
@@ -174,7 +179,7 @@ await ctx2.close();
 
   // Mid-lesson: the update waits (toast), even if the app is backgrounded, then applies when the lesson closes.
   await p3.click('.start-lesson'); await p3.waitForSelector('.session');
-  deploy = 3; await p3.evaluate(async () => (await navigator.serviceWorker.getRegistration()).update());
+  deploy = 3; await checkForUpdate(p3);
   await p3.waitForSelector('.update-toast.show', { timeout: 15000 }).then(() => ok('"Update ready" toast appears during a lesson')).catch(() => fail.push('no update toast during a lesson'));
   await hide(); await p3.waitForTimeout(1500);
   (await p3.$('.session')) && (await build()) === '2' ? ok('update waits while a lesson is open') : fail.push('update interrupted an open lesson');
@@ -188,7 +193,7 @@ await ctx2.close();
     .then(() => ok('update applies as soon as the lesson closes')).catch(() => fail.push('waiting update not applied after the lesson'));
   // Tapping the toast also works (update arrives while a sheet is open).
   await p3.waitForSelector('.hello'); await p3.goto(B2 + '#/unit/u03'); await p3.waitForSelector('.flag-it'); await p3.click('.flag-it'); await p3.waitForSelector('.sheet-wrap.open');
-  deploy = 4; await p3.evaluate(async () => (await navigator.serviceWorker.getRegistration()).update());
+  deploy = 4; await checkForUpdate(p3);
   await p3.waitForSelector('.update-toast.show', { timeout: 15000 }).catch(() => {});
   await p3.click('.update-toast button').catch(() => {});
   await p3.waitForFunction(() => document.documentElement.dataset.build === '4', null, { timeout: 15000 })

@@ -8,6 +8,7 @@ const engine = (process.env.BROWSER || 'webkit') === 'chromium' ? chromium : web
 const launchOpts = process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH, args: ['--no-sandbox'] } : {};
 const server = await ensureServer(8123);
 import fs from 'node:fs';
+import { watchdog } from './watchdog.mjs';
 
 const BASE = 'http://localhost:8123/';
 const OUT = process.env.SHOTS || 'test-results/screenshots';
@@ -112,6 +113,7 @@ async function playSession(page, dev, label, maxSteps = 80, shoot = true) {
   return maxSteps;
 }
 
+watchdog('qa', 20);
 const browser = await engine.launch(launchOpts);
 for (const dev of DEVICES) {
   const ctx = await browser.newContext({ viewport: { width: dev.width, height: dev.height }, deviceScaleFactor: dev.dpr, hasTouch: true, isMobile: dev.name !== 'ipad' });
