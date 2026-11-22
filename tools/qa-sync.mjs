@@ -25,6 +25,8 @@ await ctx.route(URL_, async route => {
 const page = await ctx.newPage();
 page.on('pageerror', e => fail.push('JS error: ' + e.message));
 page.on('dialog', d => d.accept());
+page.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') console.log(`  [browser ${m.type()}] ${m.text()}`); });
+page.on('requestfailed', r => console.log(`  [request failed] ${r.method()} ${r.url().slice(0, 60)} ${r.failure()?.errorText}`));
 
 await page.goto(BASE + '#/settings/sync'); await page.waitForSelector('.opt-url', { state: 'visible' });
 // wrong password
@@ -32,6 +34,8 @@ await page.fill('.opt-url', URL_); await page.fill('.opt-key', 'nope');
 await page.click('.sync-now'); await page.waitForTimeout(600);
 const status1 = await page.textContent('.sync-status');
 status1.includes('Wrong sync password') ? ok('wrong password is reported') : fail.push('wrong password not shown: ' + status1);
+// If the browser thinks it's offline, sync is skipped by design; say so instead of failing mysteriously later.
+console.log(`  (browser online: ${await page.evaluate(() => navigator.onLine)}, requests to the Sheet so far: ${sheet.calls.length})`);
 
 // make some progress, then sync
 await page.evaluate(async () => {
@@ -54,6 +58,7 @@ await page.click('.sync-now'); await page.waitForTimeout(800);
 sheet.sessions.length === 1 && sheet.flags.length === 1 ? ok('no duplicate rows on re-sync') : fail.push('duplicates on re-sync');
 
 // simulate another device writing newer progress → this phone should adopt it
+if (!sheet.state) { console.log('\n❌ ' + fail.concat('nothing reached the simulated Sheet; stopping').join('\n❌ ')); process.exit(1); }
 const remote = JSON.parse(sheet.state); remote.langs.vi.cards['u05-w0'] = { reps: 2, ivl: 3, ease: 2.5, due: Date.now() + 1e8, lapses: 0, seen: 1, last: 1 };
 sheet.state = JSON.stringify(remote); sheet.updatedAt = Date.now() + 100000;
 await page.click('.sync-now'); await page.waitForTimeout(800);

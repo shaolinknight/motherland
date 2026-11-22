@@ -29,8 +29,13 @@ const fakeSpeech = () => {
     speak(u) { window.__spoken = (window.__spoken || []); window.__spoken.push(u.text); setTimeout(() => u.onend && u.onend(), 30); },
     cancel() {}, addEventListener(t, f) { listeners[t] = f; },
   };
-  Object.defineProperty(window, 'speechSynthesis', { value: fake, configurable: true });
-  window.SpeechSynthesisUtterance = function (t) { this.text = t; };
+  try { Object.defineProperty(window, 'speechSynthesis', { value: fake, configurable: true }); } catch { /* WebKit: not redefinable */ }
+  if (window.speechSynthesis !== fake && window.speechSynthesis) {
+    // WebKit keeps its own object; patch its methods instead so audio drills are still exercised.
+    const real = window.speechSynthesis;
+    for (const k of ['getVoices', 'speak', 'cancel', 'addEventListener']) { try { Object.defineProperty(real, k, { value: fake[k], configurable: true }); } catch { /* ignore */ } }
+  }
+  try { window.SpeechSynthesisUtterance = function (t) { this.text = t; }; } catch { /* ignore */ }
 };
 
 async function overflow(page, where) {
