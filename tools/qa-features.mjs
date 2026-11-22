@@ -36,7 +36,10 @@ async function scenario(name, fn, ctxOpts = {}, { allowErrors = false } = {}) {
   const real = t => !/sw\.js due to access control checks/.test(t);
   p.on('pageerror', e => real(e.message) && errs.push(e.message)); p.on('console', m => m.type() === 'error' && real(m.text()) && errs.push(m.text()));
   console.log(`\n— ${name}`);
-  try { await fn(p); } catch (e) { fails.push(`${name}: crashed: ${e.message.split('\n')[0]}`); console.log('✗ crashed:', e.message.split('\n')[0]); }
+  try { await fn(p); } catch (e) {
+    const why = e.message.split('\n').filter(l => l.trim()).slice(0, 3).join(' / ');   // includes "waiting for locator(...)"
+    fails.push(`${name}: crashed: ${why}`); console.log('✗ crashed:', why);
+  }
   if (!allowErrors) ok(!errs.length, `${name}: no console errors`, errs.slice(0, 2).join(' | '));
   await ctx.close();
 }
