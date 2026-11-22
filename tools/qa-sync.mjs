@@ -218,6 +218,10 @@ await ctx2.close();
       // Say what happened, so a failure in CI (WebKit) can be understood without a rerun.
       const sw = await p3.evaluate(async () => { const r = await navigator.serviceWorker.getRegistration(); return { waiting: r?.waiting?.state, installing: r?.installing?.state, active: r?.active?.state, build: document.documentElement.dataset.build }; }).catch(e => e.message);
       fail.push(`tapping the toast did not update (toast: ${toasted}, click: ${clicked}, sw: ${JSON.stringify(sw)}, update checks: ${[...new Set(updateLog)].join(' | ')})`);
+      // The guarantee that matters: even when an in-session check stalls, reopening the app gets the new version.
+      for (let i = 0; i < 3 && (await build().catch(() => '?')) !== '4'; i++) { await p3.reload().catch(() => {}); await p3.waitForTimeout(3000); }
+      const after = await build().catch(e => e.message);
+      after === '4' ? ok('…but reopening the app still brings in the new version') : fail.push(`reopening the app did not bring the new version either (build ${after})`);
     });
   await ctx3.close(); srv2.close();
 }
