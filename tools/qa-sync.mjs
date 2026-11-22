@@ -21,6 +21,7 @@ const checkForUpdate = p => p.evaluate(() => {
   navigator.serviceWorker.getRegistration()
     .then(r => r ? r.update().then(() => { window.__upd = `ok (installing: ${r.installing?.state}, waiting: ${r.waiting?.state})`; }) : (window.__upd = 'no registration'))
     .catch(e => { window.__upd = `error: ${e.message}`; });
+  document.dispatchEvent(new Event('visibilitychange'));   // as if coming back to the app: runs the stalled-update check too
 });
 // Keep asking until the "Update ready" toast shows. The app runs its own update check at every launch;
 // a check asked for while that one is still running joins it (per the Service Worker spec) and can
@@ -170,11 +171,11 @@ await ctx2.close();
 
 // New deploy: the cache-first worker must never leave the phone on an old version.
 {
-  let deploy = 1;
+  let deploy = 1, broken = false;
   const PORT2 = 8125, B2 = `http://localhost:${PORT2}/`;
   const srv2 = await startServer(PORT2, { transform: (url, buf) => {
     if (deploy === 1) return buf;
-    if (url === '/sw.js') return Buffer.from(buf.toString().replace(/const VERSION = '([^']+)'/, `const VERSION = '$1-test${deploy}'`));
+    if (url === '/sw.js') return Buffer.from(buf.toString().replace(/const VERSION = '([^']+)'/, `const VERSION = '$1-test${deploy}'`) + (broken ? '\n}} not javascript' : ''));
     if (url === '/' || url === '/index.html') return Buffer.from(buf.toString().replace('<html lang="en"', `<html lang="en" data-build="${deploy}"`));
     return buf;
   } });
@@ -219,10 +220,20 @@ await ctx2.close();
       const sw = await p3.evaluate(async () => { const r = await navigator.serviceWorker.getRegistration(); return { waiting: r?.waiting?.state, installing: r?.installing?.state, active: r?.active?.state, build: document.documentElement.dataset.build }; }).catch(e => e.message);
       fail.push(`tapping the toast did not update (toast: ${toasted}, click: ${clicked}, sw: ${JSON.stringify(sw)}, update checks: ${[...new Set(updateLog)].join(' | ')})`);
       // The guarantee that matters: even when an in-session check stalls, reopening the app gets the new version.
-      for (let i = 0; i < 3 && (await build().catch(() => '?')) !== '4'; i++) { await p3.reload().catch(() => {}); await p3.waitForTimeout(3000); }
+      await p3.reload().catch(() => {});
+      await p3.waitForFunction(() => document.documentElement.dataset.build === '4', null, { timeout: 30000 }).catch(() => {});
       const after = await build().catch(e => e.message);
       after === '4' ? ok('…but reopening the app still brings in the new version') : fail.push(`reopening the app did not bring the new version either (build ${after})`);
     });
+  // Safety net, testable in any browser: the deployed sw.js can't be installed (a syntax error here), which
+  // is what a stuck updater looks like to the app. It must still load the new files, and only once.
+  deploy = 5; broken = true;
+  let navs = 0; p3.on('framenavigated', f => { if (f === p3.mainFrame()) navs++; });
+  await p3.goto(B2 + '#/home').catch(() => {}); await p3.reload().catch(() => {});   // a fresh launch
+  await p3.waitForFunction(() => document.documentElement.dataset.build === '5', null, { timeout: 30000 })
+    .then(() => ok('a deploy the browser can’t install still arrives (stalled-update safety net)')).catch(async () => fail.push(`safety net did not bring the new files (build ${await build().catch(e => e.message)})`));
+  await p3.waitForTimeout(12000);
+  navs <= 3 ? ok('the safety net reloads once, never in a loop') : fail.push(`safety net reloaded ${navs} times`);
   await ctx3.close(); srv2.close();
 }
 

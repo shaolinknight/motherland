@@ -12,7 +12,7 @@ let reloading = false;
 const busy = () => !!document.querySelector('.session, .sheet-wrap') ||
   !!document.activeElement?.matches?.('input, textarea, select');
 
-function showToast(reg) {
+function showToast(reg, onTap = () => apply(reg)) {
   if ($('.update-toast')) return;
   const el = document.createElement('div');
   el.className = 'update-toast';
@@ -20,7 +20,7 @@ function showToast(reg) {
   el.innerHTML = '<button type="button"><b>Update ready</b><span>Tap to refresh</span></button>';
   document.body.appendChild(el);
   requestAnimationFrame(() => el.classList.add('show'));
-  el.querySelector('button').onclick = () => apply(reg);
+  el.querySelector('button').onclick = onTap;
 }
 
 function apply(reg) {
@@ -44,9 +44,48 @@ function watch(reg) {
   // Quiet moments: a lesson/game/sheet just closed, or the app comes back to the foreground.
   window.addEventListener('motherland:refresh', () => setTimeout(() => offer(reg), 300));
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') { offer(reg); reg.update().catch(() => {}); }
+    if (document.visibilityState === 'visible') { offer(reg); reg.update().catch(() => {}); checkStalled(reg); }
     else if (reg.waiting && !document.querySelector('.session')) apply(reg);
   });
+}
+
+// ── Safety net: a deploy must arrive even if the browser's own updater is stuck ──
+// In WebKit (iPhone Safari's engine) registration.update() was seen to never settle, even across
+// reloads, so a new sw.js was never installed and the app stayed on the old version. This check reads
+// the deployed sw.js itself. If its version hasn't started installing a few seconds later (installing
+// opens a cache with that name), it clears this app's caches and reloads: the old worker then finds
+// nothing cached and fetches every file fresh. Only the Cache API is used, which doesn't wait on the
+// stuck updater. Done at most once per version, so it can't loop.
+const RESCUE_KEY = 'motherland.swRescue';
+const STALL_MS = 8000;
+let checking = false;
+
+async function deployedVersion() {
+  // The old worker caches whatever it fetches, so drop any cached copy of sw.js first.
+  for (const k of await caches.keys()) await (await caches.open(k)).delete('./sw.js', { ignoreSearch: true });
+  const res = await fetch('./sw.js', { cache: 'no-store' });
+  return res.ok ? (await res.text()).match(/const VERSION = '([^']+)'/)?.[1] : null;
+}
+
+async function rescue() {
+  saveNow();
+  for (const k of await caches.keys()) if (k.startsWith('motherland-')) await caches.delete(k);
+  location.reload();
+}
+
+async function checkStalled(reg) {
+  if (checking || !navigator.onLine || !navigator.serviceWorker.controller) return;
+  checking = true;
+  try {
+    const latest = await deployedVersion();
+    if (!latest || (await caches.has(latest))) return;   // up to date, or the update is already installing
+    await new Promise(r => setTimeout(r, STALL_MS));     // give the browser's own updater its chance
+    if ((await caches.has(latest)) || reg.waiting || reg.installing) return;
+    let done = null; try { done = localStorage.getItem(RESCUE_KEY); } catch { /* private mode */ }
+    if (done === latest) return;                          // already rescued into this version once
+    try { localStorage.setItem(RESCUE_KEY, latest); } catch { /* private mode */ }
+    if (busy()) showToast(reg, rescue); else await rescue();
+  } catch { /* offline or blocked: try again next time */ } finally { checking = false; }
 }
 
 // Reload into the new version only once its worker has finished activating. Reloading the moment it
@@ -72,5 +111,6 @@ export function registerSW() {
   navigator.serviceWorker.register('./sw.js').then(reg => {
     watch(reg);
     reg.update().catch(() => {});   // iOS can skip its own check on launch; ask explicitly
+    checkStalled(reg);
   }).catch(e => console.warn('SW failed', e));
 }
