@@ -12,7 +12,10 @@ const sheet = { state: null, updatedAt: 0, sessions: [], flags: [], calls: [] };
 const fail = []; const ok = m => console.log('✓', m);
 
 const browser = await engine.launch(launchOpts);
-const ctx = await browser.newContext({ viewport: { width: 393, height: 852 } });
+// Service worker blocked for the sync checks: in WebKit, requests from a SW-controlled page skip
+// Playwright's routing, so they'd hit the real Google URL instead of the simulated Sheet. The offline
+// and update checks below use their own contexts with the service worker on.
+const ctx = await browser.newContext({ viewport: { width: 393, height: 852 }, serviceWorkers: 'block' });
 await ctx.route(URL_, async route => {
   const body = JSON.parse(route.request().postData());
   sheet.calls.push(body.action);

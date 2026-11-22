@@ -10,8 +10,9 @@
     "test": "node tools/test-logic.mjs",
     "qa": "node tools/qa.mjs",
     "qa:sync": "node tools/qa-sync.mjs",
+    "qa:features": "node tools/qa-features.mjs",
     "audit": "node tools/audit.mjs",
-    "check": "npm run validate && npm test && npm run qa && npm run qa:sync"
+    "check": "npm run validate && npm test && npm run qa && npm run qa:sync && npm run qa:features"
   },
   "devDependencies": {
     "axe-core": "^4.10.3",
