@@ -56,7 +56,7 @@ export async function sync({ quiet = true } = {}) {
     const remote = await pull();
     if (remote.state) {
       const local = S.get();
-      const merged = mergeStates(local, JSON.parse(remote.state));
+      const merged = mergeStates(local, S.migrate(JSON.parse(remote.state)));
       if (JSON.stringify(merged) !== JSON.stringify(local)) {
         S.replace(merged);
         window.dispatchEvent(new Event('motherland:synced'));   // re-draw the screen with the merged progress

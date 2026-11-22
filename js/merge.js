@@ -101,6 +101,7 @@ export function mergeStates(local, remote) {
   out.deviceId = local.deviceId;
   out.lang = local.lang;
   out.updatedAt = Math.max(local.updatedAt || 0, remote.updatedAt || 0);
+  out.v = Math.max(local.v || 1, remote.v || 1);   // format version: the newer one (see store.migrate)
   const resetAt = out.resetAt = Math.max(local.resetAt || 0, remote.resetAt || 0);
   const langs = {};
   for (const code of new Set([...Object.keys(local.langs || {}), ...Object.keys(remote.langs || {})])) {

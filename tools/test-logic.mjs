@@ -323,9 +323,15 @@ t('v1.1 state loads: progress kept', () => { assert.equal(S.lang().cards['u03-w0
 t('v1.1 state loads: user settings kept, haptics defaults on', () => {
   const st = S.settings(); assert.equal(st.showHanoi, false); assert.equal(st.dailyGoal, 100); assert.equal(st.syncKey, 'k'); assert.equal(st.haptics, true);
 });
-t('saving keeps the storage key and shape', () => { S.saveNow(); const back = JSON.parse(mem['motherland.v1']); assert.equal(back.v, 1); assert.equal(back.settings.haptics, true); assert.ok(back.langs.vi.cards['u03-w0']); });
+t('saving keeps the storage key; the format is upgraded to the current schema', () => { S.saveNow(); const back = JSON.parse(mem['motherland.v1']); assert.equal(back.v, S.SCHEMA); assert.equal(S.SCHEMA, 2); assert.equal(back.settings.haptics, true); assert.ok(back.langs.vi.cards['u03-w0']); });
+t('migration v1 → v2 keeps everything and fills containers', () => {
+  const m = S.migrate(JSON.parse(JSON.stringify(v11)));
+  assert.equal(m.v, 2); assert.equal(m.langs.vi.cards['u03-w0'].reps, 2); assert.deepEqual(m.langs.vi.decks, {}); assert.deepEqual(m.tomb, {});
+  assert.equal(m.settings.dailyGoal, 100);
+});
+t('migration leaves a newer-format state alone', () => assert.equal(S.migrate({ v: 99, x: 1 }).v, 99));
 mem['motherland.v1'] = '{not json';
 const S2 = await import('../js/store.js?corrupt');   // fresh module instance reads storage again
-t('corrupted storage: app starts with a fresh state', () => { assert.equal(S2.get().v, 1); assert.deepEqual(S2.get().langs, {}); });
+t('corrupted storage: app starts with a fresh state', () => { assert.equal(S2.get().v, S2.SCHEMA); assert.deepEqual(S2.get().langs, {}); });
 t('corrupted storage: the unreadable data is kept, not overwritten', () => assert.equal(mem['motherland.v1.unreadable'], '{not json'));
 console.log(`\n${n} tests passed`);

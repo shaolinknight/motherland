@@ -2,12 +2,40 @@
 import { dayKey, uid } from './util.js';
 import { streakInfo } from './streak.js';
 
+// The storage key is a contract with the phone (and older backups): it stays 'motherland.v1' forever.
+// The *format* inside it is versioned by `v` and upgraded step by step by MIGRATIONS below.
 const KEY = 'motherland.v1';
 const listeners = new Set();
 
+// Current format version. To change the saved format: bump SCHEMA, add MIGRATIONS[old] that turns a
+// version-`old` state into `old + 1`, and add a test with an old-shape fixture (tools/test-logic.mjs).
+export const SCHEMA = 2;
+const MIGRATIONS = {
+  // v1 → v2 (v1.6): v1 grew field by field from v1.1 to v1.5 (FSRS card fields, myWords, edits, decks,
+  // tombstones, new settings). Nothing needs converting — every addition was optional — so this step
+  // only records that the state has been checked, and fills per-language containers so code can rely
+  // on them existing.
+  1: s => {
+    for (const l of Object.values(s.langs || {})) {
+      l.cards ||= {}; l.lessons ||= {}; l.placements ||= []; l.skills ||= {}; l.games ||= {};
+      l.myWords ||= {}; l.edits ||= {}; l.decks ||= {}; l.tomb ||= {};
+    }
+    s.flags ||= []; s.pending ||= []; s.days ||= {}; s.tomb ||= {};
+    return { ...s, v: 2 };
+  },
+};
+
+// Bring any saved state (from storage, a backup file or the Sheet) up to the current format.
+// A state from a *newer* app version is left as it is.
+export function migrate(s) {
+  let out = { ...s, v: s.v || 1 };
+  while (out.v < SCHEMA && MIGRATIONS[out.v]) out = MIGRATIONS[out.v](out);
+  return out;
+}
+
 function defaults() {
   return {
-    v: 1,
+    v: SCHEMA,
     updatedAt: 0,
     deviceId: uid(),
     lang: 'vi',
@@ -26,18 +54,19 @@ function defaults() {
 function langDefaults() {
   return {
     cards: {}, lessons: {}, placements: [],
-    skills: {}, games: {},
+    skills: {}, games: {}, myWords: {}, edits: {}, decks: {}, tomb: {},
   };
 }
 
 let state = load();
 
 function load() {
+  if (typeof localStorage === 'undefined') return defaults();   // Node tests import this module
   let raw = null;
   try {
     raw = localStorage.getItem(KEY);
     if (raw) {
-      const s = JSON.parse(raw);
+      const s = migrate(JSON.parse(raw));
       const d = defaults();
       return { ...d, ...s, settings: { ...d.settings, ...(s.settings || {}) } };
     }
@@ -77,6 +106,7 @@ export const onChange = fn => listeners.add(fn);
 
 export function replace(next) {
   const keep = { syncUrl: state.settings.syncUrl, syncKey: state.settings.syncKey };
+  next = migrate(next);   // backups and Sheet copies may be in an older format
   state = { ...defaults(), ...next, settings: { ...defaults().settings, ...(next.settings || {}), ...keep } };
   saveNow();
   listeners.forEach(fn => fn(state));
