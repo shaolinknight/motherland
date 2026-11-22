@@ -49,13 +49,25 @@ function watch(reg) {
   });
 }
 
+// Reload into the new version only once its worker has finished activating. Reloading the moment it
+// takes control sends the page's request to a half-ready worker; WebKit (iPhone Safari's engine) was
+// seen to stall there, leaving the worker "activating" and blocking every later update. A short
+// fallback means we never wait forever.
+function reloadWhenActivated(sw) {
+  if (!sw || sw.state === 'activated') { location.reload(); return; }
+  let done = false;
+  const go = () => { if (!done) { done = true; location.reload(); } };
+  sw.addEventListener('statechange', () => { if (sw.state === 'activated') go(); });
+  setTimeout(go, 3000);
+}
+
 export function registerSW() {
   if (!('serviceWorker' in navigator) || location.protocol === 'file:') return;
   const hadController = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     // Only reload for an update; the very first install also fires controllerchange (clients.claim).
     if (reloading || !hadController) return;
-    reloading = true; location.reload();
+    reloading = true; reloadWhenActivated(navigator.serviceWorker.controller);
   });
   navigator.serviceWorker.register('./sw.js').then(reg => {
     watch(reg);
