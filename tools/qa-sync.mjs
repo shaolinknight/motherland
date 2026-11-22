@@ -204,10 +204,14 @@ await ctx2.close();
     .then(() => ok('update applies as soon as the lesson closes')).catch(() => fail.push('waiting update not applied after the lesson'));
   // Tapping the toast also works (update arrives while a sheet is open).
   await p3.waitForSelector('.hello'); await p3.goto(B2 + '#/unit/u03'); await p3.waitForSelector('.flag-it'); await p3.click('.flag-it'); await p3.waitForSelector('.sheet-wrap.open');
-  deploy = 4; await untilUpdateToast(p3);
-  await p3.click('.update-toast button').catch(() => {});
+  deploy = 4; const toasted = await untilUpdateToast(p3);
+  const clicked = await p3.click('.update-toast button', { timeout: 5000 }).then(() => 'clicked', e => e.message.split('\n')[0]);
   await p3.waitForFunction(() => document.documentElement.dataset.build === '4', null, { timeout: 15000 })
-    .then(() => ok('tapping "Update ready" loads the new version')).catch(() => fail.push('tapping the toast did not update'));
+    .then(() => ok('tapping "Update ready" loads the new version')).catch(async () => {
+      // Say what happened, so a failure in CI (WebKit) can be understood without a rerun.
+      const sw = await p3.evaluate(async () => { const r = await navigator.serviceWorker.getRegistration(); return { waiting: r?.waiting?.state, installing: r?.installing?.state, active: r?.active?.state, build: document.documentElement.dataset.build }; }).catch(e => e.message);
+      fail.push(`tapping the toast did not update (toast: ${toasted}, click: ${clicked}, sw: ${JSON.stringify(sw)})`);
+    });
   await ctx3.close(); srv2.close();
 }
 
