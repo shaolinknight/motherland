@@ -1,4 +1,8 @@
-/* Motherland — Vietnam-inspired theme: flag red, star gold, warm rice-paper cream. */
+/* Motherland — Vietnam-inspired theme: flag red, star gold, warm rice-paper cream.
+   Contents: tokens · base · header · layout · buttons · chips & banners · home · learn & unit · review & play ·
+   progress · settings · tabs · lesson session · toasts · grammar & dashboard · sheets · motion · iPhone polish ·
+   accessibility · settings rows · one-handed · lesson layout · flashcards · decks · tablet · dark mode ·
+   language palettes. Colors are tokens (--brand*, --gold*, …) so dark mode and each language just swap them. */
 :root {
   --brand: #C8102E; --brand-dark: #9C0C24; --brand-soft: #FBE7E9;
   --gold: #FFCD00; --gold-soft: #FFF4CC; --gold-ink: #8A6A00;
@@ -12,13 +16,15 @@
   --shadow: 0 1px 2px rgba(42, 27, 23, .06), 0 4px 14px rgba(42, 27, 23, .06);
   --tab-h: 62px;
   --safe-b: env(safe-area-inset-bottom, 0px); --safe-t: env(safe-area-inset-top, 0px);
+  --safe-l: env(safe-area-inset-left, 0px); --safe-r: env(safe-area-inset-right, 0px);
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   color: var(--ink); background: var(--cream);
   -webkit-text-size-adjust: 100%;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; min-height: 100%; }
-body { background: var(--cream); overscroll-behavior-y: none; -webkit-tap-highlight-color: transparent; }
+body { background: var(--cream); overscroll-behavior-y: none; -webkit-tap-highlight-color: transparent; min-height: 100vh; min-height: 100dvh; }
 body.no-scroll { overflow: hidden; }
 a { color: var(--accent); }
 button { font: inherit; color: inherit; }
@@ -41,13 +47,14 @@ p { margin: .35rem 0; line-height: 1.45; }
 .top {
   position: sticky; top: 0; z-index: 20;
   display: flex; align-items: center; gap: .5rem;
-  padding: calc(var(--safe-t) + 10px) 12px 10px;
+  padding: calc(var(--safe-t) + 10px) calc(12px + var(--safe-r)) 10px calc(12px + var(--safe-l));
   background: var(--brand); color: #fff;
   box-shadow: 0 2px 10px color-mix(in srgb, var(--brand-deep) 25%, transparent);
 }
 .brand { font-weight: 800; font-size: 1.15rem; letter-spacing: .01em; display: flex; align-items: center; gap: .35rem; white-space: nowrap; }
 .brand .star { color: var(--gold); font-size: 1.25rem; line-height: 1; }
 .top-title { flex: 1; min-width: 0; text-align: center; font-weight: 700; font-size: 1.05rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+h1.top-title { margin: 0; line-height: 1.2; font-size: 1.05rem; }
 .top-title small { display: block; font-weight: 500; font-size: .78rem; opacity: .85; overflow: hidden; text-overflow: ellipsis; }
 .icon-btn {
   width: 44px; height: 44px; border-radius: 50%; border: 0; background: transparent;
@@ -62,7 +69,7 @@ p { margin: .35rem 0; line-height: 1.45; }
 
 /* ── Layout ── */
 #app { padding-bottom: calc(var(--tab-h) + var(--safe-b) + 16px); }
-.page { padding: 14px 14px 8px; max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+.page { padding: 14px calc(14px + var(--safe-r)) 8px calc(14px + var(--safe-l)); max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
 .card { background: var(--paper); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; border: 1px solid var(--line); }
 a.card, button.card { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; text-align: left; width: 100%; cursor: pointer; }
 button.card:disabled { opacity: .5; cursor: default; }
@@ -73,7 +80,7 @@ a.card:active, button.card:not(:disabled):active { transform: scale(.99); }
 .btn {
   min-height: 48px; padding: 0 18px; border-radius: 999px; border: 1.5px solid transparent;
   font-weight: 700; font-size: 1rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
-  text-decoration: none; white-space: nowrap;
+  text-decoration: none; white-space: normal; text-align: center; line-height: 1.2;   /* wraps at large text sizes */
 }
 .btn:active:not(:disabled) { transform: scale(.97); }
 .btn:disabled { opacity: .45; cursor: default; }
@@ -82,8 +89,8 @@ a.card:active, button.card:not(:disabled):active { transform: scale(.99); }
 .btn.danger { background: var(--paper); color: var(--amber); border-color: var(--amber-soft); }
 .btn.small { min-height: 38px; padding: 0 14px; font-size: .9rem; }
 .btn.wide { width: 100%; }
-.btn-row { display: flex; gap: 8px; margin-top: 12px; }
-.btn-row > .btn { flex: 1; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.btn-row > .btn { flex: 1 1 auto; }
 .btn-row.wrap { flex-wrap: wrap; }
 .btn-row.wrap > .btn { flex: 1 1 140px; }
 
@@ -92,11 +99,13 @@ a.card:active, button.card:not(:disabled):active { transform: scale(.99); }
 .chip.ok { background: var(--jade-soft); color: var(--jade); }
 .chip.lvl { background: var(--brand-soft); color: var(--brand-dark); }
 .chip.warn { background: var(--amber-soft); color: var(--amber); }
+.chip.leech { background: var(--amber-soft); color: var(--amber); }
 .bar { height: 8px; background: var(--track); border-radius: 99px; overflow: hidden; margin: 6px 0; }
 .bar > div { height: 100%; background: linear-gradient(90deg, var(--brand), color-mix(in srgb, var(--brand) 75%, white)); border-radius: 99px; }
 .bar.low > div { background: linear-gradient(90deg, var(--amber), #D97706); }
 .banner { display: block; padding: 12px 14px; border-radius: var(--radius-sm); text-decoration: none; font-size: .9rem; font-weight: 600; }
 .banner.warn { background: var(--amber-soft); color: var(--amber); }
+.preview-banner { background: var(--blue-soft); color: var(--blue); }
 
 /* ── Home ── */
 .hello { display: flex; align-items: center; gap: 12px; background: linear-gradient(135deg, var(--paper) 0%, var(--gold-soft) 140%); }
@@ -119,6 +128,10 @@ a.card:active, button.card:not(:disabled):active { transform: scale(.99); }
 .q-tile { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 4px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: .8rem; font-weight: 700; cursor: pointer; box-shadow: var(--shadow); min-height: 72px; }
 .q-tile span { font-size: 1.5rem; }
 .q-tile:active { transform: scale(.96); }
+.backup-nudge { border-color: var(--gold); background: var(--gold-soft); }
+.backup-nudge p { margin: 0 0 4px; }
+.retest { border-color: var(--gold); }
+.recheck { border-color: var(--gold); }
 
 /* ── Learn ── */
 .unit-list { display: flex; flex-direction: column; gap: 8px; }
@@ -130,8 +143,9 @@ a.card:active, button.card:not(:disabled):active { transform: scale(.99); }
 .unit-hero .chip { margin-top: 4px; }
 .tip summary { font-weight: 700; cursor: pointer; min-height: 28px; }
 .tip p { margin-top: 8px; }
-.seg { display: flex; background: var(--track); border-radius: 999px; padding: 4px; gap: 2px; position: sticky; top: calc(var(--safe-t) + 70px); z-index: 10; box-shadow: 0 0 0 6px var(--cream); }
-.seg button { flex: 1; min-height: 38px; border: 0; background: transparent; border-radius: 999px; font-weight: 700; font-size: .88rem; color: var(--muted); cursor: pointer; padding: 0 4px; }
+.seg { display: flex; background: var(--track); border-radius: 999px; padding: 4px; gap: 2px; position: sticky; top: calc(var(--safe-t) + 70px); z-index: 10; box-shadow: 0 0 0 6px var(--cream); overflow-x: auto; scrollbar-width: none; }
+.seg::-webkit-scrollbar { display: none; }
+.seg button { flex: 1 0 auto; min-height: 38px; border: 0; background: transparent; border-radius: 999px; font-weight: 700; font-size: .88rem; color: var(--muted); cursor: pointer; padding: 0 4px; }
 .seg button.on { background: var(--paper); color: var(--brand-dark); box-shadow: var(--shadow); }
 .word-list, .mini-list { list-style: none; margin: 0; padding: 0; }
 .word-list { background: var(--paper); border-radius: var(--radius); border: 1px solid var(--line); overflow: hidden; }
@@ -144,6 +158,12 @@ a.card:active, button.card:not(:disabled):active { transform: scale(.99); }
 .hanoi { font-size: .85rem; color: var(--muted); margin-top: 2px; }
 .hanoi b { color: var(--ink); font-weight: 600; }
 .note { font-size: .85rem; color: var(--gold-ink); margin-top: 4px; }
+.word-row .opts { margin-top: -6px; }
+.edited-mark { font-size: .75rem; color: var(--gold-ink); white-space: nowrap; }
+.my-link { padding: 12px; }
+.word-row .chip { margin-top: 6px; }
+.review-note { margin: 10px 0 0; padding: 8px 10px; border-radius: 10px; background: var(--amber-soft); color: var(--ink); }
+.review-chip { margin-top: 4px; }
 .dlg-tools { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .switch { display: flex; align-items: center; gap: 8px; font-size: .9rem; font-weight: 600; cursor: pointer; min-height: 44px; }
 .switch input { width: 22px; height: 22px; accent-color: var(--accent); flex-shrink: 0; }
@@ -216,20 +236,20 @@ code { background: var(--cream); padding: 1px 5px; border-radius: 4px; font-size
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
   display: flex; justify-content: space-around; background: var(--tabs-bg);
   backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  border-top: 1px solid var(--line); padding-bottom: var(--safe-b); height: calc(var(--tab-h) + var(--safe-b));
+  border-top: 1px solid var(--line); padding: 0 var(--safe-r) var(--safe-b) var(--safe-l); height: calc(var(--tab-h) + var(--safe-b));
 }
-.tabs a { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; color: var(--faint); font-size: .7rem; font-weight: 700; min-width: 0; }
+.tabs a { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; color: var(--muted); font-size: 11px; font-weight: 700; min-width: 0; }   /* muted: 5.6:1; fixed size like native tab bars */
 .tabs a.on { color: var(--accent); }
 .tabs a.on .ico { stroke-width: 2.4; }
 
 /* ── Session overlay ── */
 .session { overflow: hidden;
-  position: fixed; inset: 0; z-index: 50; background: var(--cream);
+  position: fixed; inset: 0; bottom: auto; height: 100vh; height: 100dvh; z-index: 50; background: var(--cream);
   display: flex; flex-direction: column; animation: layerIn .32s cubic-bezier(.2, .8, .2, 1);
 }
 @keyframes layerIn { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes up { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
-.s-head { display: flex; align-items: center; gap: 6px; padding: calc(var(--safe-t) + 6px) 8px 6px; }
+.s-head { display: flex; align-items: center; gap: 6px; padding: calc(var(--safe-t) + 6px) calc(8px + var(--safe-r)) 6px calc(8px + var(--safe-l)); }
 .s-progress { flex: 1; height: 12px; background: var(--track); border-radius: 99px; overflow: hidden; position: relative; }
 .s-bar { height: 100%; width: 100%; background: var(--brand); border-radius: 99px; transform: scaleX(0); transform-origin: left; transition: transform .35s cubic-bezier(.2, .8, .2, 1); }
 .s-bar.endless { background: repeating-linear-gradient(45deg, var(--brand), var(--brand) 10px, color-mix(in srgb, var(--brand) 85%, white) 10px, color-mix(in srgb, var(--brand) 85%, white) 20px); }
@@ -237,7 +257,7 @@ code { background: var(--cream); padding: 1px 5px; border-radius: 4px; font-size
 .s-flag { color: var(--faint); }
 .s-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 12px 18px 20px; display: flex; flex-direction: column; gap: 12px; max-width: 640px; width: 100%; margin: 0 auto; }
 .s-foot {
-  padding: 12px 16px calc(12px + var(--safe-b)); display: flex; gap: 10px; align-items: center;
+  padding: 12px calc(16px + var(--safe-r)) calc(12px + var(--safe-b)) calc(16px + var(--safe-l)); display: flex; gap: 10px; align-items: center;
   background: var(--paper); border-top: 1px solid var(--line); min-height: 76px;
 }
 .s-foot:empty { display: none; }
@@ -284,8 +304,9 @@ code { background: var(--cream); padding: 1px 5px; border-radius: 4px; font-size
 .btn.rec.recording { background: var(--brand); color: #fff; animation: pulse 1s infinite; }
 @keyframes pulse { 50% { opacity: .7; } }
 .tap-hint { position: absolute; bottom: 10px; left: 0; right: 0; font-size: .75rem; color: var(--muted); }
-.grades { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%; }
-.grades .btn { padding: 0 4px; font-size: .9rem; border-radius: 12px; }
+.grades { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; }
+.grades .btn { flex-direction: column; gap: 0; padding: 0 4px; min-height: 64px; font-size: 1.02rem; line-height: 1.1; border-radius: 14px; }   /* Again/Hard/Good/Easy */
+.grades .btn small { font-size: .78rem; font-weight: 600; opacity: .8; margin-top: 2px; }
 .g0 { background: var(--amber-soft); color: var(--amber); } .g1 { background: var(--gold-soft); color: var(--gold-ink); }
 .g2 { background: var(--jade-soft); color: var(--jade); } .g3 { background: var(--blue-soft); color: var(--blue); }
 .finish { text-align: center; padding-top: 6vh; display: flex; flex-direction: column; align-items: center; gap: 6px; }
@@ -311,20 +332,21 @@ code { background: var(--cream); padding: 1px 5px; border-radius: 4px; font-size
   opacity: 0; pointer-events: none; transition: .25s; z-index: 100; max-width: calc(100% - 32px); text-align: center;
 }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
-
-/* ── Larger screens (iPad mock-up): two-column home & progress ── */
-@media (min-width: 768px) {
-  .large-title { max-width: 900px; padding: 20px 20px 0; }
-  .page { max-width: 900px; display: grid; grid-template-columns: 1fr 1fr; align-items: start; padding: 20px; gap: 16px; }
-  .page > .hello, .page > .banner, .page > .kicker.pad, .page > .quick, .page > .section-title, .page > .seg,
-  .page > .panel, .page > .unit-hero, .page > .tip, .page > p, .page > .unit-list, .page > .cta-test { grid-column: 1 / -1; }
-  .unit-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .tabs { justify-content: center; gap: 24px; }
-  .tabs a { flex: 0 0 90px; }
-  .s-body { padding-top: 28px; }
+/* Update toast: at the top, so it never covers the tab bar or a lesson's Check button. */
+.update-toast {
+  position: fixed; left: 50%; top: calc(var(--safe-t) + 10px); z-index: 250;   /* above sheets (200) */
+  transform: translate(-50%, -16px); opacity: 0; transition: transform .25s cubic-bezier(.2, .8, .2, 1), opacity .25s;
+  width: max-content; max-width: calc(100% - 32px);
 }
+.update-toast.show { transform: translate(-50%, 0); opacity: 1; }
+.update-toast button {
+  display: flex; flex-direction: column; align-items: center; gap: 1px; min-height: 48px; padding: 8px 22px;
+  border: 0; border-radius: 999px; background: var(--ink); color: #fff; cursor: pointer;
+  box-shadow: 0 6px 20px rgba(42, 27, 23, .3); font-size: .9rem;
+}
+.update-toast button span { font-size: .78rem; opacity: .85; }
 
-/* ── v1.1: grammar, sheets, leaderboards, dashboard, polish ── */
+/* ── Grammar, drills, results, links, leaderboards and the dashboard ── */
 button, a, .option, .tile, .m-tile, .word-row, .bubble, .sent { touch-action: manipulation; }
 button, .btn, .option, .tile, .m-tile, .q-tile, .tabs a { -webkit-user-select: none; user-select: none; }
 .ellip { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -351,6 +373,7 @@ button, .btn, .option, .tile, .m-tile, .q-tile, .tabs a { -webkit-user-select: n
 .gap.fix { color: var(--amber); border-color: var(--amber); }
 .options.grid-auto { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
 .option.center { text-align: center; font-size: 1.2rem; }
+.g-hit { margin-top: 4px; color: var(--gold-ink); }
 
 .missed { width: 100%; text-align: left; margin-top: 14px; padding: 12px 14px; }
 .missed-row { display: flex; flex-direction: column; padding: 7px 0; border-top: 1px solid var(--line); cursor: pointer; }
@@ -362,10 +385,9 @@ button, .btn, .option, .tile, .m-tile, .q-tile, .tabs a { -webkit-user-select: n
 
 .link-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
 .link-card .muted { margin: 2px 0 0; line-height: 1.3; }
-.link-card b { display: block; line-height: 1.2; }
+.link-card b { display: block; line-height: 1.2; font-size: .95rem; }
 .link-card { padding: 12px; gap: 10px; }
 .link-card .mode-ico { width: 38px; height: 38px; font-size: 1.15rem; }
-.link-card b { font-size: .95rem; }
 .search { color: var(--ink); font: inherit; font-size: 16px; min-height: 46px; padding: 0 14px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--paper); width: 100%; }
 .search:focus { outline: none; border-color: var(--accent); }
 .filters button small { font-weight: 600; opacity: .7; }
@@ -397,43 +419,25 @@ button, .btn, .option, .tile, .m-tile, .q-tile, .tabs a { -webkit-user-select: n
 .heat-legend { display: flex; align-items: center; gap: 4px; justify-content: flex-end; margin-top: 8px; }
 .heat-legend .h { width: 12px; height: 12px; }
 
-/* Bottom sheets */
-.sheet-wrap { position: fixed; inset: 0; z-index: 200; }
+/* ── Bottom sheets ── */
+.sheet-wrap { position: fixed; inset: 0; bottom: auto; height: 100vh; height: 100dvh; z-index: 200; }
 .sheet-backdrop { position: absolute; inset: 0; background: rgba(42, 27, 23, .4); opacity: 0; transition: opacity .2s; }
-.sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--paper); color: var(--ink); border-radius: 22px 22px 0 0; padding: 10px 18px calc(18px + var(--safe-b)); transform: translateY(100%); transition: transform .22s ease-out; max-width: 640px; margin: 0 auto; max-height: 85vh; overflow-y: auto; }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--paper); color: var(--ink); border-radius: 22px 22px 0 0; padding: 10px 18px calc(18px + var(--safe-b)); transform: translateY(100%); transition: transform .22s ease-out; max-width: 640px; margin: 0 auto; max-height: 85vh; max-height: 85dvh; overflow-y: auto; }
 .sheet-wrap.open .sheet-backdrop { opacity: 1; }
 .sheet-wrap.open .sheet { transform: none; }
 .sheet-grip { width: 40px; height: 5px; border-radius: 99px; background: var(--line); margin: 0 auto 12px; }
 .sheet h2 { font-size: 1.2rem; }
 .sheet-actions { display: flex; gap: 10px; margin-top: 16px; }
 .sheet-actions .btn { flex: 1; }
-.btn.danger { color: var(--amber); }
+.sheet-actions.stack { flex-direction: column; }
+.sheet-actions.stack .btn { flex: none; width: 100%; }
 .sheet-actions .btn.danger { background: var(--amber); color: #fff; border-color: var(--amber); }
 .flag-item { display: flex; flex-direction: column; padding: 10px 12px; background: var(--cream); border-radius: 12px; margin: 8px 0; }
 .reason-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
 .chip-btn { border: 1.5px solid var(--line); background: var(--paper); border-radius: 999px; padding: 8px 12px; font-size: .85rem; font-weight: 600; cursor: pointer; min-height: 38px; }
 .chip-btn.on { border-color: var(--accent); background: var(--brand-soft); color: var(--brand-dark); }
 
-@media (min-width: 768px) {
-  .page > .link-row, .page > .search, .page > .filters, .page > .bank, .page > .word-list { grid-column: 1 / -1; }
-}
-
-/* ── v1.2: update toast (top, so it never covers the tab bar or a lesson's Check button) ── */
-.update-toast {
-  position: fixed; left: 50%; top: calc(var(--safe-t) + 10px); z-index: 250;   /* above sheets (200) */
-  transform: translate(-50%, -16px); opacity: 0; transition: transform .25s cubic-bezier(.2, .8, .2, 1), opacity .25s;
-  width: max-content; max-width: calc(100% - 32px);
-}
-.update-toast.show { transform: translate(-50%, 0); opacity: 1; }
-.update-toast button {
-  display: flex; flex-direction: column; align-items: center; gap: 1px; min-height: 48px; padding: 8px 22px;
-  border: 0; border-radius: 999px; background: var(--ink); color: #fff; cursor: pointer;
-  box-shadow: 0 6px 20px rgba(42, 27, 23, .3); font-size: .9rem;
-}
-.update-toast button span { font-size: .78rem; opacity: .85; }
-
-/* ── v1.2: motion. Only transform and opacity animate; cubic-bezier easing (no linear() springs). ── */
-:root { --ease-out: cubic-bezier(.2, .8, .2, 1); }
+/* ── Motion. Only transform and opacity animate; cubic-bezier easing (no linear() springs). ── */
 
 /* Instant press feedback on everything tappable. :where() keeps specificity at 0 so existing
    :active styles (options, audio buttons) still win. */
@@ -473,7 +477,7 @@ html[data-nav="back"]::view-transition-old(root) { z-index: 2; }   /* the page b
 .s-foot.fb { animation: footUp .22s var(--ease-out); }
 @keyframes footUp { from { transform: translateY(24px); opacity: .4; } }
 .layer-leaving {
-  position: fixed; inset: 0; z-index: 50; background: var(--cream); display: flex; flex-direction: column; overflow: hidden;
+  position: fixed; inset: 0; bottom: auto; height: 100vh; height: 100dvh; z-index: 50; background: var(--cream); display: flex; flex-direction: column; overflow: hidden;
   pointer-events: none; animation: layerOut .22s cubic-bezier(.4, 0, 1, 1) forwards;
 }
 @keyframes layerOut { to { transform: translateY(48px); opacity: 0; } }
@@ -497,21 +501,7 @@ html[data-nav="back"]::view-transition-old(root) { z-index: 2; }   /* the page b
   .s-bar { transition: none; }
 }
 
-/* ── v1.2: polish ── */
-/* Full-height layers follow the visible viewport (Safari tab bars, iPad split view). fitToViewport()
-   still sets an inline height while the keyboard is open. */
-body { min-height: 100vh; min-height: 100dvh; }
-.session, .layer-leaving { bottom: auto; height: 100vh; height: 100dvh; }
-.sheet { max-height: 85vh; max-height: 85dvh; }
-.sheet-wrap { bottom: auto; height: 100vh; height: 100dvh; }
-
-/* Side safe areas (landscape, iPad Stage Manager). */
-:root { --safe-l: env(safe-area-inset-left, 0px); --safe-r: env(safe-area-inset-right, 0px); }
-.top { padding-left: calc(12px + var(--safe-l)); padding-right: calc(12px + var(--safe-r)); }
-.page { padding-left: calc(14px + var(--safe-l)); padding-right: calc(14px + var(--safe-r)); }
-.s-head { padding-left: calc(8px + var(--safe-l)); padding-right: calc(8px + var(--safe-r)); }
-.s-foot { padding-left: calc(16px + var(--safe-l)); padding-right: calc(16px + var(--safe-r)); }
-.tabs { padding-left: var(--safe-l); padding-right: var(--safe-r); }
+/* ── iPhone polish ── */
 
 /* Scrolling inside a lesson, sheet or table never drags the page behind it. */
 .s-body, .sheet, .g-table-wrap { overscroll-behavior: contain; }
@@ -524,51 +514,85 @@ a, button, .option, .tile, .m-tile, .q-tile, .tabs a { -webkit-touch-callout: no
 @supports (font: -apple-system-body) {
   html { font: -apple-system-body; }
 }
-.tabs a { font-size: 11px; }
 .tabs a span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* Large text: buttons wrap instead of pushing the page sideways, segmented controls scroll. */
-.btn { white-space: normal; text-align: center; line-height: 1.2; }
-.btn-row { flex-wrap: wrap; }
-.btn-row > .btn { flex: 1 1 auto; }
-.seg { overflow-x: auto; scrollbar-width: none; }
-.seg::-webkit-scrollbar { display: none; }
-.seg button { flex: 1 0 auto; }
 
-/* ── v1.2: accessibility ── */
-h1.top-title { margin: 0; line-height: 1.2; font-size: 1.05rem; }
+/* ── Accessibility ── */
 h1:focus, .s-body:focus, .sheet:focus { outline: none; }
-/* Inactive tab labels were var(--faint) (3.3:1); muted is 5.6:1 on white. */
-.tabs a { color: var(--muted); }
-/* Helper text and icons that were too faint. */
-.placeholder, .tap-hint { color: var(--muted); }
+/* Placeholder text at full contrast. */
 ::placeholder { color: var(--muted); opacity: 1; }
-.s-flag, .word-row .icon-btn { color: var(--faint); }   /* icons need 3:1 */
 /* A clear focus ring for keyboard / Switch Control users; taps don't show it. */
 :where(button, a, input, select, summary, [tabindex]:not([tabindex="-1"])):focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .top :where(button, a):focus-visible { outline-color: #fff; }
 
-/* ── v1.3 ── */
-.backup-nudge { border-color: var(--gold); background: var(--gold-soft); }
-.backup-nudge p { margin: 0 0 4px; }
-@media (min-width: 768px) { .page > .backup-nudge { grid-column: 1 / -1; } }
+/* ── One-handed use ── */
+.s-body > .finish:first-child, .s-body > .countdown:first-child { margin-top: 0; }
+.fb-row { display: flex; gap: 10px; align-items: center; }
+.fb-row .next { flex: 1; }
+.fb-more { background: rgba(0, 0, 0, .06); }
+/* Unit page actions live above the tab bar. */
+.action-bar {
+  position: fixed; left: 0; right: 0; bottom: calc(var(--tab-h) + var(--safe-b)); z-index: 25;
+  display: flex; gap: 8px; padding: 10px calc(14px + var(--safe-r)) 10px calc(14px + var(--safe-l));
+  background: var(--tabs-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid var(--line);
+}
+.action-bar .btn { flex: 1; }
+.action-bar .btn.primary { flex: 1.4; }
+.page.has-action { padding-bottom: 84px; }
 
-.sheet-actions.stack { flex-direction: column; }
-.sheet-actions.stack .btn { flex: none; width: 100%; }
-.my-link { padding: 12px; }
-.word-row .chip { margin-top: 6px; }
-.review-note { margin: 10px 0 0; padding: 8px 10px; border-radius: 10px; background: var(--amber-soft); color: var(--ink); }
-.review-chip { margin-top: 4px; }
-.retest { border-color: var(--gold); }
-@media (min-width: 768px) { .page > .retest { grid-column: 1 / -1; } }
-.recheck { border-color: var(--gold); }
-@media (min-width: 768px) { .page > .recheck { grid-column: 1 / -1; } }
-.chip.leech { background: var(--amber-soft); color: var(--amber); }
-.chip.hid { background: var(--track); color: var(--muted); }
-.word-row .opts { margin-top: -6px; }
-.grades .btn { flex-direction: column; gap: 0; line-height: 1.1; }
-.grades .btn small { font-size: .68rem; font-weight: 600; opacity: .8; }
+/* ── Lesson layout: question in the middle, answers at the bottom ──
+   Free space is split by auto margins: above the first block and below the question, so the prompt
+   sits mid-screen and the answer area (options / tiles / typing / recording) rests at the bottom
+   near the thumb. Steps with no answer area (intro cards, flashcards) are centred. */
+.s-body > :first-child { margin-top: auto; }
+.s-body > :is(.options, .tiles, .dict-input, .rec-row) { margin-top: auto; }
+.s-body > :last-child:not(.options, .tiles, .dict-input, .rec-row) { margin-bottom: auto; }
 
-/* ── v1.3: dark mode. Follows the iPhone unless Settings forces light or dark (data-theme on <html>).
+/* ── Flashcards: a real two-sided card. Tap anywhere to flip, tap again to flip back. ── */
+.flip-wrap { perspective: 1200px; }
+button.flip-card { display: grid; align-items: stretch; padding: 0; min-height: 260px; width: 100%; transform-style: preserve-3d; transition: transform .45s cubic-bezier(.2, .8, .2, 1); cursor: pointer; }
+.flip-card .face { grid-area: 1 / 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 28px 16px 34px; text-align: center; backface-visibility: hidden; -webkit-backface-visibility: hidden; position: relative; }
+.flip-card .face.back { transform: rotateY(180deg); }
+.flip-card.flipped { transform: rotateY(180deg); }
+button.flip-card.flipped:not(:disabled):active { transform: rotateY(180deg) scale(.98); }   /* must out-rank button.card:active */
+.flip-card .back .en { font-size: 1.3rem; font-weight: 650; }
+@media (prefers-reduced-motion: reduce) {
+  .flip-card, .flip-card.flipped, button.flip-card.flipped:not(:disabled):active { transform: none; transition: none; }
+  .flip-card .face.back { transform: none; opacity: 0; transition: opacity .15s; }
+  .flip-card .face.front { transition: opacity .15s; }
+  .flip-card.flipped .face.back { opacity: 1; }
+  .flip-card.flipped .face.front { opacity: 0; }
+}
+
+/* ── Decks ── */
+.decks-sec { display: flex; flex-direction: column; gap: 8px; }
+.decks-sec .section-title { margin: 10px 4px 0; }
+.deck-list { display: flex; flex-direction: column; gap: 8px; }
+.deck-row { padding: 12px; }
+.pick-row { align-items: center; }
+.pick-row.in { background: var(--jade-soft); }
+.pick-mark { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 1.1rem; background: var(--brand-soft); color: var(--brand-dark); flex-shrink: 0; margin-right: 6px; }
+.pick-row.in .pick-mark { background: var(--jade); color: #fff; }
+
+/* ── Tablet (iPad): two columns, centered tab bar. Every wide-screen rule lives here. ── */
+@media (min-width: 768px) {
+  .large-title { max-width: 900px; padding: 20px 20px 0; }
+  .page { max-width: 900px; display: grid; grid-template-columns: 1fr 1fr; align-items: start; padding: 20px calc(14px + var(--safe-r)) 20px calc(14px + var(--safe-l)); gap: 16px; }
+  /* Full-width rows in the two-column grid */
+  .page > .hello, .page > .banner, .page > .kicker.pad, .page > .quick, .page > .section-title, .page > .seg,
+  .page > .panel, .page > .unit-hero, .page > .tip, .page > p, .page > .unit-list, .page > .cta-test,
+  .page > .link-row, .page > .search, .page > .filters, .page > .bank, .page > .word-list,
+  .page > .g-sec, .page > .g-empty, .page > .g-intro, .page > .my-link, .page > .set-sec,
+  .page > .backup-nudge, .page > .retest, .page > .recheck, .page > .preview-banner,
+  .page > .decks-sec, .page > .pick-list, .page > .deck-cards, .page > .pick-search, .page > .field, .page > .add-unit, .page > .pick-more { grid-column: 1 / -1; }
+  .unit-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tabs { justify-content: center; gap: 24px; }
+  .tabs a { flex: 0 0 90px; }
+  .s-body { padding-top: 28px; }
+  .action-bar { justify-content: center; }
+  .action-bar .btn { flex: 0 1 240px; }
+}
+
+/* ── Dark mode. Follows the iPhone unless Settings forces light or dark (data-theme on <html>).
    Red stays the fill color for buttons and the header; --accent / --brand-dark are its text forms. ── */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -595,10 +619,8 @@ h1:focus, .s-body:focus, .sheet:focus { outline: none; }
   --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 14px rgba(0, 0, 0, .25);
 }
 :root[data-theme="light"] { color-scheme: light; }
-.g-hit { margin-top: 4px; color: var(--gold-ink); }
-@media (min-width: 768px) { .page > .g-sec, .page > .g-empty, .page > .g-intro, .page > .my-link { grid-column: 1 / -1; } }
 
-/* Settings: collapsed rows, one open at a time */
+/* ── Settings: collapsed rows, one open at a time ── */
 .set-sec { padding: 0; overflow: hidden; }
 .set-sec > summary { list-style: none; display: flex; align-items: center; gap: 12px; padding: 12px 14px; min-height: 60px; cursor: pointer; color: var(--ink); font-size: 1rem; font-weight: 400; }
 .set-sec > summary::-webkit-details-marker { display: none; }
@@ -610,7 +632,6 @@ h1:focus, .s-body:focus, .sheet:focus { outline: none; }
 .set-sec[open] > summary { border-bottom: 1px solid var(--line); }
 .set-body { padding: 4px 16px 16px; }
 .set-sec[open] .set-body { animation: vtFadeIn .2s ease-out; }
-@media (min-width: 768px) { .page > .set-sec { grid-column: 1 / -1; } }
 
 /* ── Language colors. Each course has its own palette, picked by data-lang on <html> (set before
    first paint in index.html and kept in sync by js/theme.js). Vietnamese uses the defaults in
@@ -655,62 +676,3 @@ h1:focus, .s-body:focus, .sheet:focus { outline: none; }
   --accent: #6EDDB0; --brand-dark: #8CE3BE; --brand-soft: #0F2A20; --brand-mid: #1F5A43; --brand-line: #1C4636;
   --gold-soft: #3B1418; --gold-ink: #FF8F99; --gold-line: #5A2328;
 }
-
-/* ── v1.4: one-handed use ── */
-.s-body > .finish:first-child, .s-body > .countdown:first-child { margin-top: 0; }
-.fb-row { display: flex; gap: 10px; align-items: center; }
-.fb-row .next { flex: 1; }
-.fb-more { background: rgba(0, 0, 0, .06); }
-/* Unit page actions live above the tab bar. */
-.action-bar {
-  position: fixed; left: 0; right: 0; bottom: calc(var(--tab-h) + var(--safe-b)); z-index: 25;
-  display: flex; gap: 8px; padding: 10px calc(14px + var(--safe-r)) 10px calc(14px + var(--safe-l));
-  background: var(--tabs-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid var(--line);
-}
-.action-bar .btn { flex: 1; }
-.action-bar .btn.primary { flex: 1.4; }
-.page.has-action { padding-bottom: 84px; }
-@media (min-width: 768px) { .action-bar { justify-content: center; } .action-bar .btn { flex: 0 1 240px; } }
-
-/* ── v1.5: question in the middle, answers at the bottom ──
-   Free space is split by auto margins: above the first block and below the question, so the prompt
-   sits mid-screen and the answer area (options / tiles / typing / recording) rests at the bottom
-   near the thumb. Steps with no answer area (intro cards, flashcards) are centred. */
-.s-body > :first-child { margin-top: auto; }
-.s-body > :is(.options, .tiles, .dict-input, .rec-row) { margin-top: auto; }
-.s-body > :last-child:not(.options, .tiles, .dict-input, .rec-row) { margin-bottom: auto; }
-
-/* Flashcards: a real two-sided card. Tap anywhere to flip, tap again to flip back. */
-.flip-wrap { perspective: 1200px; }
-button.flip-card { display: grid; align-items: stretch; padding: 0; min-height: 260px; width: 100%; transform-style: preserve-3d; transition: transform .45s cubic-bezier(.2, .8, .2, 1); cursor: pointer; }
-.flip-card .face { grid-area: 1 / 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 28px 16px 34px; text-align: center; backface-visibility: hidden; -webkit-backface-visibility: hidden; position: relative; }
-.flip-card .face.back { transform: rotateY(180deg); }
-.flip-card.flipped { transform: rotateY(180deg); }
-.flip-card.flipped:active { transform: rotateY(180deg) scale(.98); }
-.flip-card .back .en { font-size: 1.3rem; font-weight: 650; }
-@media (prefers-reduced-motion: reduce) {
-  .flip-card, .flip-card.flipped, .flip-card.flipped:active { transform: none; transition: none; }
-  .flip-card .face.back { transform: none; opacity: 0; transition: opacity .15s; }
-  .flip-card .face.front { transition: opacity .15s; }
-  .flip-card.flipped .face.back { opacity: 1; }
-  .flip-card.flipped .face.front { opacity: 0; }
-}
-/* Bigger Again / Hard / Good / Easy buttons */
-.grades { gap: 8px; }
-.grades .btn { min-height: 64px; font-size: 1.02rem; border-radius: 14px; }
-.grades .btn small { font-size: .78rem; margin-top: 2px; }
-
-.edited-mark { font-size: .75rem; color: var(--gold-ink); white-space: nowrap; }
-
-/* Decks */
-.decks-sec { display: flex; flex-direction: column; gap: 8px; }
-.decks-sec .section-title { margin: 10px 4px 0; }
-.deck-list { display: flex; flex-direction: column; gap: 8px; }
-.deck-row { padding: 12px; }
-.pick-row { align-items: center; }
-.pick-row.in { background: var(--jade-soft); }
-.pick-mark { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 1.1rem; background: var(--brand-soft); color: var(--brand-dark); flex-shrink: 0; margin-right: 6px; }
-.pick-row.in .pick-mark { background: var(--jade); color: #fff; }
-@media (min-width: 768px) { .page > .decks-sec, .page > .pick-list, .page > .deck-cards, .page > .pick-search, .page > .field, .page > .add-unit, .page > .pick-more { grid-column: 1 / -1; } }
-.preview-banner { background: var(--blue-soft); color: var(--blue); }
-@media (min-width: 768px) { .page > .preview-banner { grid-column: 1 / -1; } }
