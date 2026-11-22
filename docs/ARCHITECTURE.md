@@ -5,7 +5,7 @@
 |---|---|
 | `index.html` | App shell: `#app` (screens) + `#tabs` (bottom tab bar). Loads `js/main.js`. |
 | `js/main.js` | Boot, hash router (`#/home`, `#/unit/u03/grammar`…), back-navigation depth, View Transitions between screens, per-screen scroll memory, sync on open/return/back online. Installs error reporting first. |
-| `js/pwa.js` | Service worker registration and the "Update ready" toast (cache-first updates). |
+| `js/pwa.js` | Service worker registration and the "Update ready" toast (cache-first updates). Reloads only once a new worker is `activated`. **Stalled-update safety net** (`checkStalled`): WebKit's updater was seen to hang for good (even `register()` never resolved), so on launch and on return the page reads the deployed `sw.js` itself; if that version hasn't started installing within 8 s, it clears the app caches and reloads so files come fresh from the network (once per version). Keep it independent of `register()`. |
 | `js/haptics.js` | One light haptic tick (iOS 17.4+ `<input switch>` trick, `navigator.vibrate` elsewhere), gated by `settings.haptics`. |
 | `js/screens.js` | Index that re-exports the screens in `js/screens/`, one module per area: `shared.js` (header, audio buttons, backups, lesson start, `VERSION`), `home.js`, `learn.js` (Learn, unit, grammar guide, My words), `words.js`, `review.js` (modes, week chart, decks, word picker), `play.js` (+ leaderboards), `progress.js` (dashboard, placement, diagnostics), `settings.js`. Each renders via `innerHTML` and wires its own events. |
 | `js/exercises.js` | Exercise types and the full-screen **session runner** used by lessons, reviews, endless mode and the placement test. Also the grammar renderers and the synonym-safe answer-choice picker (`clash`). |
