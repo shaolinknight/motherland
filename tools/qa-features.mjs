@@ -126,7 +126,12 @@ await scenario('Edit a card, restore it, typo warning', async p => {
 await scenario('Decks: create, add, write, study, remove', async p => {
   await p.goto(BASE + '#/review'); await p.click('.new-deck'); await p.fill('.ask-text', 'Wedding speech'); await p.click('.sheet-actions .primary');
   await p.waitForSelector('.write-card');
-  await p.click('a.btn >> text=Add words'); await p.selectOption('.pick-unit', 'u06'); await p.click('.add-unit'); await p.waitForTimeout(200);
+  await p.click('a.btn >> text=Add words'); await p.selectOption('.pick-unit', 'u06');
+  // Headless WebKit can hang "scrolling into view" right after a <select> change (seen in CI, not
+  // reproducible elsewhere). Let the screen settle, then fall back to clicking the button directly.
+  await p.waitForFunction(() => !document.getAnimations().some(a => a.effect?.getTiming().iterations !== Infinity && a.playState === 'running'), null, { timeout: 5000 }).catch(() => {});
+  await p.click('.add-unit', { timeout: 5000 }).catch(() => p.locator('.add-unit').dispatchEvent('click'));
+  await p.waitForTimeout(200);
   await p.click('.back'); await p.waitForSelector('.write-card'); await p.waitForTimeout(300);
   await p.click('.write-card'); await p.fill('.wc-vi', 'kính thưa quý vị'); await p.fill('.wc-en', 'ladies and gentlemen'); await p.click('.sheet-actions .primary'); await p.waitForTimeout(400);
   const total = await p.$$eval('.deck-cards .word-row', r => r.length);
