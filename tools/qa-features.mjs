@@ -337,9 +337,11 @@ for (const scheme of ['light', 'dark']) {
       const bad = [];
       for (const r of ['home', 'progress', 'settings/study', 'review']) {
         await p.evaluate(r2 => { location.hash = '#/' + r2; }, r); await p.waitForTimeout(350);
+        // Mid-transition text is half-transparent and measures as low contrast; wait until the screen settles.
+        await p.waitForFunction(() => !document.getAnimations().some(a => a.effect?.getTiming().iterations !== Infinity && a.playState === 'running'), null, { timeout: 5000 }).catch(() => {});
         await p.addScriptTag({ content: AXE });
-        const v = await p.evaluate(async () => (await window.axe.run(document, { runOnly: ['color-contrast'] })).violations.length);
-        if (v) bad.push(r);
+        const v = await p.evaluate(async () => (await window.axe.run(document, { runOnly: ['color-contrast'] })).violations.flatMap(x => x.nodes.map(n => `${n.target.join(' ')}: ${n.any[0]?.message?.match(/contrast of [\d.]+/)?.[0]}`)));
+        if (v.length) bad.push(`${r} (${v.slice(0, 2).join('; ')})`);
       }
       // The toast (with its Undo button) inverts with the theme; check it too.
       await p.evaluate(async () => (await import('/js/ui.js')).undoToast('Buried until tomorrow', () => {})); await p.waitForTimeout(400);
