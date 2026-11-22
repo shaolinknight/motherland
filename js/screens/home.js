@@ -76,7 +76,7 @@ export function home(root) {
   $('.do-quiz', root)?.addEventListener('click', () => X.run({ steps: X.reviewSteps(), activity: 'review' }));
   $('.do-endless', root)?.addEventListener('click', () => X.run({ endless: true, activity: 'endless', steps: [] }));
   $$('[data-game]', root).forEach(b => b.onclick = () => GAMES[b.dataset.game]());
-  wireSyncLine(root);
+  drawSyncLine();
 }
 
 // Everything that wants a moment of your attention, as one short list instead of a stack of cards.
@@ -105,17 +105,14 @@ function syncStatus() {
   return `☁️ <a class="link-btn" href="#/settings/sync">Synced ${timeAgo(st.lastSync)}</a>`;
 }
 
-function wireSyncLine(root) {
-  const line = $('.sync-line', root);
+// Draw the sync line on screen (if Home is showing) with a working Retry button.
+function drawSyncLine() {
+  const line = document.querySelector('.sync-line');
   if (!line) return;
-  const draw = () => { line.innerHTML = syncStatus(); $('.sync-retry', line)?.addEventListener('click', retry); };
-  const retry = async () => {
+  line.innerHTML = syncStatus();
+  $('.sync-retry', line)?.addEventListener('click', async () => {
     try { await sync({ quiet: false }); toast('Synced ✅'); } catch (e) { toast(`Sync failed: ${e.message}`, 3500); }
-  };
-  draw();
-  // Redraw on sync start/finish and connection changes. Once Home re-renders, this line is detached
-  // and its listener removes itself on the next event.
-  const on = () => { if (!line.isConnected) { off(); return; } draw(); };
-  const off = () => ['motherland:sync-state', 'online', 'offline'].forEach(e => window.removeEventListener(e, on));
-  ['motherland:sync-state', 'online', 'offline'].forEach(e => window.addEventListener(e, on));
+  });
 }
+// One set of listeners for the app's lifetime: redraw on sync start/finish and connection changes.
+['motherland:sync-state', 'online', 'offline'].forEach(e => window.addEventListener(e, drawSyncLine));
