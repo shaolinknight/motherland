@@ -14,6 +14,7 @@ const AXE = fs.readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
 const server = await ensureServer(8123);
 const BASE = 'http://localhost:8123/';
 const fails = [];
+fs.mkdirSync('test-results', { recursive: true });
 let passed = 0;
 const ok = (cond, name, detail = '') => { if (cond) { passed++; console.log('✓', name); } else { fails.push(`${name}${detail ? ` (${detail})` : ''}`); console.log('✗', name, detail); } };
 
@@ -37,7 +38,9 @@ async function scenario(name, fn, ctxOpts = {}, { allowErrors = false } = {}) {
   p.on('pageerror', e => real(e.message) && errs.push(e.message)); p.on('console', m => m.type() === 'error' && real(m.text()) && errs.push(m.text()));
   console.log(`\n— ${name}`);
   try { await fn(p); } catch (e) {
-    const why = e.message.split('\n').filter(l => l.trim()).slice(0, 3).join(' / ');   // includes "waiting for locator(...)"
+    const why = e.message.split('\n').filter(l => l.trim()).slice(0, 8).join(' / ');   // includes "waiting for locator(...)" and why
+    // A picture of the moment it got stuck (CI uploads test-results/ when a run fails).
+    await p.screenshot({ path: `test-results/crash-${name.replace(/[^a-z0-9]+/gi, '-').slice(0, 40)}.png` }).catch(() => {});
     fails.push(`${name}: crashed: ${why}`); console.log('✗ crashed:', why);
   }
   if (!allowErrors) ok(!errs.length, `${name}: no console errors`, errs.slice(0, 2).join(' | '));
