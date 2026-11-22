@@ -252,6 +252,23 @@ if (ONLY_LOADS) { await browser.close(); server.close(); console.log(JSON.string
   }
   await page.goto(BASE + '#/unit/u03'); await page.click('.learn-new'); await page.waitForTimeout(200); await scan('session:intro');
   await page.click('.s-foot .btn.primary'); await page.waitForTimeout(200); await scan('session:step');
+  // Screens added since v1.2, with enough state to show their parts: due cards (week chart, flashcards,
+  // Home's next-up), a deck, a My word, a failed sync (Home status line + Retry), placement skips.
+  await load(page);
+  const deckId = await page.evaluate(async () => {
+    const S = await import('/js/store.js'), C = await import('/js/course.js'), D = await import('/js/decks.js');
+    C.unitItems('u03').slice(0, 8).forEach((i, n) => { C.cards()[i.id] = { reps: 1, ivl: 1, ease: 2.5, due: n < 5 ? 0 : Date.now() + n * 864e5, lapses: 0, seen: 1, last: 1 }; });
+    C.myWordsMap()['my-a11y'] = { id: 'my-a11y', vi: 'bánh mì', en: 'bread', verified: false, at: 1, edited: 1 };
+    Object.assign(S.settings(), { syncUrl: 'https://sheet.invalid/exec', syncError: 'Wrong password', lastSync: 1 });
+    const d = D.create('Test deck'); D.add(d.id, C.unitItems('u03').slice(0, 4).map(i => i.id)); S.saveNow(); return d.id;
+  });
+  for (const r of ['home', 'review', 'mywords', 'grammar', 'diagnostics', 'settings/study', 'settings/sync', 'settings/data', `deck/${deckId}`, `deck/${deckId}/add`]) {
+    await page.goto(BASE + '#/' + r); await page.waitForTimeout(250); await scan(r.replace(deckId, 'id'));
+  }
+  await page.goto(BASE + '#/review'); await page.waitForTimeout(200);
+  await page.evaluate(async () => (await import('/js/ui.js')).undoToast('Buried until tomorrow', () => {})); await page.waitForTimeout(350); await scan('undo toast');
+  await page.click('[data-mode="flash"]'); await page.waitForSelector('.flip-card'); await page.waitForTimeout(500); await scan('flashcard front');   // after the entrance fade
+  await page.click('.flip-card'); await page.waitForTimeout(500); await scan('flashcard back');
   out.a11y.violations = all;
   out.a11y.total = Object.values(all).reduce((n, v) => n + v.nodes, 0);
   // Focus order: tab through Home and list what receives focus.

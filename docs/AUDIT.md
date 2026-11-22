@@ -127,3 +127,26 @@ Notes, honestly:
 | Requests / bytes, first load | 23 / 90 KB | 30 / 117 KB |
 
 The first-ever load is ~0.9 s slower on slow 3G because v1.3 adds 7 small modules and the content of 7 new units. Everyday launches are served from the phone and are unchanged, and after a deploy the new files download in the background, so this cost is paid once per install. If it ever matters, the new modules could be merged into fewer files without a build step.
+
+## v1.6 (same method, Chromium, Nov 22, 2026)
+| | v1.3 | v1.6 |
+|---|---|---|
+| Slow 3G, warm launch (every day) | 0.06 s | 0.09 s |
+| Offline launch | 0.05 s | 0.09 s |
+| Slow 3G, first-ever load | 4.10 s | 5.19 s |
+| Fast 3G, first-ever load | 1.40 s | 1.76 s |
+| Requests / bytes, first load | 30 / 117 KB | 45 / 158 KB |
+| Tab switch / open lesson / next step | — | 14 / 35 / 14 ms |
+| axe-core violations | 0 (11 screens) | **0 (25 screens and states)** |
+| Text at 130% / 200% | no problems | no problems (after the fix below) |
+
+What the re-check covered and found:
+- **New screens scanned:** My words, grammar search, diagnostics, Settings sections open, a deck and its word picker, Review with the week chart, Home with sync status and Needs attention, the Undo toast, and a flashcard front and back.
+- **Fixed: grade-button intervals** ("10m", "3d" under Again/Hard/Good/Easy) were faded to 3.2:1. They are now full color (4.5:1 or better, light and dark).
+- **Fixed: toasts in dark mode** had white text on a light background. Feature tests now check the toast in every language palette.
+- **Fixed: at 200% text,** the "needs family check" chip on new units pushed Learn sideways. It now wraps.
+- **Audit method:** the flashcard scan now waits for the session's entrance fade. Mid-fade, text measures as half-transparent.
+
+Speed, honestly:
+- First-ever load is ~1.1 s slower on slow 3G than v1.3. It is mostly bytes: 38 units of content (~53 KB gzipped), plus the modules for decks, planner, undo and error reporting. At 400 kbit/s the download alone is ~3.2 s, so merging files would save little. This is paid once per install; after a deploy, new files download in the background.
+- Warm and offline launches went from ~0.05 s to ~0.09 s (45 cached modules to evaluate instead of 30). Still well under a tenth of a second, but measurable. If it ever feels slow on the phone, lazy-loading the rarely used screens (games, diagnostics, settings) is the first lever.
