@@ -16,6 +16,17 @@ watchdog('qa:sync', 6);
 // Ask the service worker to look for a new version without waiting on it in the page: WebKit can
 // leave update() unsettled while a sheet is open, and the checks that follow wait with timeouts anyway.
 const checkForUpdate = p => p.evaluate(() => { navigator.serviceWorker.getRegistration().then(r => r?.update()).catch(() => {}); });
+// Keep asking until the "Update ready" toast shows. The app runs its own update check at every launch;
+// a check asked for while that one is still running joins it (per the Service Worker spec) and can
+// miss a deploy made a moment later. WebKit is slow enough to hit this; the phone would catch the
+// deploy at its next foreground check, which this loop stands in for.
+async function untilUpdateToast(p, tries = 10) {
+  for (let i = 0; i < tries; i++) {
+    await checkForUpdate(p);
+    if (await p.waitForSelector('.update-toast.show', { timeout: 1500 }).then(() => true, () => false)) return true;
+  }
+  return false;
+}
 const browser = await engine.launch(launchOpts);
 // Service worker blocked for the sync checks: in WebKit, requests from a SW-controlled page skip
 // Playwright's routing, so they'd hit the real Google URL instead of the simulated Sheet. The offline
@@ -179,8 +190,8 @@ await ctx2.close();
 
   // Mid-lesson: the update waits (toast), even if the app is backgrounded, then applies when the lesson closes.
   await p3.click('.start-lesson'); await p3.waitForSelector('.session');
-  deploy = 3; await checkForUpdate(p3);
-  await p3.waitForSelector('.update-toast.show', { timeout: 15000 }).then(() => ok('"Update ready" toast appears during a lesson')).catch(() => fail.push('no update toast during a lesson'));
+  deploy = 3;
+  (await untilUpdateToast(p3)) ? ok('"Update ready" toast appears during a lesson') : fail.push('no update toast during a lesson');
   await hide(); await p3.waitForTimeout(1500);
   (await p3.$('.session')) && (await build()) === '2' ? ok('update waits while a lesson is open') : fail.push('update interrupted an open lesson');
   await p3.evaluate(() => { Object.defineProperty(document, 'visibilityState', { get: () => 'visible', configurable: true }); });
@@ -193,8 +204,7 @@ await ctx2.close();
     .then(() => ok('update applies as soon as the lesson closes')).catch(() => fail.push('waiting update not applied after the lesson'));
   // Tapping the toast also works (update arrives while a sheet is open).
   await p3.waitForSelector('.hello'); await p3.goto(B2 + '#/unit/u03'); await p3.waitForSelector('.flag-it'); await p3.click('.flag-it'); await p3.waitForSelector('.sheet-wrap.open');
-  deploy = 4; await checkForUpdate(p3);
-  await p3.waitForSelector('.update-toast.show', { timeout: 15000 }).catch(() => {});
+  deploy = 4; await untilUpdateToast(p3);
   await p3.click('.update-toast button').catch(() => {});
   await p3.waitForFunction(() => document.documentElement.dataset.build === '4', null, { timeout: 15000 })
     .then(() => ok('tapping "Update ready" loads the new version')).catch(() => fail.push('tapping the toast did not update'));
