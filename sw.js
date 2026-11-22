@@ -26,9 +26,13 @@ self.addEventListener('install', e => {
 });
 
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys()
+  const cleanup = caches.keys()
     .then(keys => Promise.all(keys.filter(k => k.startsWith('motherland-') && k !== VERSION).map(k => caches.delete(k))))
-    .then(() => self.clients.claim()));
+    .then(() => self.clients.claim());
+  // Hold activation open for the cleanup, but never for long. In WebKit (iPhone Safari) this step was
+  // seen to never finish, which left the worker "activating" and blocked every later update. Capped,
+  // activation always completes and the cleanup simply finishes in the background.
+  e.waitUntil(Promise.race([cleanup, new Promise(r => setTimeout(r, 3000))]));
 });
 
 self.addEventListener('message', e => {
