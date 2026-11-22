@@ -6,7 +6,7 @@ import * as T from '../stats.js';
 import { audioAvailable } from '../speech.js';
 import { $, esc, toast, dayKey, weekKeys, pct, timeAgo } from '../util.js';
 import { icon } from '../icons.js';
-import { confirmSheet } from '../ui.js';
+import { confirmSheet, undoToast } from '../ui.js';
 import { focusSkills, RETEST_AFTER_DAYS } from '../focus.js';
 import { L, say, go, wireSay, bar, plural, header, wireHeader } from './shared.js';
 
@@ -200,6 +200,8 @@ export function diagnostics(root) {
   });
   $('.keepskips', root)?.addEventListener('click', () => {
     // Mark them as reviewed-on-trust so they stop showing here; FSRS still checks them on schedule.
-    const cards = C.cards(), now = Date.now(); skipped.forEach(id => { Object.assign(cards[id], { placed: 'kept', edited: now }); }); S.save(); diagnostics(root);
+    const cards = C.cards(), now = Date.now(), before = skipped.map(id => [id, cards[id].placed]);
+    skipped.forEach(id => { Object.assign(cards[id], { placed: 'kept', edited: now }); }); S.save(); diagnostics(root);
+    undoToast(`${plural(skipped.length, 'word')} kept as known`, () => before.forEach(([id, placed]) => { if (cards[id]) Object.assign(cards[id], { placed, edited: Date.now() }); }));
   });
 }

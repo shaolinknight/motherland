@@ -157,6 +157,32 @@ await scenario('Bury, suspend, Hidden filter, Anki export', async p => {
   ok(txt.startsWith('#separator:tab') && txt.includes('đám cưới\twedding'), 'Anki export file');
 });
 
+await scenario('Undo for small changes', async p => {
+  await p.goto(BASE + '#/home'); await p.waitForSelector('.hello'); await seed(p, dueCards, { unit: 'u03', n: 3 }); await p.reload();
+  await p.goto(BASE + '#/words'); await p.waitForSelector('.bank .opts');
+  const id = await p.$eval('.bank .word-row', r => r.dataset.id);
+  await p.click('.bank .word-row .opts'); await p.click('.sheet-actions .btn >> text=Bury until tomorrow');
+  await p.waitForSelector('#toast.show .toast-action');
+  const h = await p.$eval('.toast-action', b => b.getBoundingClientRect().height);
+  ok(h >= 44, 'Undo button is a full-size tap target', `${h}px`);
+  const t0 = Date.now(); await p.click('.toast-action'); await p.waitForTimeout(300);
+  const c = await p.evaluate(async id => (await import('/js/course.js')).card(id), id);
+  ok(!c.buriedUntil && c.edited >= t0, 'Undo un-buries, with a fresh edit time for sync', JSON.stringify({ b: c.buriedUntil, e: c.edited, t0 }));
+  ok(/Undone/.test(await p.textContent('#toast')), 'confirms the undo');
+  // Unflag → Undo brings the flag back under a new id (the old id has a tombstone).
+  await seed(p, async () => { const S = await import('/js/store.js'); const C = await import('/js/course.js'); S.flag(C.item('u03-w0'), 'test'); });
+  await p.goto(BASE + '#/settings/flags'); await p.waitForSelector('.unflag', { state: 'visible' });
+  const oldId = await p.$eval('.unflag', b => b.dataset.id);
+  await p.click('.unflag'); await p.waitForSelector('#toast.show .toast-action'); await p.click('.toast-action'); await p.waitForTimeout(300);
+  const fl = await p.evaluate(async () => { const S = await import('/js/store.js'); return { ids: S.get().flags.map(f => f.id), tomb: Object.keys(S.get().tomb || {}) }; });
+  ok(fl.ids.length === 1 && fl.ids[0] !== oldId && fl.tomb.includes(`f:${oldId}`), 'unflag → Undo restores the flag under a new id', JSON.stringify(fl));
+  ok(await p.isVisible('.unflag'), 'the restored flag shows in Settings');
+  // Big changes still ask first.
+  await p.evaluate(async () => { const D = await import('/js/decks.js'); location.hash = `#/deck/${D.create('Temp').id}`; });
+  await p.waitForSelector('.delete'); await p.click('.delete');
+  ok(await p.isVisible('.sheet >> text=Delete “Temp”?'), 'deleting a deck still asks “are you sure”');
+});
+
 await scenario('Grammar search with and without accents', async p => {
   await p.goto(BASE + '#/grammar'); await p.waitForSelector('.g-search');
   const n = async q => { await p.fill('.g-search', q); await p.waitForTimeout(80); return p.$$eval('.g-link:not(.hidden)', e => e.length); };
@@ -258,6 +284,11 @@ for (const scheme of ['light', 'dark']) {
         const v = await p.evaluate(async () => (await window.axe.run(document, { runOnly: ['color-contrast'] })).violations.length);
         if (v) bad.push(r);
       }
+      // The toast (with its Undo button) inverts with the theme; check it too.
+      await p.evaluate(async () => (await import('/js/ui.js')).undoToast('Buried until tomorrow', () => {})); await p.waitForTimeout(400);
+      const tv = await p.evaluate(async () => (await window.axe.run('#toast', { runOnly: ['color-contrast'] })).violations.flatMap(v => v.nodes.map(n => n.any[0]?.message)));
+      if (tv.length) bad.push(`toast: ${tv.join(' / ')}`);
+      await p.evaluate(() => document.getElementById('toast').classList.remove('show'));
       ok(!bad.length, `${lang} palette has no contrast problems`, bad.join(','));
       await p.evaluate(async () => { (await import('/js/store.js')).get().lang = 'vi'; });
     }

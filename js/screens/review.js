@@ -4,7 +4,7 @@ import * as X from '../exercises.js';
 import { $, $$, esc, toast } from '../util.js';
 import { icon } from '../icons.js';
 import { isMastered } from '../srs.js';
-import { confirmSheet, itemOptions, sheet, askText } from '../ui.js';
+import { confirmSheet, itemOptions, sheet, askText, undoToast } from '../ui.js';
 import * as D from '../decks.js';
 import * as P from '../planner.js';
 import { stripAll } from '../vitext.js';
@@ -152,6 +152,9 @@ function deckPicker(root, d) {
     });
   };
   q.oninput = draw; sel.onchange = draw;
-  addUnit.onclick = () => { const n = D.add(d.id, all.filter(i => i.unit === sel.value).map(i => i.id)); toast(`${plural(n, 'word')} added`); draw(); };
+  addUnit.onclick = () => {
+    const before = [...d.items], n = D.add(d.id, all.filter(i => i.unit === sel.value).map(i => i.id)); draw();
+    if (n) undoToast(`${plural(n, 'word')} added`, () => D.restoreItems(d.id, before)); else toast('Already all in the deck');
+  };
   draw();
 }

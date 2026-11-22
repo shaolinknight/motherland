@@ -32,6 +32,8 @@ export function add(id, itemIds) {
   return d.items.length - before;
 }
 export const removeItem = (id, itemId) => { const d = get(id); if (d) { d.items = d.items.filter(x => x !== itemId); touch(d); } };
+// Put a deck's word list back as it was (Undo).
+export const restoreItems = (id, itemIds) => { const d = get(id); if (d) { d.items = [...itemIds]; touch(d); } };
 export const has = (id, itemId) => !!get(id)?.items.includes(itemId);
 
 // Items that still exist (a deleted My word or an unknown id is skipped quietly).

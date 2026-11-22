@@ -133,6 +133,16 @@ export async function flagSheet(item) {
   return true;
 }
 
+// Small changes are done at once and offered an Undo in the toast; big ones (deleting a deck, resets,
+// restoring a backup) ask first with confirmSheet. `undo` puts things back and must stamp a fresh
+// `edited` time, so a sync that ran in between can't overrule the undo with the older copy.
+export function undoToast(msg, undo) {
+  toast(msg, 6000, { label: 'Undo', run: () => {
+    undo(); S.save(); toast('Undone');
+    window.dispatchEvent(new Event('motherland:refresh'));   // re-draw the screen in place
+  } });
+}
+
 // Per-item options, like Anki's card menu: bury (hide until tomorrow), suspend (hide until you
 // un-suspend), or report a problem. Returns what was done, so a lesson can skip the item.
 export async function itemOptions(item, { deckId } = {}) {
@@ -151,14 +161,25 @@ export async function itemOptions(item, { deckId } = {}) {
   if (act === 'report') { await flagSheet(item); return 'report'; }
   if (act === 'edit') return (await editCard(item)) ? 'edit' : null;
   if (act === 'deck') return (await chooseDeck([item.id])) ? 'deck' : null;
-  if (act === 'undeck') { D.removeItem(deckId, item.id); toast('Removed from the deck'); return 'undeck'; }
+  if (act === 'undeck') {
+    const before = [...D.get(deckId).items];
+    D.removeItem(deckId, item.id);
+    undoToast('Removed from the deck', () => D.restoreItems(deckId, before));
+    return 'undeck';
+  }
   if (!act || !card) return null;
-  if (act === 'bury') { card.buriedUntil = tomorrow(); toast('Buried until tomorrow'); }
-  if (act === 'unbury') { delete card.buriedUntil; toast('Back in your reviews'); }
-  if (act === 'suspend') { card.suspended = true; toast('Suspended. Find it in Word bank → Hidden'); }
-  if (act === 'unsuspend') { delete card.suspended; toast('Back in your reviews'); }
+  const prev = { buriedUntil: card.buriedUntil, suspended: card.suspended };
+  if (act === 'bury') card.buriedUntil = tomorrow();
+  if (act === 'unbury') delete card.buriedUntil;
+  if (act === 'suspend') card.suspended = true;
+  if (act === 'unsuspend') delete card.suspended;
   card.edited = now;   // so a sync merge keeps this choice (not `last`, which FSRS reads as a review)
   S.save();
+  const msg = { bury: 'Buried until tomorrow', unbury: 'Back in your reviews', suspend: 'Suspended. Find it in Word bank → Hidden', unsuspend: 'Back in your reviews' }[act];
+  undoToast(msg, () => {
+    for (const [k, v] of Object.entries(prev)) { if (v === undefined) delete card[k]; else card[k] = v; }
+    card.edited = Date.now();
+  });
   return act;
 }
 
@@ -171,8 +192,10 @@ export async function chooseDeck(itemIds) {
   if (!pick) return null;
   let id = pick;
   if (pick === 'new') { const name = await askText('New deck', 'Deck name', 'e.g. Wedding speech'); if (!name) return null; id = D.create(name).id; }
+  const before = [...D.get(id).items];
   const n = D.add(id, itemIds);
-  toast(n ? `Added to ${D.get(id).name}` : `Already in ${D.get(id).name}`);
+  if (n) undoToast(`Added to ${D.get(id).name}`, () => D.restoreItems(id, before));
+  else toast(`Already in ${D.get(id).name}`);
   return id;
 }
 

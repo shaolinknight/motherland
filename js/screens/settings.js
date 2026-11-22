@@ -3,9 +3,9 @@ import * as C from '../course.js';
 import * as S from '../store.js';
 import { sync } from '../sync.js';
 import { voicesFor } from '../speech.js';
-import { $, $$, esc, toast, dayKey, timeAgo } from '../util.js';
+import { $, $$, esc, toast, dayKey, timeAgo, uid } from '../util.js';
 import { icon } from '../icons.js';
-import { confirmSheet } from '../ui.js';
+import { confirmSheet, undoToast } from '../ui.js';
 import { ankiText } from '../ankiexport.js';
 import { isPreview, resetDemo } from '../demo.js';
 import { applyTheme } from '../theme.js';
@@ -159,7 +159,12 @@ export function settings(root, section) {
     try { await sync({ quiet: false }); toast('Synced ✅'); } catch (err) { toast(`Sync failed: ${err.message}`, 3500); }
     settings(root);
   };
-  $$('.unflag', root).forEach(b => b.onclick = () => { S.get().flags = S.get().flags.filter(f => f.id !== b.dataset.id); S.forget('f', b.dataset.id); S.save(); settings(root); });
+  $$('.unflag', root).forEach(b => b.onclick = () => {
+    const f = S.get().flags.find(x => x.id === b.dataset.id);
+    S.get().flags = S.get().flags.filter(x => x !== f); S.forget('f', f.id); S.save(); settings(root);
+    // Undo re-adds it under a new id: the old id has a tombstone a sync may already have shared.
+    undoToast('Flag removed', () => S.get().flags.push({ ...f, id: uid(), synced: false }));
+  });
   $('.export', root).onclick = exportBackup;
   $('.reset-demo', root)?.addEventListener('click', async () => {
     if (!(await confirmSheet('Reset sample data?', 'Everything on this preview goes back to the starting sample.', 'Reset'))) return;

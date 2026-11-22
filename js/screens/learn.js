@@ -7,7 +7,7 @@ import { stop as stopAudio } from '../speech.js';
 import { $, $$, esc, toast, uid } from '../util.js';
 import { icon } from '../icons.js';
 import { isMastered } from '../srs.js';
-import { flagSheet, confirmSheet, itemOptions, sheet } from '../ui.js';
+import { flagSheet, confirmSheet, itemOptions, sheet, undoToast } from '../ui.js';
 import { stripAll } from '../vitext.js';
 import { spellingProblems } from '../vispell.js';
 import { L, say, go, wireSay, bar, plural, header, wireHeader, startLesson } from './shared.js';
@@ -226,7 +226,10 @@ export function mywords(root) {
     const act = await sheet({ title: w.vi, text: w.en, stack: true, actions: [
       { label: w.verified ? 'Mark as not checked' : '✓ Checked with family', value: 'verify', kind: 'primary' },
       { label: 'Edit', value: 'edit' }, { label: 'Delete', value: 'delete', kind: 'danger' }, { label: 'Cancel', value: null }] });
-    if (act === 'verify') { w.verified = !w.verified; w.edited = Date.now(); S.save(); }
+    if (act === 'verify') {
+      w.verified = !w.verified; w.edited = Date.now(); S.save();
+      undoToast(w.verified ? 'Marked as checked ✓' : 'Marked as not checked', () => { w.verified = !w.verified; w.edited = Date.now(); });
+    }
     if (act === 'edit' && !(await editMyWord(w))) return;
     if (act === 'delete') {
       if (!(await confirmSheet(`Delete “${w.vi}”?`, 'Its review history is removed too.', 'Delete', 'danger'))) return;

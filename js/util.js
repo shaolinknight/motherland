@@ -27,11 +27,20 @@ export function weekKeys(d = new Date()) {
 export const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 export const pct = (c, t) => (t ? Math.round((c / t) * 100) : 0);
 
-export function toast(msg, ms = 2200) {
+// A short message above the tab bar. With `action` ({ label, run }) it carries a button (e.g. Undo)
+// and stays a little longer; the next toast replaces it.
+export function toast(msg, ms = 2200, action) {
   let el = document.getElementById('toast');
   if (!el) { el = document.createElement('div'); el.id = 'toast'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
-  el.textContent = msg; el.classList.add('show');
-  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), ms);
+  el.textContent = msg; el.classList.toggle('has-action', !!action);
+  if (action) {
+    const b = document.createElement('button');
+    b.className = 'toast-action'; b.textContent = action.label;
+    b.onclick = () => { clearTimeout(el._t); el.classList.remove('show'); action.run(); };
+    el.append(b);
+  }
+  el.classList.add('show');
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), action ? Math.max(ms, 6000) : ms);
 }
 
 export function timeAgo(ts) {
