@@ -4,10 +4,10 @@
 | File | What it does |
 |---|---|
 | `index.html` | App shell: `#app` (screens) + `#tabs` (bottom tab bar). Loads `js/main.js`. |
-| `js/main.js` | Boot, hash router (`#/home`, `#/unit/u03/grammar`…), back-navigation depth, View Transitions between screens, per-screen scroll memory, sync on open/return. |
+| `js/main.js` | Boot, hash router (`#/home`, `#/unit/u03/grammar`…), back-navigation depth, View Transitions between screens, per-screen scroll memory, sync on open/return/back online. Installs error reporting first. |
 | `js/pwa.js` | Service worker registration and the "Update ready" toast (cache-first updates). |
 | `js/haptics.js` | One light haptic tick (iOS 17.4+ `<input switch>` trick, `navigator.vibrate` elsewhere), gated by `settings.haptics`. |
-| `js/screens.js` | Every screen: home, learn, unit, grammar guide, word bank, review, play, leaderboard, progress, placement, diagnostics, settings. Each renders via `innerHTML` and wires its own events. |
+| `js/screens.js` | Index that re-exports the screens in `js/screens/`, one module per area: `shared.js` (header, audio buttons, backups, lesson start, `VERSION`), `home.js`, `learn.js` (Learn, unit, grammar guide, My words), `words.js`, `review.js` (modes, week chart, decks, word picker), `play.js` (+ leaderboards), `progress.js` (dashboard, placement, diagnostics), `settings.js`. Each renders via `innerHTML` and wires its own events. |
 | `js/exercises.js` | Exercise types and the full-screen **session runner** used by lessons, reviews, endless mode and the placement test. Also the grammar renderers and the synonym-safe answer-choice picker (`clash`). |
 | `js/games.js` | Match pairs, Speed round, Tone hunter, Listen up. Flow: intro → 3-2-1 → play → results (with missed words). Keeps a run history for leaderboards. |
 | `js/placement.js` | Placement test builder, scoring (level, skills, topics, weak areas), "skip ahead" seeding. |
@@ -16,6 +16,8 @@
 | `js/srs.js` | Spaced repetition with **FSRS-5** (the scheduler modern Anki uses, written fresh from the published formulas): stability/difficulty per card, desired retention, Anki-style fuzz, leeches (8 lapses), bury/suspend. Old SM-2 cards convert on their next review (`fromSM2`). |
 | `js/merge.js` | Sync merge: combines this phone's state with the Sheet's copy card by card (latest review wins, day logs take the max, lists union). Pure, unit-tested. |
 | `js/streak.js` | Streak with one forgiven missed day per Monday–Sunday week; computed from the day log. |
+| `js/planner.js` | Review planner: reviews due on each of the next 7 days, and the optional daily review limit (`settings.reviewCap`, counted in `day().rev`). |
+| `js/errors.js` | Error reporting: uncaught errors and rejected promises become flags with item `app-error` (once per message per day, max 5 a day), so they reach Settings and the Sheet's Flags tab with no Apps Script change. |
 | `js/decks.js` | Custom decks (`lang().decks`): named lists of item IDs, hand-written cards (stored as My words), deck study steps. |
 | `js/demo.js` | Sample data for branch previews (`*-motherland.*.workers.dev` or `?demo`), only when that site has no saved progress. |
 | `js/levels.js` | Placement scoring rules (80% per level and 2/3 of production questions). |
@@ -24,15 +26,16 @@
 | `js/vispell.js` | Vietnamese spelling/tone rules shared by `tools/validate.mjs` and the app (typo warning in My words). |
 | `js/ankiexport.js` | Tab-separated export with Anki's import headers (Basic and reversed card). |
 | `js/theme.js` | Light / dark / match-iPhone theme and the **language palette** (`data-lang` on `<html>`; palettes for vi/ko/ja/es live at the end of `css/app.css`, tokens `--brand*` and `--gold*`). `index.html` applies both before first paint. Adding a language: add its palette block (light + dark, 4.5:1 contrast); `npm test` checks every upcoming language has one. |
-| `js/store.js` | App state, saved to `localStorage['motherland.v1']`. Day logs, XP, streaks, flags, pending sessions. |
+| `js/store.js` | App state, saved to `localStorage['motherland.v1']`. Day logs, XP, streaks, flags, pending sessions. The format version `v` is upgraded by `MIGRATIONS` (see below). |
 | `js/sync.js` | Google Sheet sync: pull if the Sheet is newer, then push. `text/plain` POST to avoid CORS preflight. |
 | `js/speech.js` | Built-in voices (Web Speech API), iOS speech unlock on first tap, mic recording for "compare yourself". |
 | `js/vitext.js` | Vietnamese text tools: answer comparison (exact / tones / letters), tone variants, syllable diff. |
-| `js/ui.js` | Bottom sheets (replace browser dialogs, drag down to close), the flag/report sheet, keyboard-aware full-screen layers, `trapFocus()` for modal layers, `dismissLayer()` exit animation. |
+| `js/ui.js` | Bottom sheets (replace browser dialogs, drag down to close), the flag/report sheet, keyboard-aware full-screen layers, `trapFocus()` for modal layers, `dismissLayer()` exit animation. `undoToast()`: small changes happen at once with Undo; big ones ask first with `confirmSheet()`. |
 | `js/icons.js`, `js/util.js` | Inline SVG icons and small helpers. |
 | `data/vi.js` | Vietnamese course entry: metadata + units (from `vi-a.js` … `vi-d.js`) + grammar (`vi-grammar.js`). Units with `review: true` (u25–u37) are shown as “needs family check” and left out of the placement test. |
 | `apps-script/Code.gs` | The Google Apps Script web app for sync. It lives in my Google account, not on Cloudflare. |
-| `tools/` | `validate.mjs` (content checker), `test-logic.mjs`, `qa.mjs`, `qa-sync.mjs` (also simulates deploys), `audit.mjs` (perf/a11y numbers, see `docs/AUDIT.md`), `serve.mjs`. Dev only. |
+| `tools/` | `validate.mjs` (content checker), `test-logic.mjs`, `qa.mjs`, `qa-sync.mjs` (also simulates deploys), `qa-features.mjs` (a permanent check for each feature), `shots.mjs` (screenshot capture + pixel compare for refactors), `audit.mjs` (perf/a11y numbers, see `docs/AUDIT.md`), `watchdog.mjs`, `serve.mjs`. Dev only. |
+| `.github/workflows/check.yml` | CI: `npm run check` in WebKit and Chromium on every push. |
 
 ## Content format (`data/`)
 Unit fields: `id, section, icon, level (1–3), title, vi, tip, words[], phrases[], dialogue[], reading{vi,en}`.
@@ -50,8 +53,8 @@ Unit fields: `id, section, icon, level (1–3), title, vi, tip, words[], phrases
 ## State shape (`motherland.v1`)
 ```js
 {
-  v: 1, updatedAt, deviceId, lang: 'vi',
-  settings: { showHanoi, rate, voiceURI, forceAudio, haptics, retention, theme, dailyGoal, newPerLesson, syncUrl, syncKey, lastSync, syncError, lastBackup, backupSnooze },
+  v: 2, updatedAt, deviceId, lang: 'vi',   // format version, see Migrations
+  settings: { showHanoi, rate, voiceURI, forceAudio, haptics, retention, theme, dailyGoal, newPerLesson, reviewCap, syncUrl, syncKey, lastSync, syncError, lastBackup, backupSnooze },
   langs: { vi: {
     cards: { [itemId]: { reps, ivl, ease, due, lapses, seen, last,     // SRS (ease is legacy SM-2, kept for old cards)
                          s, d, leech?, suspended?, buriedUntil?, edited?, placed? } },   // FSRS stability/difficulty + card state
@@ -63,11 +66,14 @@ Unit fields: `id, section, icon, level (1–3), title, vi, tip, words[], phrases
     skills: { vocab|reading|grammar|listening|tones|speaking: { c, t } },
     games: { match|speed|tones|listen: { best, at, runs: [{ score, at }] } },
   } },
-  days: { 'YYYY-MM-DD': { xp, ms, c, t, words, skills: { [skill]: { c, t } } } },
-  flags: [{ id, at, lang, itemId, vi, en, note, synced }],
+  days: { 'YYYY-MM-DD': { xp, ms, c, t, words, rev, skills: { [skill]: { c, t } } } },   // rev: due-card reviews (daily limit)
+  flags: [{ id, at, lang, itemId, vi, en, note, synced }],   // itemId 'app-error' = an error reported by the app
   pending: [{ id, at, lang, activity, ms, xp, c, t }],   // sessions not yet sent to the Sheet
 }
 ```
+
+### Migrations
+The storage key stays `motherland.v1` forever. The format inside is versioned by `v` (`SCHEMA` in `js/store.js`). Every saved state (from storage, a backup file or the Sheet) passes through `migrate()`, which applies `MIGRATIONS[v]` one step at a time. To change the format: bump `SCHEMA`, add `MIGRATIONS[old]`, and add a test with an old-shape fixture in `tools/test-logic.mjs`. A state from a newer app version is left as it is.
 
 ## Sync protocol (Apps Script)
 - **Request:** `POST` body (text/plain JSON) `{ key, action }`.

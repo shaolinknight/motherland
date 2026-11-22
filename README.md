@@ -16,7 +16,11 @@ Your personal language app. It starts with Vietnamese (Saigon first, with Hanoi 
 - **Placement keeps working** (stricter since v1.4: 80% per level, half the questions make you produce Vietnamese): your latest result sets where Continue learning starts, adds words you produced correctly to reviews, gives more practice in weak skills, and reminds you to retest after 4 weeks. It never skips whole units; use **Test out** on a unit instead.
 - **One-handed**: lessons sit at the bottom of the screen, swipe from the left edge to go back or close, and unit actions live above the tab bar.
 - **Streak freeze** (one missed day a week is forgiven), **dark mode**, and a **backup reminder** when Sheet sync isn't set up.
-- **Sync merges** progress from several devices card by card instead of overwriting.
+- **Sync merges** progress from several devices card by card instead of overwriting. Home shows the sync status (synced, syncing, offline, or failed with Retry).
+- **Home** has one clear "Next up" (review if cards are due, otherwise your lesson) and a short "Needs attention" list.
+- **Review planner**: a chart of reviews due over the next 7 days, and an optional daily review limit for busy days.
+- **Undo** in the message bar for small changes (bury, suspend, deck changes, flags). Big changes ask first.
+- **Error reporting**: if something breaks in the app, it shows up as a flag (Settings → Flagged items and the Sheet's Flags tab), so it can be fixed.
 - **Games**: Match pairs, Speed round, Tone hunter and Listen up. Each has a rules screen, a 3-2-1 countdown, a timer that pauses when you leave the app, and a results screen listing the words you missed.
 - **🚩 Flag button** on every word and exercise. Flagged items show in Settings and sync to your Sheet, so content can be corrected.
 

@@ -8,6 +8,15 @@
 4. Haptics: checkbox-switch trick, single pulse, with a setting to turn it off
 5. Accessibility fixes from the audit
 
+## Done: v1.6 (Nov 22, 2026)
+- **Review planner:** a "This week" chart of reviews due each day, and an optional daily review limit (Settings → Study).
+- **Undo for small changes** (bury, suspend, deck add/remove, mark checked, keep placement words, remove a flag). Big changes (delete a deck or word, resets, restoring a backup) still ask "are you sure".
+- **Friendlier Home:** one "Next up" action, a short "Needs attention" list, and a sync status line with Retry.
+- **Developer:** CI in WebKit and Chromium, permanent feature tests, errors reported from the phone as flags, `screens.js` split into `js/screens/`, CSS consolidated (pixel-identical), state format versioning with migrations, accessibility and speed re-check.
+
+## Decided against (for now)
+- Family check mode, family audio recordings, a tone keyboard, quick 5-minute lessons.
+
 ## Done: v1.5 (Nov 21, 2026)
 - Question mid-screen with answers at the bottom; tap-anywhere flashcard flip (and back); bigger grade buttons.
 - Edit the text of any card (course cards are overlaid and logged as flags).
@@ -55,7 +64,6 @@ Order: the progress-touching work first (sync merge, then FSRS), each kept separ
   - Texting slang
 - **Fixing flagged items.** Pull the Flags tab or the in-app list and fix confirmed problems, with a validator run each time.
 - **Graded reading library.** Longer stories at each level, built from words already learned.
-- **Family audio (optional, free).** Let me record a family member saying items and store the clips per item. This would need a free storage plan (e.g. files in the repo or Google Drive). Discuss before building.
 
 ## Later: more languages
 | Language | Approach |

@@ -23,6 +23,7 @@ npm run validate               # Vietnamese spelling/tone checker over ALL conte
 npm test                       # logic unit tests (answer checking, tones, review timing)
 npm run qa                     # click-through of every screen at 375/393/430/820 widths
 npm run qa:sync                # Google Sheet sync (simulated), backup restore, offline
+npm run qa:features            # a permanent check for each feature (decks, undo, planner, Home…)
 npm run check                  # all of the above; must pass before any push
 npm run audit -- <label>       # perf + a11y numbers → test-results/audit-<label>.json (method in docs/AUDIT.md)
 ```
