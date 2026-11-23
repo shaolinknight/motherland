@@ -260,7 +260,13 @@ await scenario('Typing with the keyboard up; grammar examples play', async p => 
   const k = await p.evaluate(() => ({ input: document.querySelector('.dict-input').getBoundingClientRect().bottom, foot: document.querySelector('.s-foot').getBoundingClientRect(), h: innerHeight, tabs: getComputedStyle(document.getElementById('tabs')).visibility }));
   ok(k.input < k.foot.top && k.foot.bottom <= k.h + 1, 'field and Check stay visible above the keyboard', JSON.stringify(k));
   ok(k.tabs === 'hidden', 'the tab bar doesn’t show through behind a lesson');
+  ok(await p.evaluate(() => getComputedStyle(document.getElementById('app')).visibility === 'hidden'), 'nor does the screen the lesson was opened from');
   await p.setViewportSize({ width: 393, height: 852 });
+  await p.click('.s-close'); await p.waitForTimeout(300);
+  if (await p.$('.sheet-wrap .danger')) await p.click('.sheet-wrap .danger');
+  if (await p.$('.session .done')) await p.click('.session .done');   // closing mid-lesson shows the summary first
+  await p.waitForFunction(() => !document.querySelector('.session'), null, { timeout: 5000 }).catch(() => {});
+  ok(await p.evaluate(() => getComputedStyle(document.getElementById('app')).visibility === 'visible' && getComputedStyle(document.getElementById('tabs')).visibility === 'visible'), 'the screen comes back when the lesson closes');
 });
 
 await scenario('Grammar search with and without accents', async p => {

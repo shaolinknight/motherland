@@ -592,7 +592,7 @@ h1:focus, .s-body:focus, .sheet:focus { outline: none; }
 /* Typing: the keyboard takes half the screen, so stick to the top to keep the field and Check in view. */
 .session:has(:is(input, textarea):focus) .s-body > :first-child { margin-top: 0; }
 /* The iPhone keyboard is see-through: hide the tab bar and action bar behind an open lesson. */
-body:has(.session) :is(#tabs, .action-bar) { visibility: hidden; }
+body:has(.session) :is(#app, #tabs, .action-bar) { visibility: hidden; }   /* the whole screen behind, not just the tabs */
 
 /* ── Flashcards: a real two-sided card. Tap anywhere to flip, tap again to flip back. ── */
 .flip-wrap { perspective: 1200px; }
