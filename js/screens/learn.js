@@ -79,7 +79,7 @@ export function unit(root, id, tab = 'words') {
         <p>${esc(g.explain)}</p>
         ${g.pattern ? `<div class="pattern">${esc(g.pattern)}</div>` : ''}
         ${g.table ? X.grammarTable(g.table) : ''}
-        <div class="examples">${g.examples.map(([v, en]) => `<button class="ex-row" data-say="${esc(v)}"><b lang="vi">${esc(v)}</b><span class="muted">${esc(en)}</span></button>`).join('')}</div>
+        ${X.exampleRows(g.examples)}
         <button class="btn ghost wide practice-g" data-id="${it.id}">Practice this (${g.drills.length} drills)</button>
       </section>`; }).join(''),
     dialogue: () => {

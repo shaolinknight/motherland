@@ -396,9 +396,17 @@ button, .btn, .option, .tile, .m-tile, .q-tile, .tabs a { -webkit-user-select: n
 .g-table td { padding: 7px 9px; border-top: 1px solid var(--line); vertical-align: top; }
 .g-table td:not(:first-child) { font-weight: 600; }
 .examples { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
-.ex-row { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; background: var(--cream); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; cursor: pointer; width: 100%; min-height: 44px; }
-.ex-row span { font-size: .87rem; }
-.ex-row:active { background: var(--gold-soft); }
+.ex-row { display: flex; align-items: center; gap: 10px; text-align: left; background: var(--cream); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; width: 100%; min-height: 44px; }
+button.ex-row { cursor: pointer; }
+.ex-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.ex-text .muted { font-size: .87rem; }
+.ex-say { color: var(--accent); display: grid; place-items: center; flex-shrink: 0; }
+button.ex-row:active { background: var(--gold-soft); }
+/* While a tapped phrase is being spoken (any [data-say] button). */
+.speaking { box-shadow: 0 0 0 2px var(--accent); }
+.ex-row.speaking .ex-say { animation: speakPulse .9s ease-in-out infinite; }
+@keyframes speakPulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .ex-row.speaking .ex-say { animation: none; } }
 .gap-sent { line-height: 1.5; }
 .gap { display: inline-block; min-width: 2.6em; border-bottom: 3px solid var(--brand); color: var(--accent); margin: 0 .1em; text-align: center; }
 .gap.ok { color: var(--jade); border-color: var(--jade); }
@@ -571,13 +579,20 @@ h1:focus, .s-body:focus, .sheet:focus { outline: none; }
 .action-bar .btn.primary { flex: 1.4; }
 .page.has-action { padding-bottom: 84px; }
 
-/* ── Lesson layout: question in the middle, answers at the bottom ──
-   Free space is split by auto margins: above the first block and below the question, so the prompt
-   sits mid-screen and the answer area (options / tiles / typing / recording) rests at the bottom
-   near the thumb. Steps with no answer area (intro cards, flashcards) are centred. */
+/* ── Lesson layout: question and answers together in the middle of the screen ──
+   The footer (Check / feedback) floats over the bottom instead of taking space from the lesson, so
+   the "Giỏi quá!" panel slides in without moving the question. The body keeps room for the normal
+   footer, and auto margins centre the question + answers in what's left. A tall step (grammar
+   spotlight) simply scrolls. */
+.session .s-foot { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; }
+.s-body { padding-bottom: calc(76px + var(--safe-b) + 24px); }
 .s-body > :first-child { margin-top: auto; }
-.s-body > :is(.options, .tiles, .dict-input, .rec-row) { margin-top: auto; }
-.s-body > :last-child:not(.options, .tiles, .dict-input, .rec-row) { margin-bottom: auto; }
+.s-body > :last-child { margin-bottom: auto; }
+.s-body > :is(.options, .tiles, .dict-input, .rec-row) { margin-top: clamp(16px, 4vh, 40px); }
+/* Typing: the keyboard takes half the screen, so stick to the top to keep the field and Check in view. */
+.session:has(:is(input, textarea):focus) .s-body > :first-child { margin-top: 0; }
+/* The iPhone keyboard is see-through: hide the tab bar and action bar behind an open lesson. */
+body:has(.session) :is(#tabs, .action-bar) { visibility: hidden; }
 
 /* ── Flashcards: a real two-sided card. Tap anywhere to flip, tap again to flip back. ── */
 .flip-wrap { perspective: 1200px; }

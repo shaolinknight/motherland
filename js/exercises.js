@@ -4,7 +4,7 @@ import * as C from './course.js';
 import * as S from './store.js';
 import { newCard, grade as srsGrade, nextInterval, isDue } from './srs.js';
 import { capLeft } from './planner.js';
-import { speak, audioAvailable, canRecord, record, stop as stopAudio } from './speech.js';
+import { speak, speakFrom, audioAvailable, canRecord, record, stop as stopAudio } from './speech.js';
 import { compare, syllableDiff, toneVariants, toneOf, TONE_NAMES, tokens, clean } from './vitext.js';
 import { $, $$, esc, shuffle, sample, pick, toast, pct } from './util.js';
 import { tick } from './haptics.js';
@@ -245,7 +245,15 @@ function audioBtn(text, big = false) {
           <button class="audio-btn slow" data-say="${esc(text)}" data-rate="0.55" aria-label="Play slowly">🐢</button>`;
 }
 function wireAudio(root) {
-  $$('[data-say]', root).forEach(b => b.onclick = () => speak(b.dataset.say, L(), b.dataset.rate ? { rate: +b.dataset.rate } : {}));
+  $$('[data-say]', root).forEach(b => b.onclick = () => speakFrom(b, b.dataset.say, L(), b.dataset.rate ? { rate: +b.dataset.rate } : {}));
+}
+// Grammar example rows: tap to hear when a voice exists (with a speaker icon so it's clear); otherwise
+// plain text, so nothing looks tappable that does nothing.
+export function exampleRows(examples) {
+  const audio = hasAudio();
+  return `<div class="examples">${examples.map(([v, en]) => audio
+    ? `<button class="ex-row" data-say="${esc(v)}" aria-label="Play: ${esc(v)}"><span class="ex-text"><b lang="vi">${esc(v)}</b><span class="muted">${esc(en)}</span></span><span class="ex-say" aria-hidden="true">${icon('speaker')}</span></button>`
+    : `<div class="ex-row"><span class="ex-text"><b lang="vi">${esc(v)}</b><span class="muted">${esc(en)}</span></span></div>`).join('')}</div>`;
 }
 function hanoiLine(item) {
   if (!item.north || !S.settings().showHanoi) return '';
@@ -389,7 +397,7 @@ const RENDER = {
         <p>${esc(g.explain)}</p>
         ${g.pattern ? `<div class="pattern">${esc(g.pattern)}</div>` : ''}
         ${g.table ? grammarTable(g.table) : ''}
-        <div class="examples">${g.examples.map(([v, en]) => `<button class="ex-row" data-say="${esc(v)}"><b lang="vi">${esc(v)}</b><span class="muted">${esc(en)}</span></button>`).join('')}</div>
+        ${exampleRows(g.examples)}
       </div>`;
     wireAudio(body);
     foot.innerHTML = `<button class="btn primary">Got it — let’s practice</button>`;

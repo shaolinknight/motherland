@@ -1,5 +1,6 @@
 // Free audio using the phone's built-in voices (Web Speech API) + mic recording.
 import { settings } from './store.js';
+import { toast } from './util.js';
 
 let voices = [];
 let ready = false;
@@ -52,6 +53,26 @@ export function speak(text, lang, { rate, onend } = {}) {
   synth.speak(u);
 }
 export const stop = () => synth && synth.cancel();
+
+// Speak from a tapped element and show that it's playing (class "speaking" until it ends), so a tap
+// always visibly does something. The first time on an iPhone, say that Silent mode mutes the voice:
+// iOS silences speech with the ring switch, and a tap with no sound otherwise looks broken.
+export function speakFrom(el, text, lang, opts = {}) {
+  el.classList.add('speaking');
+  let t = 0;
+  const done = () => { clearTimeout(t); el.classList.remove('speaking'); };
+  t = setTimeout(done, 6000);   // in case the end event never comes
+  speak(text, lang, { ...opts, onend: done });
+  silentModeHint();
+}
+const isIOS = () => /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.userAgent));
+function silentModeHint() {
+  try {
+    if (!isIOS() || localStorage.getItem('motherland.silentHint')) return;
+    localStorage.setItem('motherland.silentHint', '1');
+  } catch { return; }
+  toast('🔈 No sound? Turn off Silent mode. iPhone mutes the voice when it’s on.', 4500);
+}
 
 // ── Recording your own voice to compare (no grading, stays on the phone) ──
 export const canRecord = () => !!(navigator.mediaDevices?.getUserMedia && window.MediaRecorder);

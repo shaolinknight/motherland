@@ -90,7 +90,7 @@ await scenario('Review planner: week chart and daily limit', async p => {
   ok(await p.evaluate(async () => (await import('/js/store.js')).day().rev) === 48, 'grading a due card counts toward the limit');
 });
 
-await scenario('Question mid-screen, answers at the bottom', async p => {
+await scenario('Question and answers in the middle; feedback never moves them', async p => {
   await p.goto(BASE + '#/unit/u03'); await p.click('.learn-new'); await p.waitForSelector('.session');
   // Step until a multiple-choice question with a word prompt (skip intros and other exercise types).
   for (let i = 0; i < 20 && !(await p.$('.options .option') && await p.$('.s-body .prompt, .s-body .vi.big, .s-body .en-prompt')); i++) {
@@ -99,9 +99,13 @@ await scenario('Question mid-screen, answers at the bottom', async p => {
     await p.waitForTimeout(250);
   }
   await p.waitForTimeout(400);
-  const r = await p.evaluate(() => { const pr = document.querySelector('.s-body > :nth-child(2)').getBoundingClientRect(); const o = document.querySelector('.options').getBoundingClientRect(); return { mid: pr.top + pr.height / 2, h: innerHeight, ob: o.bottom }; });
-  ok(r.mid > r.h * 0.2 && r.mid < r.h * 0.6, 'prompt sits in the middle area', JSON.stringify(r));
-  ok(r.ob > r.h - 60, 'options end at the bottom');
+  const at = () => p.evaluate(() => { const pr = document.querySelector('.s-body > :first-child').getBoundingClientRect(); const o = document.querySelector('.options').getBoundingClientRect(); return { top: Math.round(pr.top), ob: Math.round(o.bottom), ot: Math.round(o.top), h: innerHeight }; });
+  const r = await at();
+  ok(r.top > r.h / 6 - 40 && r.ob < r.h * 5 / 6 + 40, 'question + answers sit in the middle two-thirds', JSON.stringify(r));
+  await p.click('.options .option'); await p.waitForSelector('.s-foot.fb'); await p.waitForTimeout(300);
+  const r2 = await at();
+  ok(r2.top === r.top && r2.ot === r.ot, 'the feedback panel doesn’t move the question or answers', JSON.stringify([r, r2]));
+  ok(await p.evaluate(() => document.querySelector('.options').getBoundingClientRect().bottom <= document.querySelector('.s-foot').getBoundingClientRect().top + 1), 'and doesn’t cover the answers');
 });
 
 await scenario('Edit a card, restore it, typo warning', async p => {
@@ -244,6 +248,20 @@ await scenario('Errors on the phone become flags', async p => {
   await p.goto(BASE + '#/settings/flags'); await p.waitForSelector('.unflag', { state: 'visible' });
   ok(/test boom/.test(await p.textContent('.mini-list')), 'they show in Settings → Flagged items');
 }, {}, { allowErrors: true });
+
+await scenario('Typing with the keyboard up; grammar examples play', async p => {
+  await p.goto(BASE + '#/home'); await p.waitForSelector('.hello');
+  await p.evaluate(async () => { const X = await import('/js/exercises.js'), C = await import('/js/course.js'); X.run({ steps: [X.gexplain(C.grammarItems()[0]), X.dictation(C.unitItems('u01')[1])], activity: 'test' }); });
+  await p.waitForSelector('.ex-row');
+  ok(await p.$eval('.ex-row', e => e.tagName === 'BUTTON' && !!e.querySelector('.ex-say')), 'examples show a speaker and are buttons');
+  await p.click('.ex-row'); ok(await p.$eval('.ex-row', e => e.classList.contains('speaking')), 'a tapped example shows it is playing');
+  await p.click('.s-foot .btn.primary'); await p.waitForSelector('.dict-input');
+  await p.focus('.dict-input'); await p.setViewportSize({ width: 393, height: 470 }); await p.waitForTimeout(400);   // keyboard up
+  const k = await p.evaluate(() => ({ input: document.querySelector('.dict-input').getBoundingClientRect().bottom, foot: document.querySelector('.s-foot').getBoundingClientRect(), h: innerHeight, tabs: getComputedStyle(document.getElementById('tabs')).visibility }));
+  ok(k.input < k.foot.top && k.foot.bottom <= k.h + 1, 'field and Check stay visible above the keyboard', JSON.stringify(k));
+  ok(k.tabs === 'hidden', 'the tab bar doesn’t show through behind a lesson');
+  await p.setViewportSize({ width: 393, height: 852 });
+});
 
 await scenario('Grammar search with and without accents', async p => {
   await p.goto(BASE + '#/grammar'); await p.waitForSelector('.g-search');

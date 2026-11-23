@@ -4,11 +4,11 @@ import * as S from '../store.js';
 import * as X from '../exercises.js';
 import * as G from '../games.js';
 import { sync } from '../sync.js';
-import { speak, audioAvailable, voicesReady } from '../speech.js';
+import { speak, speakFrom, audioAvailable, voicesReady } from '../speech.js';
 import { $, $$, esc, dayKey } from '../util.js';
 import { icon } from '../icons.js';
 
-export const VERSION = '1.6.5';
+export const VERSION = '1.6.6';
 export const L = () => C.get().speechLang;
 export const say = (t, opts) => speak(t, L(), opts);
 export const go = h => { location.hash = h; };
@@ -16,7 +16,7 @@ export const go = h => { location.hash = h; };
 export function wireSay(root) {
   $$('[data-say]', root).forEach(b => b.addEventListener('click', e => {
     if (e.target.closest('.flag-it, a')) return;
-    e.stopPropagation(); say(b.dataset.say, b.dataset.rate ? { rate: +b.dataset.rate } : {});
+    e.stopPropagation(); speakFrom(b, b.dataset.say, L(), b.dataset.rate ? { rate: +b.dataset.rate } : {});
   }));
 }
 export const sayBtn = (t, label = 'Play audio') => audioAvailable(L()) ? `<button class="icon-btn say" data-say="${esc(t)}" aria-label="${label}">${icon('speaker')}</button>` : '';
