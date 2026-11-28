@@ -8,9 +8,7 @@ export function applyTheme() {
   if (t === 'light' || t === 'dark') root.dataset.theme = t;
   else delete root.dataset.theme;
   root.dataset.lang = get().lang || 'vi';   // picks the palette in app.css
-  // Status bar / browser chrome follows the header: the language's main color (deeper in dark mode).
-  const dark = t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
-  const css = getComputedStyle(root);
-  const color = css.getPropertyValue(dark ? '--brand-deep' : '--brand').trim();
-  if (color) document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color);
+  // Status bar / browser chrome matches the page background (the header is neutral), in the theme in use.
+  const color = getComputedStyle(root).getPropertyValue('--cream').trim();
+  if (color) document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute('content', color));
 }

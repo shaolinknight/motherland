@@ -23,18 +23,25 @@ export const sayBtn = (t, label = 'Play audio') => audioAvailable(L()) ? `<butto
 export const bar = (p, cls = '') => `<div class="bar ${cls}"><div style="width:${Math.max(0, Math.min(100, p))}%"></div></div>`;
 export const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 
-// Tab pages: brand bar + large title. Detail pages: back button that returns to `back` if opened directly.
+// Three header kinds, all on the page's own background (red is kept for actions):
+// - Home: a slim bar with the app name and Settings.
+// - Tab pages (Learn, Review, Play, Progress): a large title with Settings beside it; it scrolls away.
+// - Detail pages: a compact sticky bar with Back, returning to `back` when opened directly.
 export function header(title, { back, sub } = {}) {
   if (back) return `<header class="top">
     <button class="icon-btn back" data-parent="${esc(back)}" aria-label="Back">${icon('back')}</button>
     <h1 class="top-title">${esc(title)}${sub ? `<small lang="vi">${esc(sub)}</small>` : ''}</h1>
     <span class="icon-btn-spacer"></span>
   </header>`;
+  if (title) return `<header class="top top-root">
+    <div class="large-title"><h1>${esc(title)}</h1>${sub ? `<p class="muted">${esc(sub)}</p>` : ''}</div>
+    <button class="icon-btn gear" aria-label="Settings">${icon('gear')}</button>
+  </header>`;
   return `<header class="top">
-    <div class="brand"><span class="star">★</span> Motherland</div>
+    <div class="brand"><span class="star" aria-hidden="true">★</span> Motherland</div>
     <span class="grow"></span>
     <button class="icon-btn gear" aria-label="Settings">${icon('gear')}</button>
-  </header>${title ? `<div class="large-title"><h1>${esc(title)}</h1>${sub ? `<p class="muted">${esc(sub)}</p>` : ''}</div>` : ''}`;
+  </header>`;
 }
 export function wireHeader(root) {
   const b = $('.back', root);
