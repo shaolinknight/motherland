@@ -14,7 +14,7 @@ export function play(root) {
   root.innerHTML = `${header('Play', { sub: 'Games for when you have a few minutes' })}
   <div class="page">
     ${Object.entries(G.GAME_INFO).map(([k, info]) => `<button class="card game-card" data-game="${k}" ${k === 'listen' && !audio ? 'disabled' : ''}>
-      <span aria-hidden="true" class="g-emoji">${info.emoji}</span><div class="grow"><b>${info.name}</b><p class="muted">${k === 'listen' && !audio ? 'Needs a Vietnamese voice (see Settings).' : esc(info.rules)}</p>
+      <span aria-hidden="true" class="mode-ico">${icon(info.ico)}</span><div class="grow"><b>${info.name}</b><p class="muted">${k === 'listen' && !audio ? 'Needs a Vietnamese voice (see Settings).' : esc(info.rules)}</p>
       ${g[k]?.best != null ? `<span class="chip">Best: ${g[k].best}${info.unit} · ${plural(g[k].runs?.length || 1, 'play')}</span>` : ''}</div>${icon('chevron')}</button>`).join('')}
     <a class="card link-card" href="#/leaderboard"><span aria-hidden="true" class="mode-ico">🏆</span><div class="grow"><b>Leaderboards</b><p class="muted small">Your best weeks, months and game runs</p></div>${icon('chevron')}</a>
     <p class="muted small center pad">Games use words you’ve learned, plus beginner words until you have enough.</p>
@@ -43,7 +43,7 @@ export function leaderboard(root, tab = 'week') {
   };
   const games = () => Object.entries(G.GAME_INFO).map(([k, info]) => {
     const runs = T.gameBoard(k, 5);
-    return `<section class="card"><p class="kicker">${info.emoji} ${esc(info.name)}</p>
+    return `<section class="card"><p class="kicker">${esc(info.name)}</p>
       ${runs.length ? `<ol class="board flat">${runs.map((r, i) => `<li><span class="medal">${medal(i + 1)}</span><span class="grow muted small">${new Date(r.at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span><b>${r.score}${info.unit}</b></li>`).join('')}</ol>`
         : '<p class="muted small">No runs yet.</p>'}</section>`;
   }).join('');

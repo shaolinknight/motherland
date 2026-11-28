@@ -35,15 +35,15 @@ export function review(root) {
     ${waiting ? `<p class="muted center small cap-note">${left ? `Today’s limit leaves room for ${due}.` : 'You’ve reached today’s review limit.'} ${waiting} more waiting for tomorrow · <a href="#/settings/study">Change</a></p>` : ''}
     ${!dueAll && upcoming ? `<p class="muted center small">Next card due ${new Date(upcoming.due).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}</p>` : ''}
     ${seen ? weekChart() : ''}
-    ${seen ? `<button class="card mode" data-mode="flash" ${due ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('cards')}</span><div class="grow"><b>Flashcards</b><p class="muted">Flip and rate how well you knew it. Classic and fast.</p></div>${icon('chevron')}</button>
-    <button class="card mode" data-mode="quiz" ${due ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('check')}</span><div class="grow"><b>Quiz review</b><p class="muted">Due cards as mixed exercises: meaning, grammar, tones, listening, typing.</p></div>${icon('chevron')}</button>
-    <button class="card mode" data-mode="endless" ${seen ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('infinity')}</span><div class="grow"><b>Endless review</b><p class="muted">Keeps going as long as you want. Focuses on what you miss.</p></div>${icon('chevron')}</button>
+    ${seen ? `<button class="card mode primary-mode" data-mode="flash" ${due ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('cards')}</span><div class="grow"><b>Flashcards</b><p class="muted">Flip and rate. The quickest way through.</p></div>${icon('chevron')}</button>
+    <button class="card mode" data-mode="quiz" ${due ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('check')}</span><div class="grow"><b>Quiz review</b><p class="muted">The same cards as mixed exercises.</p></div>${icon('chevron')}</button>
+    <button class="card mode" data-mode="endless" ${seen ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('infinity')}</span><div class="grow"><b>Endless review</b><p class="muted">Keep going; leans on what you miss.</p></div>${icon('chevron')}</button>
     <button class="card mode" data-mode="grammar" ${gSeen.length ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('book')}</span><div class="grow"><b>Grammar drills</b><p class="muted">${gSeen.length ? `Mixed drills from the ${plural(gSeen.length, 'grammar point')} you’ve learned.` : 'Unlocks after your first lesson.'}</p></div>${icon('chevron')}</button>
     <button class="card mode" data-mode="weak" ${weak.length ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('target')}</span><div class="grow"><b>Weak spots</b><p class="muted">${weak.length ? `${plural(weak.length, 'item')} you’ve missed before${weak.some(i => cards[i.id].leech) ? ', hardest first' : ''}.` : 'Things you miss will show up here.'}</p></div>${icon('chevron')}</button>` : ''}
     <section class="decks-sec">
       <div class="row"><h2 class="section-title grow">Your decks</h2><button class="btn ghost small new-deck">+ New deck</button></div>
       ${D.list().length ? `<div class="deck-list">${D.list().map(d => { const st = D.stats(d.id); return `
-        <a class="card link-card deck-row" href="#/deck/${d.id}"><span aria-hidden="true" class="mode-ico">🗂️</span>
+        <a class="card link-card deck-row" href="#/deck/${d.id}"><span aria-hidden="true" class="mode-ico">${icon('folder')}</span>
           <div class="grow"><b>${esc(d.name)}</b><p class="muted small">${plural(st.total, 'card')}${st.due ? ` · ${st.due} due` : ''}${st.fresh ? ` · ${st.fresh} new` : ''}</p></div>${icon('chevron')}</a>`; }).join('')}</div>`
         : '<p class="muted small">Make your own decks: fill them with words from any unit, or write every card yourself. Study each deck on its own.</p>'}
     </section>

@@ -44,6 +44,9 @@
 - **Action sheets**: `sheet({ menu: true })` with `{ group, icon, kind: 'warn' }` on actions; Cancel (value `null`) sits apart. Use it for option lists; keep plain `sheet()` for confirmations.
 - **Learning status**: `statusDot()` (ring = new, half = learning, check = mastered, with a VoiceOver label) and `statusLegend()`; never a colour alone.
 - **Empty states**: one `.empty-state` card with the next step, not a list of disabled options.
+- **Lesson prompts**: a white card means something you hold (a new word, a flashcard, a word to say aloud); every other step leaves the prompt on the background.
+- **Icons**: the line set in `js/icons.js` (24 px, `currentColor`) for everything in the interface; emoji only as unit stickers and inside lesson content.
+- **Words**: plain language over Anki's terms: "Hide until tomorrow" (bury), "Stop showing this card" (suspend), "keeps slipping" (leech).
 
 ## Content format (`data/`)
 Unit fields: `id, section, icon, level (1–3), title, vi, tip, words[], phrases[], dialogue[], reading{vi,en}`.

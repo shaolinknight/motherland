@@ -65,7 +65,7 @@ export function home(root) {
 
     <p class="kicker pad">Quick play</p>
     <section class="quick">
-      ${Object.entries(G.GAME_INFO).map(([k, g]) => `<button class="q-tile" data-game="${k}"><span aria-hidden="true">${g.emoji}</span>${esc(g.name.split(' ')[0])}</button>`).join('')}
+      ${Object.entries(G.GAME_INFO).map(([k, g]) => `<button class="q-tile" data-game="${k}"><span aria-hidden="true">${icon(g.ico)}</span>${esc(g.name.split(' ')[0])}</button>`).join('')}
     </section>
   </div>`;
   wireHeader(root); wireSay(root);
@@ -85,10 +85,10 @@ function attention() {
   const skipped = P.unreviewedSkipped().length;
   if (!S.lang().placements.length) rows.push(`<li><a class="att-row cta-test" href="#/placement"><span aria-hidden="true" class="att-ico">${icon('target')}</span>
     <span class="grow"><b>Find your level</b><small>A 4-minute test, so lessons start in the right place</small></span>${icon('chevron')}</a></li>`);
-  if (backupDue()) rows.push(`<li><div class="att-row backup-nudge" role="group" aria-label="Backup reminder"><span aria-hidden="true" class="att-ico">💾</span>
+  if (backupDue()) rows.push(`<li><div class="att-row backup-nudge" role="group" aria-label="Backup reminder"><span aria-hidden="true" class="att-ico">${icon('download')}</span>
     <span class="grow"><b>Back up your progress</b><small>It’s only on this phone. Save a file, or set up Sheet sync in Settings.</small>
       <span class="att-actions"><button class="btn primary small do-backup">Save backup</button><button class="btn ghost small later-backup">Later</button></span></span></div></li>`);
-  if (skipped >= 5) rows.push(`<li><a class="att-row retest" href="#/diagnostics"><span aria-hidden="true" class="att-ico">🔍</span>
+  if (skipped >= 5) rows.push(`<li><a class="att-row retest" href="#/diagnostics"><span aria-hidden="true" class="att-ico">${icon('search')}</span>
     <span class="grow"><b>Re-check what the test skipped</b><small>${plural(skipped, 'word')} marked as known haven’t been reviewed yet</small></span>${icon('chevron')}</a></li>`);
   if (retestDue()) rows.push(`<li><a class="att-row retest" href="#/placement"><span aria-hidden="true" class="att-ico">${icon('target')}</span>
     <span class="grow"><b>Time for a check-up</b><small>Last placement test was ${daysSincePlacement()} days ago</small></span>${icon('chevron')}</a></li>`);

@@ -25,31 +25,37 @@ export function settings(root, section) {
   const flags = S.get().flags;
   root.innerHTML = `${header('Settings', { back: '#/home' })}
   <div class="page">
-    ${isPreview() ? `<details class="card set-sec" name="settings" data-sec="preview" ${openSection === 'preview' ? 'open' : ''}>
-      <summary><span class="set-ico" aria-hidden="true">🧪</span><span class="grow"><b>Preview</b><small class="muted">Sample data for testing</small></span><span class="set-chev" aria-hidden="true">${icon('chevron')}</span></summary>
-      <div class="set-body">
-        <p class="small">This preview link started with sample progress so you can try everything: due cards, a word that keeps slipping, hidden and stopped cards, My words, two decks, an edited card, a streak freeze, and an old over-generous placement to re-check or reset. It’s separate from your real app.</p>
-        <button class="btn ghost wide reset-demo">Reset sample data</button>
-      </div>
-    </details>` : ''}
+    <h2 class="section-title set-group">Learning</h2>
     <details class="card set-sec" name="settings" data-sec="languages" ${openSection === 'languages' ? 'open' : ''}>
-      <summary><span class="set-ico" aria-hidden="true">🌏</span><span class="grow"><b>Languages</b><small class="muted">${C.get().flag} ${esc(C.get().name)} · ${C.UPCOMING.length} more coming</small></span><span class="set-chev" aria-hidden="true">${icon('chevron')}</span></summary>
+      <summary><span class="set-ico" aria-hidden="true">${icon('globe')}</span><span class="grow"><b>Languages</b><small class="muted">${C.get().flag} ${esc(C.get().name)} · ${C.UPCOMING.length} more coming</small></span><span class="set-chev" aria-hidden="true">${icon('chevron')}</span></summary>
       <div class="set-body">
       <div class="lang-row on"><span class="flag">${C.get().flag}</span><div class="grow"><b>${C.get().name}</b><p class="muted small">${esc(C.get().accent)}</p></div><span class="chip ok">Active</span></div>
       ${C.UPCOMING.map(u => `<div class="lang-row"><span class="flag">${u.flag}</span><div class="grow"><b>${u.name}</b> <span class="muted">${u.native}</span><p class="muted small">${esc(u.plan)}</p></div><span class="chip">Soon</span></div>`).join('')}
       </div>
     </details>
-
     <details class="card set-sec" name="settings" data-sec="accent" ${openSection === 'accent' ? 'open' : ''}>
-      <summary><span class="set-ico" aria-hidden="true">🗣️</span><span class="grow"><b>Accent</b><small class="muted">Saigon first · Hanoi ${st.showHanoi ? 'shown' : 'hidden'}</small></span><span class="set-chev" aria-hidden="true">${icon('chevron')}</span></summary>
+      <summary><span class="set-ico" aria-hidden="true">${icon('mic')}</span><span class="grow"><b>Accent</b><small class="muted">Saigon first · Hanoi ${st.showHanoi ? 'shown' : 'hidden'}</small></span><span class="set-chev" aria-hidden="true">${icon('chevron')}</span></summary>
       <div class="set-body">
       <label class="switch row"><span class="grow">Show Hanoi (Northern) word variants</span><input type="checkbox" class="opt-hanoi" ${st.showHanoi ? 'checked' : ''}></label>
       <p class="muted small">Lessons teach Saigon (Southern) Vietnamese first. Where Hanoi uses a different word, it’s shown underneath.</p>
       </div>
     </details>
-
+    <details class="card set-sec" name="settings" data-sec="study" ${openSection === 'study' ? 'open' : ''}>
+      <summary><span class="set-ico" aria-hidden="true">${icon('book')}</span><span class="grow"><b>Study</b><small class="muted">${st.dailyGoal} XP a day · remember ${Math.round((st.retention || 0.9) * 100)}%${st.reviewCap ? ` · ${st.reviewCap} reviews max` : ''}</small></span><span class="set-chev" aria-hidden="true">${icon('chevron')}</span></summary>
+      <div class="set-body">
+      <label class="field"><span>Daily goal</span><select class="opt-goal">${[30, 60, 100, 150].map(n => `<option value="${n}" ${n === st.dailyGoal ? 'selected' : ''}>${n} XP (${{ 30: 'casual', 60: 'regular', 100: 'serious', 150: 'intense' }[n]})</option>`).join('')}</select></label>
+      <label class="field"><span>How well to remember</span><select class="opt-retention">${[[0.8, '80% (fewer reviews)'], [0.85, '85%'], [0.9, '90% (recommended)'], [0.95, '95% (more reviews)']].map(([v, n]) => `<option value="${v}" ${v === (st.retention || 0.9) ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+      <p class="muted small">Each word comes back when your chance of remembering it drops to this level. Higher means more reviews.</p>
+      <details class="tip"><summary>How reviews work</summary><p class="muted small">Reviews are scheduled with FSRS, the method modern Anki uses. It learns how well you know each word from your answers, and spaces the reviews out further each time you remember it.</p></details>
+      <label class="field"><span>Daily review limit</span><select class="opt-cap">${CAP_CHOICES.map(n => `<option value="${n}" ${n === (st.reviewCap || 0) ? 'selected' : ''}>${n ? `${n} reviews a day` : 'No limit (recommended)'}</option>`).join('')}</select></label>
+      <p class="muted small">For busy days. Cards past the limit wait until tomorrow. A limit keeps sessions short, but a long backlog then takes longer to clear.</p>
+      <label class="field"><span>New items per lesson</span><select class="opt-new">${[5, 8, 10, 12].map(n => `<option value="${n}" ${n === st.newPerLesson ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+      <label class="switch row"><span class="grow">Haptic tap on right answers</span><input type="checkbox" class="opt-haptics" ${st.haptics !== false ? 'checked' : ''}></label>
+      ${hapticsSupported() ? '' : '<p class="muted small">Needs iOS 17.4 or later on iPhone.</p>'}
+      </div>
+    </details>
     <details class="card set-sec" name="settings" data-sec="audio" ${openSection === 'audio' ? 'open' : ''}>
-      <summary><span class="set-ico" aria-hidden="true">🔊</span><span class="grow"><b>Audio</b><small class="muted">${vlist.length ? esc((vlist.find(v => v.voiceURI === st.voiceURI) || vlist[0]).name) : 'No voice found'} · ${st.rate.toFixed(2)}×</small></span><span class="set-chev" aria-hidden="true">${icon('chevron')}</span></summary>
+      <summary><span class="set-ico" aria-hidden="true">${icon('speaker')}</span><span class="grow"><b>Audio</b><small class="muted">${vlist.length ? esc((vlist.find(v => v.voiceURI === st.voiceURI) || vlist[0]).name) : 'No voice found'} · ${st.rate.toFixed(2)}×</small></span><span class="set-chev" aria-hidden="true">${icon('chevron')}</span></summary>
       <div class="set-body">
       <p class="small">${vlist.length ? `✅ ${plural(vlist.length, 'Vietnamese voice')} found.` : '🔇 No Vietnamese voice found yet.'}</p>
       ${vlist.length ? `<label class="field"><span>Voice</span><select class="opt-voice">${vlist.map(v => `<option value="${esc(v.voiceURI)}" ${v.voiceURI === st.voiceURI ? 'selected' : ''}>${esc(v.name)} (${esc(v.lang)})</option>`).join('')}</select></label>` : ''}
@@ -65,31 +71,16 @@ export function settings(root, section) {
       </details>
       </div>
     </details>
-
+    <h2 class="section-title set-group">App</h2>
     <details class="card set-sec" name="settings" data-sec="appearance" ${openSection === 'appearance' ? 'open' : ''}>
-      <summary><span class="set-ico" aria-hidden="true">🎨</span><span class="grow"><b>Appearance</b><small class="muted">${{ auto: 'Match iPhone', light: 'Light', dark: 'Dark' }[st.theme || 'auto']}</small></span><span class="set-chev" aria-hidden="true">${icon('chevron')}</span></summary>
+      <summary><span class="set-ico" aria-hidden="true">${icon('sun')}</span><span class="grow"><b>Appearance</b><small class="muted">${{ auto: 'Match iPhone', light: 'Light', dark: 'Dark' }[st.theme || 'auto']}</small></span><span class="set-chev" aria-hidden="true">${icon('chevron')}</span></summary>
       <div class="set-body">
       <label class="field"><span>Theme</span><select class="opt-theme">${[['auto', 'Match iPhone'], ['light', 'Light'], ['dark', 'Dark']].map(([v, n]) => `<option value="${v}" ${v === (st.theme || 'auto') ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
       </div>
     </details>
-
-    <details class="card set-sec" name="settings" data-sec="study" ${openSection === 'study' ? 'open' : ''}>
-      <summary><span class="set-ico" aria-hidden="true">📚</span><span class="grow"><b>Study</b><small class="muted">${st.dailyGoal} XP a day · remember ${Math.round((st.retention || 0.9) * 100)}%${st.reviewCap ? ` · ${st.reviewCap} reviews max` : ''}</small></span><span class="set-chev" aria-hidden="true">${icon('chevron')}</span></summary>
-      <div class="set-body">
-      <label class="field"><span>Daily goal</span><select class="opt-goal">${[30, 60, 100, 150].map(n => `<option value="${n}" ${n === st.dailyGoal ? 'selected' : ''}>${n} XP (${{ 30: 'casual', 60: 'regular', 100: 'serious', 150: 'intense' }[n]})</option>`).join('')}</select></label>
-      <label class="field"><span>How well to remember</span><select class="opt-retention">${[[0.8, '80% (fewer reviews)'], [0.85, '85%'], [0.9, '90% (recommended)'], [0.95, '95% (more reviews)']].map(([v, n]) => `<option value="${v}" ${v === (st.retention || 0.9) ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
-      <p class="muted small">Each word comes back when your chance of remembering it drops to this level. Higher means more reviews.</p>
-      <details class="tip"><summary>How reviews work</summary><p class="muted small">Reviews are scheduled with FSRS, the method modern Anki uses. It learns how well you know each word from your answers, and spaces the reviews out further each time you remember it.</p></details>
-      <label class="field"><span>Daily review limit</span><select class="opt-cap">${CAP_CHOICES.map(n => `<option value="${n}" ${n === (st.reviewCap || 0) ? 'selected' : ''}>${n ? `${n} reviews a day` : 'No limit (recommended)'}</option>`).join('')}</select></label>
-      <p class="muted small">For busy days. Cards past the limit wait until tomorrow. A limit keeps sessions short, but a long backlog then takes longer to clear.</p>
-      <label class="field"><span>New items per lesson</span><select class="opt-new">${[5, 8, 10, 12].map(n => `<option value="${n}" ${n === st.newPerLesson ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
-      <label class="switch row"><span class="grow">Haptic tap on right answers</span><input type="checkbox" class="opt-haptics" ${st.haptics !== false ? 'checked' : ''}></label>
-      ${hapticsSupported() ? '' : '<p class="muted small">Needs iOS 17.4 or later on iPhone.</p>'}
-      </div>
-    </details>
-
+    <h2 class="section-title set-group">Your data</h2>
     <details class="card set-sec" name="settings" data-sec="sync" ${openSection === 'sync' ? 'open' : ''}>
-      <summary><span class="set-ico" aria-hidden="true">☁️</span><span class="grow"><b>Google Sheet sync</b><small class="muted">${st.syncUrl ? `Synced ${timeAgo(st.lastSync)}${st.syncError ? ' · ⚠️' : ''}` : 'Not connected'}</small></span><span class="set-chev" aria-hidden="true">${icon('chevron')}</span></summary>
+      <summary><span class="set-ico" aria-hidden="true">${icon('cloud')}</span><span class="grow"><b>Google Sheet sync</b><small class="muted">${st.syncUrl ? `Synced ${timeAgo(st.lastSync)}${st.syncError ? ' · ⚠️' : ''}` : 'Not connected'}</small></span><span class="set-chev" aria-hidden="true">${icon('chevron')}</span></summary>
       <div class="set-body">
       <label class="field"><span>Web app URL</span><input class="opt-url" type="url" inputmode="url" autocapitalize="off" autocorrect="off" placeholder="https://script.google.com/macros/s/…/exec" value="${esc(st.syncUrl)}"></label>
       <label class="field"><span>Sync password</span><input class="opt-key" type="password" autocapitalize="off" placeholder="The SECRET from your script" value="${esc(st.syncKey)}"></label>
@@ -105,18 +96,8 @@ export function settings(root, section) {
       </details>
       </div>
     </details>
-
-    <details class="card set-sec" name="settings" data-sec="flags" ${openSection === 'flags' ? 'open' : ''}>
-      <summary><span class="set-ico" aria-hidden="true">🚩</span><span class="grow"><b>Flagged items</b><small class="muted">${flags.length ? plural(flags.length, 'item') : 'None'}</small></span><span class="set-chev" aria-hidden="true">${icon('chevron')}</span></summary>
-      <div class="set-body">
-      ${flags.length ? `<ul class="mini-list">${flags.slice().reverse().map(f => `<li><div class="grow"><span class="vi"${f.itemId === 'app-error' ? '' : ' lang="vi"'}>${esc(f.vi)}</span> <span class="muted">${esc(f.en)}</span>${f.note ? `<div class="small">“${esc(f.note)}”</div>` : ''}</div><button class="icon-btn unflag" data-id="${f.id}" aria-label="Remove flag">${icon('x')}</button></li>`).join('')}</ul>
-        <p class="muted small">Share these with Claude to get the lesson content fixed. They also sync to the Flags tab of your Sheet.</p>`
-        : '<p class="muted small">Tap 🚩 on any word or exercise that sounds off to you or your family.</p>'}
-      </div>
-    </details>
-
     <details class="card set-sec" name="settings" data-sec="data" ${openSection === 'data' ? 'open' : ''}>
-      <summary><span class="set-ico" aria-hidden="true">💾</span><span class="grow"><b>Your data</b><small class="muted">Backup, Anki export, reset</small></span><span class="set-chev" aria-hidden="true">${icon('chevron')}</span></summary>
+      <summary><span class="set-ico" aria-hidden="true">${icon('download')}</span><span class="grow"><b>Your data</b><small class="muted">Backup, Anki export, reset</small></span><span class="set-chev" aria-hidden="true">${icon('chevron')}</span></summary>
       <div class="set-body">
       <div class="btn-row wrap">
         <button class="btn ghost export">Export backup</button>
@@ -126,6 +107,21 @@ export function settings(root, section) {
       </div>
       </div>
     </details>
+    <details class="card set-sec" name="settings" data-sec="flags" ${openSection === 'flags' ? 'open' : ''}>
+      <summary><span class="set-ico" aria-hidden="true">${icon('flag')}</span><span class="grow"><b>Flagged items</b><small class="muted">${flags.length ? plural(flags.length, 'item') : 'None'}</small></span><span class="set-chev" aria-hidden="true">${icon('chevron')}</span></summary>
+      <div class="set-body">
+      ${flags.length ? `<ul class="mini-list">${flags.slice().reverse().map(f => `<li><div class="grow"><span class="vi"${f.itemId === 'app-error' ? '' : ' lang="vi"'}>${esc(f.vi)}</span> <span class="muted">${esc(f.en)}</span>${f.note ? `<div class="small">“${esc(f.note)}”</div>` : ''}</div><button class="icon-btn unflag" data-id="${f.id}" aria-label="Remove flag">${icon('x')}</button></li>`).join('')}</ul>
+        <p class="muted small">Share these with Claude to get the lesson content fixed. They also sync to the Flags tab of your Sheet.</p>`
+        : '<p class="muted small">Tap 🚩 on any word or exercise that sounds off to you or your family.</p>'}
+      </div>
+    </details>
+    ${isPreview() ? `<details class="card set-sec" name="settings" data-sec="preview" ${openSection === 'preview' ? 'open' : ''}>
+      <summary><span class="set-ico" aria-hidden="true">${icon('eye')}</span><span class="grow"><b>Preview</b><small class="muted">Sample data for testing</small></span><span class="set-chev" aria-hidden="true">${icon('chevron')}</span></summary>
+      <div class="set-body">
+        <p class="small">This preview link started with sample progress so you can try everything: due cards, a word that keeps slipping, hidden and stopped cards, My words, two decks, an edited card, a streak freeze, and an old over-generous placement to re-check or reset. It’s separate from your real app.</p>
+        <button class="btn ghost wide reset-demo">Reset sample data</button>
+      </div>
+    </details>` : ''}
     <p class="muted small center">Motherland v${VERSION} · ${C.vocabItems().length} words & phrases · ${C.grammarItems().length} grammar points · free forever</p>
   </div>`;
   wireHeader(root);

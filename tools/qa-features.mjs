@@ -172,7 +172,7 @@ await scenario('Bury, suspend, Hidden filter, Anki export', async p => {
   await p.goto(BASE + '#/home'); await p.waitForSelector('.hello'); await seed(p, dueCards, { unit: 'u03', n: 6 }); await p.reload();
   await p.goto(BASE + '#/words'); await p.waitForSelector('.bank .opts');
   await p.click('.bank .word-row .opts'); await p.click('.sheet-actions .btn >> text=Hide until tomorrow'); await p.waitForTimeout(300);
-  await p.click('.bank .word-row:nth-child(2) .opts'); await p.click('.sheet-actions .btn >> text=Stop showing this card'); await p.waitForTimeout(400);
+  await p.click('.bank .word-row >> nth=1 >> .opts'); await p.click('.sheet-actions .btn >> text=Stop showing this card'); await p.waitForTimeout(400);
   await p.click('.filters button[data-f="hidden"]'); await p.waitForTimeout(150);
   ok((await p.$$eval('.bank .word-row:not(.hidden)', r => r.length)) === 2, 'Hidden lists the buried and the suspended card');
   ok((await p.evaluate(async () => (await import('/js/course.js')).dueItems().length)) === 4, 'hidden cards leave the review queue');
@@ -296,6 +296,20 @@ await scenario('Design review fixes (top 10)', async p => {
   ok(await p.$eval('h1.top-title', e => e.scrollWidth <= e.clientWidth + 1), 'long titles wrap at 200% text instead of being cut off');
   await p.evaluate(() => { location.hash = '#/home'; }); await p.waitForTimeout(500);
   ok(await p.evaluate(() => { const r = document.querySelector('.ring').getBoundingClientRect(), t = document.querySelector('.ring span').getBoundingClientRect(); return t.left >= r.left - 1 && t.right <= r.right + 1 && document.querySelector('.ring span').scrollHeight <= t.height + 1; }), 'the XP ring holds its text at 200%');
+});
+
+await scenario('Design review: Word bank by unit, grouped Settings, line icons, recent runs', async p => {
+  await p.goto(BASE + '?demo#/words'); await p.waitForSelector('.bank .bank-unit');
+  const before = await p.$$eval('.bank .bank-unit:not(.hidden)', h => h.length);
+  await p.click('.filters button[data-f="hidden"]'); await p.waitForTimeout(200);
+  const after = await p.$$eval('.bank .bank-unit:not(.hidden)', h => h.length);
+  ok(before > 1 && after >= 1 && after < before, 'Word bank groups words under unit headings that follow the filter', `${before} → ${after}`);
+  await p.goto(BASE + '?demo#/settings'); await p.waitForSelector('.set-group');
+  const st = await p.evaluate(() => ({ groups: [...document.querySelectorAll('.set-group')].map(h => h.textContent), emoji: [...document.querySelectorAll('.set-ico')].filter(e => !e.querySelector('svg')).length }));
+  ok(st.groups.join('|') === 'Learning|App|Your data' && st.emoji === 0, 'Settings are grouped and use line icons', JSON.stringify(st));
+  await p.goto(BASE + '?demo#/play'); await p.waitForSelector('[data-game="speed"]');
+  await p.click('[data-game="speed"]'); await p.waitForSelector('.game-intro');
+  ok(await p.isVisible('.recent-runs .rr-bars') && !!(await p.$('.game-intro .finish-star svg')), 'game intros show recent runs and a line icon');
 });
 
 await scenario('Empty Review and the summary of a lesson with no questions', async p => {

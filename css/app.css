@@ -158,7 +158,7 @@ a.card:active, button.card:not(:disabled):active { transform: scale(.99); }
 .vi.big { font-size: 1.625rem; line-height: 1.25; }
 .quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .q-tile { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 4px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: .75rem; font-weight: 700; cursor: pointer; box-shadow: var(--shadow); min-height: 72px; }
-.q-tile span { font-size: 1.625rem; }
+.q-tile span { color: var(--accent); display: grid; place-items: center; }
 .q-tile:active { transform: scale(.96); }
 .recheck { border-color: var(--gold); }
 
@@ -178,6 +178,7 @@ a.card:active, button.card:not(:disabled):active { transform: scale(.99); }
 .seg button { flex: 1 0 auto; min-height: 44px; border: 0; background: transparent; border-radius: 999px; font-weight: 700; font-size: .875rem; color: var(--muted); cursor: pointer; padding: 0 4px; }
 .seg button.on { background: var(--paper); color: var(--brand-dark); box-shadow: var(--shadow); }
 .word-list, .mini-list { list-style: none; margin: 0; padding: 0; }
+.bank-unit { padding: 14px 14px 6px; font-size: var(--fs-caption); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--sunken, var(--cream)); }
 .word-list { background: var(--paper); border-radius: var(--radius); border: 1px solid var(--line); overflow: hidden; }
 .word-row { display: flex; align-items: flex-start; gap: 10px; padding: 12px 6px 12px 14px; border-bottom: 1px solid var(--line); cursor: pointer; }
 .word-row:last-child { border-bottom: 0; }
@@ -241,6 +242,7 @@ a.card:active, button.card:not(:disabled):active { transform: scale(.99); }
 .wp-day { font-size: .75rem; color: var(--muted); }
 .wp-bars .today .wp-day { color: var(--ink); font-weight: 700; text-decoration: underline 2px; text-underline-offset: 3px; }
 .mode, .game-card { padding: 14px; }
+.mode.primary-mode .mode-ico { background: var(--brand); color: #fff; }
 .mode-ico { width: 44px; height: 44px; border-radius: 12px; background: var(--brand-soft); color: var(--accent); display: grid; place-items: center; flex-shrink: 0; }
 .g-emoji { font-size: 2rem; width: 48px; text-align: center; flex-shrink: 0; }
 .game-card .chip { margin-top: 4px; }
@@ -367,10 +369,18 @@ code { background: var(--cream); padding: 1px 5px; border-radius: 4px; font-size
 .g0 { background: var(--amber-soft); color: var(--amber); } .g1 { background: var(--gold-soft); color: var(--gold-ink); }
 .g2 { background: var(--jade-soft); color: var(--jade); } .g3 { background: var(--blue-soft); color: var(--blue); }
 .finish { text-align: center; padding-top: 6vh; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.finish-star { font-size: 4rem; }
+/* The hero icon on results, game intros and the placement test: a line icon in a soft tile. */
+.finish-star { width: 84px; height: 84px; border-radius: 26px; background: var(--brand-soft); color: var(--accent); display: grid; place-items: center; margin: 0 auto; }
+.finish-star .ico { width: 42px; height: 42px; stroke-width: 1.8; }
 .stat-row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; justify-content: center; }
 .stat-row .stat { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 14px; min-width: 74px; }
 .g-title { flex: 1; font-weight: 700; text-align: center; }
+.recent-runs { width: 100%; max-width: 280px; margin-top: 18px; }
+.rr-bars { display: flex; justify-content: center; gap: 14px; height: 90px; align-items: end; }
+.rr-bars span { width: 30px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 4px; }
+.rr-bars b { font-size: var(--fs-caption); color: var(--muted); font-variant-numeric: tabular-nums; }
+.rr-bars i { display: block; width: 100%; max-width: 30px; border-radius: 6px; background: var(--brand-mid); }
+.rr-bars .last i { background: var(--brand); } .rr-bars .last b { color: var(--ink); }
 .g-hud { min-width: 92px; text-align: right; font-weight: 700; color: var(--brand-dark); padding-right: 6px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .match-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .match-grid .col { display: flex; flex-direction: column; gap: 8px; }
@@ -670,7 +680,7 @@ button.flip-card.flipped:not(:disabled):active { transform: rotateY(180deg) scal
   .page > .hello, .page > .banner, .page > .kicker.pad, .page > .quick, .page > .section-title, .page > .seg,
   .page > .panel, .page > .unit-hero, .page > .tip, .page > p, .page > .unit-list,
   .page > .link-row, .page > .search, .page > .filters, .page > .legend, .page > .bank, .page > .word-list,
-  .page > .g-sec, .page > .g-empty, .page > .g-intro, .page > .my-link, .page > .set-sec,
+  .page > .g-sec, .page > .g-empty, .page > .g-intro, .page > .my-link, .page > .set-sec, .page > .set-group,
   .page > .recheck, .page > .preview-banner,
   .page > .week-plan, .page > .empty-state, .page > .decks-sec, .page > .pick-list, .page > .deck-cards, .page > .pick-search, .page > .field, .page > .add-unit, .page > .pick-more { grid-column: 1 / -1; }
   .unit-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -711,11 +721,13 @@ button.flip-card.flipped:not(:disabled):active { transform: rotateY(180deg) scal
 
 /* ── Settings: collapsed rows, one open at a time ── */
 .set-sec { padding: 0; overflow: hidden; }
+.set-group { margin: 14px 4px 0; }
+.set-group:first-child { margin-top: 0; }
 .set-sec > summary { list-style: none; display: flex; align-items: center; gap: 12px; padding: 12px 14px; min-height: 60px; cursor: pointer; color: var(--ink); font-size: 1rem; font-weight: 400; }
 .set-sec > summary::-webkit-details-marker { display: none; }
 .set-sec > summary b { display: block; font-weight: 600; }
 .set-sec > summary small { display: block; font-size: .75rem; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.set-ico { width: 34px; height: 34px; border-radius: 9px; background: var(--brand-soft); display: grid; place-items: center; font-size: 1.0625rem; flex-shrink: 0; }
+.set-ico { width: 34px; height: 34px; border-radius: 9px; background: var(--brand-soft); color: var(--accent); display: grid; place-items: center; font-size: 1.0625rem; flex-shrink: 0; }
 .set-chev { color: var(--faint); display: grid; transition: transform .2s var(--ease-out); }
 .set-sec[open] > summary .set-chev { transform: rotate(90deg); }
 .set-sec[open] > summary { border-bottom: 1px solid var(--line); }

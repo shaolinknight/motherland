@@ -10,7 +10,7 @@
 
 ## Done: v1.7 (Nov 28, 2026): design review, top 10
 - Accessibility failures fixed (axe: 18 screens to 0), 44 px tap targets and real switches, no "0% accuracy" after a lesson with no questions, an empty-state Review, Word bank under Learn, neutral headers (red kept for actions), one type scale (28 sizes to 11, weights to 3, plus fixed exceptions), a grouped action sheet for card options, learning status as shapes with labels, and large-text fixes (titles wrap, XP ring grows, week chart letters).
-- Not done yet from the review: G3 icons, H1–H3, L1–L2, W3–W4, R2, LS2–LS5, SH2, P1, S2–S3, PL1, GM1 (see the design review page).
+- Then the rest of the review: one icon set, plain words, calmer Home, Word bank by unit, grouped Settings, one-line review modes, neutral disabled buttons, red-tint destructive actions, palette-aware greeting, game intros with recent runs.
 
 ## Done: v1.6 (Nov 22, 2026)
 - **Review planner:** a "This week" chart of reviews due each day, and an optional daily review limit (Settings → Study).

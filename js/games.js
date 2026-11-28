@@ -13,10 +13,10 @@ import { TONE_NAMES, toneOf, stripTones } from './vitext.js';
 const L = () => C.get().speechLang;
 
 export const GAME_INFO = {
-  match: { emoji: '🧩', name: 'Match pairs', rules: 'Tap a Vietnamese word, then its meaning. Clear all 6 pairs as fast as you can.', unit: 's', lower: true },
-  speed: { emoji: '⚡', name: 'Speed round', rules: '60 seconds. Pick the meaning of each word. Streaks of 3+ earn bonus points.', unit: '' },
-  tones: { emoji: '🎵', name: 'Tone hunter', rules: '45 seconds. Pick the correct tone mark for the missing word.', unit: '' },
-  listen: { emoji: '🎧', name: 'Listen up', rules: '10 words by ear. Choose what you heard. Tap the speaker to replay.', unit: '/10' },
+  match: { ico: 'grid', name: 'Match pairs', rules: 'Tap a Vietnamese word, then its meaning. Clear all 6 pairs as fast as you can.', unit: 's', lower: true },
+  speed: { ico: 'bolt', name: 'Speed round', rules: '60 seconds. Pick the meaning of each word. Streaks of 3+ earn bonus points.', unit: '' },
+  tones: { ico: 'music', name: 'Tone hunter', rules: '45 seconds. Pick the correct tone mark for the missing word.', unit: '' },
+  listen: { ico: 'headphones', name: 'Listen up', rules: '10 words by ear. Choose what you heard. Tap the speaker to replay.', unit: '/10' },
 };
 
 // Words you've met; falls back to beginner words so games work on day one.
@@ -43,7 +43,7 @@ function overlay(key) {
   root.innerHTML = `
     <header class="s-head">
       <button class="icon-btn s-close" aria-label="Close">${icon('x')}</button>
-      <div class="g-title">${info.emoji} ${esc(info.name)}</div>
+      <div class="g-title">${esc(info.name)}</div>
       <div class="g-hud" aria-live="polite"></div>
     </header>
     <main class="s-body" tabindex="-1"></main>
@@ -69,14 +69,25 @@ function overlay(key) {
 
 function best(key) { return S.lang().games[key]?.best; }
 
+// Your last five runs as small bars: something to beat, in the space under the rules.
+function recentRuns(g) {
+  const runs = (S.lang().games[g.key]?.runs || []).slice(-5);
+  if (runs.length < 2) return '';
+  const max = Math.max(...runs.map(r => r.score), 1);
+  return `<div class="recent-runs"><p class="kicker">Recent runs</p>
+    <div class="rr-bars" role="img" aria-label="Last ${runs.length} scores: ${runs.map(r => `${r.score}${g.info.unit}`).join(', ')}">${runs.map((r, i) =>
+      `<span class="${i === runs.length - 1 ? 'last' : ''}"><b>${r.score}</b><i style="height:${Math.max(8, Math.round(r.score / max * 100))}%"></i></span>`).join('')}</div></div>`;
+}
+
 function intro(g, start) {
   const b = best(g.key);
   g.hud.textContent = '';
   g.body.innerHTML = `<div class="finish game-intro">
-      <div aria-hidden="true" class="finish-star">${g.info.emoji}</div>
+      <div aria-hidden="true" class="finish-star">${icon(g.info.ico)}</div>
       <h2>${esc(g.info.name)}</h2>
       <p class="muted">${esc(g.info.rules)}</p>
       ${b != null ? `<span class="chip">Your best: ${b}${g.info.unit}</span>` : '<span class="chip">No score yet</span>'}
+      ${recentRuns(g)}
     </div>`;
   g.foot.innerHTML = `<button class="btn primary go">Start</button>`;
   $('.go', g.foot).onclick = () => countdown(g, start);
@@ -108,7 +119,7 @@ function results(g, { score, label, missed = [], xp = 0 }) {
   g.hud.textContent = '';
   const uniq = [...new Map(missed.map(m => [m.id, m])).values()].slice(0, 8);
   g.body.innerHTML = `<div class="finish">
-      <div aria-hidden="true" class="finish-star">${isBest ? '🏆' : '🎯'}</div>
+      <div aria-hidden="true" class="finish-star">${icon(isBest ? 'trophy' : 'target')}</div>
       <h2>${esc(label)}</h2>
       <div class="stat-row">
         <div class="stat"><b>${score}${g.info.unit}</b><span>${isBest ? (prev == null ? 'first score!' : 'new best!') : `best ${prev}${g.info.unit}`}</span></div>

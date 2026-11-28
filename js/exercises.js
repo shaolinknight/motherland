@@ -334,11 +334,11 @@ function finish(s, early = false) {
   // celebrate what was learned instead of showing "0%" and a pep talk about misses.
   const asked = s.t > 0;
   const [star, title, line] = !asked
-    ? ['⭐', 'Làm tốt lắm!', s.learned ? `${s.learned === 1 ? 'One new word' : `${s.learned} new words`} to remember. They’ll come back in your reviews.` : 'Nice start.']
-    : acc >= 80 ? ['🌟', 'Xuất sắc!', 'Excellent work.'] : acc >= 50 ? ['⭐', 'Làm tốt lắm!', 'Nice job — keep going.'] : ['💪', 'Cố lên!', 'Every miss is a word you’ll see again soon.'];
+    ? ['star', 'Làm tốt lắm!', s.learned ? `${s.learned === 1 ? 'One new word' : `${s.learned} new words`} to remember. They’ll come back in your reviews.` : 'Nice start.']
+    : acc >= 80 ? ['trophy', 'Xuất sắc!', 'Excellent work.'] : acc >= 50 ? ['star', 'Làm tốt lắm!', 'Nice job — keep going.'] : ['target', 'Cố lên!', 'Every miss is a word you’ll see again soon.'];
   body.innerHTML = `
     <div class="finish">
-      <div aria-hidden="true" class="finish-star">${star}</div>
+      <div aria-hidden="true" class="finish-star">${icon(star)}</div>
       <h2>${title}</h2>
       <p class="muted">${line}</p>
       <div class="stat-row">

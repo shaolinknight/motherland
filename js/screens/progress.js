@@ -62,7 +62,7 @@ export function progress(root) {
     </section>
 
     <section class="link-row">
-      <a class="card link-card" href="#/leaderboard"><span aria-hidden="true" class="mode-ico">🏆</span><div class="grow"><b>Leaderboards</b><p class="muted small">Your best runs</p></div></a>
+      <a class="card link-card" href="#/leaderboard"><span aria-hidden="true" class="mode-ico">${icon('trophy')}</span><div class="grow"><b>Leaderboards</b><p class="muted small">Your best runs</p></div></a>
       <a class="card link-card" href="#/words"><span aria-hidden="true" class="mode-ico">${icon('cards')}</span><div class="grow"><b>Word bank</b><p class="muted small">${seenV} learned</p></div></a>
     </section>
 
@@ -117,7 +117,7 @@ export function placement(root) {
   root.innerHTML = `${header('Placement test', { back: '#/progress' })}
   <div class="page">
     <section class="card">
-      <div aria-hidden="true" class="big-emoji">🎯</div>
+      <div aria-hidden="true" class="finish-star">${icon('target')}</div>
       <h2>Find your level</h2>
       <p>About 25 quick questions across three levels: vocabulary, reading, grammar, tones${audioAvailable(L()) ? ' and listening' : ''}.</p>
       <ul class="checklist">
