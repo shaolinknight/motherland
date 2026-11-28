@@ -330,13 +330,19 @@ function finish(s, early = false) {
   $('.s-flag', s.root).style.visibility = 'hidden';
   const acc = pct(s.c, s.t);
   const missed = s.missed.filter(i => i.kind !== 'grammar').slice(0, 8);
+  // No questions answered (only new words shown, or closed early): there's no accuracy to judge, so
+  // celebrate what was learned instead of showing "0%" and a pep talk about misses.
+  const asked = s.t > 0;
+  const [star, title, line] = !asked
+    ? ['⭐', 'Làm tốt lắm!', s.learned ? `${s.learned === 1 ? 'One new word' : `${s.learned} new words`} to remember. They’ll come back in your reviews.` : 'Nice start.']
+    : acc >= 80 ? ['🌟', 'Xuất sắc!', 'Excellent work.'] : acc >= 50 ? ['⭐', 'Làm tốt lắm!', 'Nice job — keep going.'] : ['💪', 'Cố lên!', 'Every miss is a word you’ll see again soon.'];
   body.innerHTML = `
     <div class="finish">
-      <div aria-hidden="true" class="finish-star">${acc >= 80 ? '🌟' : acc >= 50 ? '⭐' : '💪'}</div>
-      <h2>${acc >= 80 ? 'Xuất sắc!' : acc >= 50 ? 'Làm tốt lắm!' : 'Cố lên!'}</h2>
-      <p class="muted">${acc >= 80 ? 'Excellent work.' : acc >= 50 ? 'Nice job — keep going.' : 'Every miss is a word you’ll see again soon.'}</p>
+      <div aria-hidden="true" class="finish-star">${star}</div>
+      <h2>${title}</h2>
+      <p class="muted">${line}</p>
       <div class="stat-row">
-        <div class="stat"><b>${acc}%</b><span>accuracy</span></div>
+        ${asked ? `<div class="stat"><b>${acc}%</b><span>accuracy</span></div>` : ''}
         <div class="stat"><b>+${s.xp}</b><span>XP</span></div>
         <div class="stat"><b>${Math.max(1, Math.round(ms / 60000))}</b><span>min</span></div>
         ${s.learned ? `<div class="stat"><b>${s.learned}</b><span>new</span></div>` : ''}

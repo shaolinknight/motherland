@@ -14,7 +14,7 @@ export function words(root, filter = 'all') {
   const hidden = c => isHidden(c, now);
   const counts = { all: learned.length, learning: learned.filter(i => !isMastered(cards[i.id])).length, mastered: learned.filter(i => isMastered(cards[i.id])).length, missed: learned.filter(i => cards[i.id].lapses > 0).length, hidden: learned.filter(i => hidden(cards[i.id])).length };
   const when = c => { const d = Math.round((c.due - now) / 86400000); return c.due <= now ? 'due now' : d < 1 ? 'later today' : `in ${d}d`; };
-  root.innerHTML = `${header('Word bank', { back: '#/progress', sub: `${learned.length} learned` })}
+  root.innerHTML = `${header('Word bank', { back: '#/learn', sub: `${learned.length} learned` })}
   <div class="page">
     <input class="search" type="search" placeholder="Search Vietnamese or English…" aria-label="Search words" autocomplete="off" autocorrect="off" autocapitalize="off">
     <nav class="seg filters">${[['all', 'All'], ['learning', 'Learning'], ['mastered', 'Mastered'], ['missed', 'Missed'], ['hidden', 'Hidden']].map(([k, n]) => `<button class="${k === filter ? 'on' : ''}" data-f="${k}">${n} <small>${counts[k]}</small></button>`).join('')}</nav>

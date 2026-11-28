@@ -7,9 +7,10 @@ import { isMastered } from '../srs.js';
 import { confirmSheet, itemOptions, sheet, askText, undoToast } from '../ui.js';
 import * as D from '../decks.js';
 import * as P from '../planner.js';
+import { continueUnit } from '../placement.js';
 import { stripAll } from '../vitext.js';
 import { spellingProblems } from '../vispell.js';
-import { say, go, wireSay, bar, plural, header, wireHeader } from './shared.js';
+import { say, go, wireSay, bar, plural, header, wireHeader, startLesson } from './shared.js';
 
 // ── REVIEW ──────────────────────────────────────────────────────────────────
 export function review(root) {
@@ -21,20 +22,24 @@ export function review(root) {
   const gSeen = C.seenItems().filter(i => i.kind === 'grammar');
   root.innerHTML = `${header('Review', { sub: 'Spaced repetition: right before you forget' })}
   <div class="page">
-    <section class="card stats3">
+    ${seen ? `<section class="card stats3">
       <div class="stat"><b>${due}</b><span>due now</span></div>
       <div class="stat"><b>${seen}</b><span>learning</span></div>
       <div class="stat"><b>${mastered}</b><span>mastered</span></div>
-    </section>
+    </section>` : `<section class="card empty-state">
+      <span aria-hidden="true" class="mode-ico">${icon('cards')}</span>
+      <h2>Reviews start after your first lesson</h2>
+      <p class="muted">Every word you learn comes back here, right before you’d forget it.</p>
+      <button class="btn primary start-first">Start a lesson</button>
+    </section>`}
     ${waiting ? `<p class="muted center small cap-note">${left ? `Today’s limit leaves room for ${due}.` : 'You’ve reached today’s review limit.'} ${waiting} more waiting for tomorrow · <a href="#/settings/study">Change</a></p>` : ''}
     ${!dueAll && upcoming ? `<p class="muted center small">Next card due ${new Date(upcoming.due).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}</p>` : ''}
     ${seen ? weekChart() : ''}
-    <button class="card mode" data-mode="flash" ${due ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('cards')}</span><div class="grow"><b>Flashcards</b><p class="muted">Flip and rate how well you knew it. Classic and fast.</p></div>${icon('chevron')}</button>
+    ${seen ? `<button class="card mode" data-mode="flash" ${due ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('cards')}</span><div class="grow"><b>Flashcards</b><p class="muted">Flip and rate how well you knew it. Classic and fast.</p></div>${icon('chevron')}</button>
     <button class="card mode" data-mode="quiz" ${due ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('check')}</span><div class="grow"><b>Quiz review</b><p class="muted">Due cards as mixed exercises: meaning, grammar, tones, listening, typing.</p></div>${icon('chevron')}</button>
     <button class="card mode" data-mode="endless" ${seen ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('infinity')}</span><div class="grow"><b>Endless review</b><p class="muted">Keeps going as long as you want. Focuses on what you miss.</p></div>${icon('chevron')}</button>
     <button class="card mode" data-mode="grammar" ${gSeen.length ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('book')}</span><div class="grow"><b>Grammar drills</b><p class="muted">${gSeen.length ? `Mixed drills from the ${plural(gSeen.length, 'grammar point')} you’ve learned.` : 'Unlocks after your first lesson.'}</p></div>${icon('chevron')}</button>
-    <button class="card mode" data-mode="weak" ${weak.length ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('target')}</span><div class="grow"><b>Weak spots</b><p class="muted">${weak.length ? `${plural(weak.length, 'item')} you’ve missed before${weak.some(i => cards[i.id].leech) ? ', leeches first' : ''}.` : 'Things you miss will show up here.'}</p></div>${icon('chevron')}</button>
-    ${!seen ? `<p class="muted center pad">Finish your first lesson to unlock reviews.</p>` : ''}
+    <button class="card mode" data-mode="weak" ${weak.length ? '' : 'disabled'}><span aria-hidden="true" class="mode-ico">${icon('target')}</span><div class="grow"><b>Weak spots</b><p class="muted">${weak.length ? `${plural(weak.length, 'item')} you’ve missed before${weak.some(i => cards[i.id].leech) ? ', leeches first' : ''}.` : 'Things you miss will show up here.'}</p></div>${icon('chevron')}</button>` : ''}
     <section class="decks-sec">
       <div class="row"><h2 class="section-title grow">Your decks</h2><button class="btn ghost small new-deck">+ New deck</button></div>
       ${D.list().length ? `<div class="deck-list">${D.list().map(d => { const st = D.stats(d.id); return `
@@ -53,6 +58,7 @@ export function review(root) {
     weak: () => X.run({ steps: weak.map(i => X.choose(i, 2)), activity: 'weak' }),
   };
   $$('[data-mode]', root).forEach(b => b.onclick = () => modes[b.dataset.mode]());
+  $('.start-first', root)?.addEventListener('click', () => startLesson(continueUnit().id));
 }
 
 // Reviews due on each of the next 7 days, as a small bar chart. Today includes anything overdue.
