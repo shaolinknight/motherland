@@ -37,6 +37,14 @@
 | `tools/` | `validate.mjs` (content checker), `test-logic.mjs`, `qa.mjs`, `qa-sync.mjs` (also simulates deploys), `qa-features.mjs` (a permanent check for each feature), `shots.mjs` (screenshot capture + pixel compare for refactors), `audit.mjs` (perf/a11y numbers, see `docs/AUDIT.md`), `watchdog.mjs`, `serve.mjs`. Dev only. |
 | `.github/workflows/check.yml` | CI: `npm run check` in WebKit and Chromium on every push. |
 
+## Design conventions (v1.7, from the design review)
+- **Headers** (`header()` in `js/screens/shared.js`) sit on the page background, never a coloured bar: Home has a slim name bar, tab pages a large title with Settings beside it, detail pages a compact sticky bar with Back whose title wraps. Red is for actions, the active tab and progress. The status bar uses `apple-mobile-web-app-status-bar-style: default` with `theme-color` set to `--cream`, so iOS picks readable status text.
+- **Type scale** tokens `--fs-caption` 12 · `--fs-secondary` 14 · `--fs-body` 16 · `--fs-headline` 17 · `--fs-heading` 20 · `--fs-title` 26 · `--fs-display` 32 px; weights 400 / 600 / 700. Exceptions: 11 px tab labels, 16 px inputs, emoji and big numbers.
+- **Tap targets** at least 44 px; settings toggles are switches in 48 px rows.
+- **Action sheets**: `sheet({ menu: true })` with `{ group, icon, kind: 'warn' }` on actions; Cancel (value `null`) sits apart. Use it for option lists; keep plain `sheet()` for confirmations.
+- **Learning status**: `statusDot()` (ring = new, half = learning, check = mastered, with a VoiceOver label) and `statusLegend()`; never a colour alone.
+- **Empty states**: one `.empty-state` card with the next step, not a list of disabled options.
+
 ## Content format (`data/`)
 Unit fields: `id, section, icon, level (1–3), title, vi, tip, words[], phrases[], dialogue[], reading{vi,en}`.
 

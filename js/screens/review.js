@@ -64,7 +64,8 @@ export function review(root) {
 // Reviews due on each of the next 7 days, as a small bar chart. Today includes anything overdue.
 function weekChart() {
   const days = P.forecast(7), max = Math.max(1, ...days.map(d => d.n)), total = days.reduce((a, d) => a + d.n, 0);
-  const name = d => (d.today ? 'Today' : d.date.toLocaleDateString([], { weekday: 'short' }));
+  // One letter per day (today underlined) so labels never collide, even at the largest text sizes.
+  const name = d => d.date.toLocaleDateString([], { weekday: 'narrow' });
   const full = d => (d.today ? 'today' : d.date.toLocaleDateString([], { weekday: 'long' }));
   return `<section class="card week-plan">
     <div class="row"><h2 class="section-title grow">This week</h2><span class="muted small">${plural(total, 'review')}</span></div>

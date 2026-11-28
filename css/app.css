@@ -32,6 +32,9 @@ body { background: var(--cream); overscroll-behavior-y: none; -webkit-tap-highli
 body.no-scroll { overflow: hidden; }
 a { color: var(--accent); }
 button { font: inherit; color: inherit; }
+/* Keep browser defaults on the scale: <small> is "smaller" (13.3 px) and <b> is "bolder" (900 inside bold text). */
+small { font-size: var(--fs-secondary); }
+b, strong { font-weight: 700; }
 h1, h2 { margin: 0 0 .25rem; line-height: 1.2; }
 h1 { font-size: 1.625rem; } h2 { font-size: 1.25rem; }
 p { margin: .35rem 0; line-height: 1.45; }
@@ -119,14 +122,14 @@ a.card:active, button.card:not(:disabled):active { transform: scale(.99); }
 .preview-banner { background: var(--blue-soft); color: var(--blue); }
 
 /* ── Home ── */
-.hello { display: flex; align-items: center; gap: 12px; background: linear-gradient(135deg, var(--paper) 0%, var(--gold-soft) 140%); }
-.hello > div:first-child { flex: 1; min-width: 0; }
+.hello { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; background: linear-gradient(135deg, var(--paper) 0%, var(--gold-soft) 140%); }
+.hello > div:first-child { flex: 1 1 9rem; min-width: 0; }   /* at large text sizes the ring wraps below */
 .ring {
-  --p: 0; width: 84px; height: 84px; border-radius: 50%; flex-shrink: 0;
+  --p: 0; width: max(84px, 5.25rem); height: max(84px, 5.25rem); border-radius: 50%; flex-shrink: 0;   /* grows with text size */
   background: conic-gradient(var(--brand) calc(var(--p) * 1%), var(--track) 0);
   display: grid; place-items: center;
 }
-.ring span { width: 66px; height: 66px; border-radius: 50%; background: var(--paper); display: grid; place-content: center; text-align: center; line-height: 1.05; }
+.ring span { width: calc(100% - 18px); height: calc(100% - 18px); border-radius: 50%; background: var(--paper); display: grid; place-content: center; text-align: center; line-height: 1.05; }
 .ring b { font-size: 1.25rem; } .ring small { font-size: .75rem; color: var(--muted); }
 /* Sync status under the greeting. */
 .sync-line { margin: 4px 0 0; color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; }
@@ -233,7 +236,7 @@ a.card:active, button.card:not(:disabled):active { transform: scale(.99); }
 .wp-bar i { display: block; width: 100%; background: var(--brand-mid); border-radius: 6px 6px 0 0; }
 .wp-bars .today .wp-bar i { background: var(--brand); }
 .wp-day { font-size: .75rem; color: var(--muted); }
-.wp-bars .today .wp-day { color: var(--ink); font-weight: 700; }
+.wp-bars .today .wp-day { color: var(--ink); font-weight: 700; text-decoration: underline 2px; text-underline-offset: 3px; }
 .mode, .game-card { padding: 14px; }
 .mode-ico { width: 44px; height: 44px; border-radius: 12px; background: var(--brand-soft); color: var(--accent); display: grid; place-items: center; flex-shrink: 0; }
 .g-emoji { font-size: 2rem; width: 48px; text-align: center; flex-shrink: 0; }
@@ -458,7 +461,7 @@ button.ex-row:active { background: var(--gold-soft); }
 .link-card .mode-ico { width: 38px; height: 38px; font-size: 1.0625rem; }
 .search { color: var(--ink); font: inherit; font-size: 16px; min-height: 46px; padding: 0 14px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--paper); width: 100%; }
 .search:focus { outline: none; border-color: var(--accent); }
-.filters button small { font-weight: 600; color: var(--muted); }
+.filters button small { font-size: var(--fs-caption); font-weight: 600; color: var(--muted); }
 .filters { top: calc(var(--safe-t) + 70px); }
 
 .stack { display: flex; flex-direction: column; gap: 12px; }

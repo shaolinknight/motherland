@@ -8,6 +8,10 @@
 4. Haptics: checkbox-switch trick, single pulse, with a setting to turn it off
 5. Accessibility fixes from the audit
 
+## Done: v1.7 (Nov 28, 2026): design review, top 10
+- Accessibility failures fixed (axe: 18 screens to 0), 44 px tap targets and real switches, no "0% accuracy" after a lesson with no questions, an empty-state Review, Word bank under Learn, neutral headers (red kept for actions), one type scale (28 sizes to 11, weights to 3, plus fixed exceptions), a grouped action sheet for card options, learning status as shapes with labels, and large-text fixes (titles wrap, XP ring grows, week chart letters).
+- Not done yet from the review: G3 icons, H1–H3, L1–L2, W3–W4, R2, LS2–LS5, SH2, P1, S2–S3, PL1, GM1 (see the design review page).
+
 ## Done: v1.6 (Nov 22, 2026)
 - **Review planner:** a "This week" chart of reviews due each day, and an optional daily review limit (Settings → Study).
 - **Undo for small changes** (bury, suspend, deck add/remove, mark checked, keep placement words, remove a flag). Big changes (delete a deck or word, resets, restoring a backup) still ask "are you sure".

@@ -269,6 +269,44 @@ await scenario('Typing with the keyboard up; grammar examples play', async p => 
   ok(await p.evaluate(() => getComputedStyle(document.getElementById('app')).visibility === 'visible' && getComputedStyle(document.getElementById('tabs')).visibility === 'visible'), 'the screen comes back when the lesson closes');
 });
 
+await scenario('Design review fixes (top 10)', async p => {
+  await p.goto(BASE + '?demo#/home'); await p.waitForSelector('.hello');
+  const axeOn = async route => { await p.evaluate(r => { location.hash = '#/' + r; }, route); await p.waitForTimeout(500); await p.addScriptTag({ content: AXE }); return p.evaluate(async () => (await window.axe.run(document)).violations.map(v => v.id)); };
+  for (const r of ['home', 'words', 'review', 'unit/u03']) { const v = await axeOn(r); ok(!v.length, `axe clean: ${r}`, v.join(',')); }
+  // Neutral header; status bar colour matches the page.
+  await p.evaluate(() => { location.hash = '#/learn'; }); await p.waitForTimeout(400);
+  const hdr = await p.evaluate(() => ({ bg: getComputedStyle(document.querySelector('.top')).backgroundColor, brand: getComputedStyle(document.documentElement).getPropertyValue('--brand').trim(), theme: document.querySelector('meta[name="theme-color"]').content, cream: getComputedStyle(document.documentElement).getPropertyValue('--cream').trim(), large: !!document.querySelector('.top-root .large-title h1') }));
+  ok(hdr.large && !hdr.bg.includes('200, 16, 46') && hdr.theme.toLowerCase() === hdr.cream.toLowerCase(), 'headers are neutral, tab pages have a large title, status bar matches the page', JSON.stringify(hdr));
+  // Word bank belongs to Learn.
+  await p.evaluate(() => { location.hash = '#/words'; }); await p.waitForTimeout(400);
+  ok(await p.$eval('#tabs .on', e => e.dataset.tab) === 'learn', 'Word bank keeps the Learn tab highlighted');
+  ok((await p.$$eval('.bank .dot[role="img"][aria-label]', d => d.length)) > 0 && await p.isVisible('.legend'), 'learning status has a label and a legend');
+  // Action sheet.
+  await p.click('.bank .word-row .opts'); await p.waitForSelector('.sheet-actions.menu');
+  const m = await p.evaluate(() => ({ groups: document.querySelectorAll('.menu-group').length, cancel: !!document.querySelector('.menu-cancel'), minH: Math.min(...[...document.querySelectorAll('.sheet-actions.menu .btn')].map(b => b.getBoundingClientRect().height)) }));
+  ok(m.groups === 3 && m.cancel && m.minH >= 44, 'card options are a grouped action sheet with Cancel apart', JSON.stringify(m));
+  await p.click('.menu-cancel'); await p.waitForTimeout(300);
+  // Settings switches: 44 px rows, real switch size.
+  await p.goto(BASE + '?demo#/settings/accent'); await p.waitForSelector('.opt-hanoi', { state: 'visible' });
+  const sw = await p.$eval('.opt-hanoi', e => ({ w: e.getBoundingClientRect().width, row: e.closest('label').getBoundingClientRect().height }));
+  ok(sw.w >= 50 && sw.row >= 44, 'settings toggles are switches in full-height rows', JSON.stringify(sw));
+  // 200% text: titles wrap, the XP ring holds its text.
+  await p.addStyleTag({ content: 'html{font-size:200% !important}' });
+  await p.evaluate(() => { location.hash = '#/unit/u03'; }); await p.waitForTimeout(500);
+  ok(await p.$eval('h1.top-title', e => e.scrollWidth <= e.clientWidth + 1), 'long titles wrap at 200% text instead of being cut off');
+  await p.evaluate(() => { location.hash = '#/home'; }); await p.waitForTimeout(500);
+  ok(await p.evaluate(() => { const r = document.querySelector('.ring').getBoundingClientRect(), t = document.querySelector('.ring span').getBoundingClientRect(); return t.left >= r.left - 1 && t.right <= r.right + 1 && document.querySelector('.ring span').scrollHeight <= t.height + 1; }), 'the XP ring holds its text at 200%');
+});
+
+await scenario('Empty Review and the summary of a lesson with no questions', async p => {
+  await p.goto(BASE + '#/review'); await p.waitForSelector('.empty-state');
+  ok(!(await p.$('[data-mode]')) && await p.isVisible('.empty-state .start-first'), 'a new user sees one empty state with Start a lesson, not disabled modes');
+  await p.evaluate(async () => { const X = await import('/js/exercises.js'), C = await import('/js/course.js'); const w = C.unitItems('u03').filter(i => i.kind === 'word'); X.run({ steps: [X.intro(w[0]), X.intro(w[1])], activity: 't' }); });
+  await p.click('.s-foot .btn.primary'); await p.waitForTimeout(400); await p.click('.s-foot .btn.primary'); await p.waitForSelector('.finish');
+  const f = await p.textContent('.finish');
+  ok(!/accuracy/.test(f) && /2 new words/.test(f), 'no “0% accuracy” after a lesson with no questions', f.replace(/\s+/g, ' ').slice(0, 120));
+});
+
 await scenario('Grammar search with and without accents', async p => {
   await p.goto(BASE + '#/grammar'); await p.waitForSelector('.g-search');
   const n = async q => { await p.fill('.g-search', q); await p.waitForTimeout(80); return p.$$eval('.g-link:not(.hidden)', e => e.length); };
