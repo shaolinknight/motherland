@@ -177,8 +177,14 @@ a.card:active, button.card:not(:disabled):active { transform: scale(.99); }
 .word-row:last-child { border-bottom: 0; }
 .word-row:active { background: var(--cream); }
 .word-row .icon-btn { color: var(--faint); margin-top: -6px; }
-.dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; background: var(--faint); }
-.dot.learning { background: var(--gold); } .dot.mastered { background: var(--jade); }
+.dot { width: 14px; height: 14px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; box-sizing: border-box; position: relative; border: 2px solid var(--faint); }
+.dot.new { background: transparent; }
+.dot.learning { border-color: var(--gold-ink); background: linear-gradient(to top, var(--gold) 50%, transparent 50%); }
+.dot.mastered { border-color: var(--jade); background: var(--jade); }
+.dot.mastered::after { content: ""; position: absolute; left: 3px; top: 0; width: 3px; height: 6px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0; font-size: .75rem; color: var(--muted); }
+.legend > span { display: inline-flex; align-items: center; gap: 6px; }
+.legend .dot { margin: 0; }
 .hanoi { font-size: .875rem; color: var(--muted); margin-top: 2px; }
 .hanoi b { color: var(--ink); font-weight: 600; }
 .note { font-size: .875rem; color: var(--gold-ink); margin-top: 4px; }
@@ -494,6 +500,15 @@ button.ex-row:active { background: var(--gold-soft); }
 .sheet-actions.stack { flex-direction: column; }
 .sheet-actions.stack .btn { flex: none; width: 100%; }
 .sheet-actions .btn.danger { background: var(--amber); color: #fff; border-color: var(--amber); }
+/* Action sheet (sheet({ menu: true })): grouped list rows with icons, Cancel on its own below. */
+.sheet-actions.menu { flex-direction: column; gap: 10px; }
+.menu-group { display: flex; flex-direction: column; background: var(--cream); border-radius: 16px; overflow: hidden; }
+.sheet-actions.menu .btn.menu-row { flex: none; width: 100%; min-height: 52px; justify-content: flex-start; gap: 14px; padding: 0 16px; border: 0; border-radius: 0; background: transparent; color: var(--ink); font-weight: 600; text-align: left; }
+.sheet-actions.menu .menu-row + .menu-row { box-shadow: inset 0 1px 0 var(--line); }
+.menu-row .ico { color: var(--accent); }
+.sheet-actions.menu .btn.menu-row.warn, .menu-row.warn .ico { color: var(--amber); }
+.sheet-actions.menu .btn.menu-cancel { flex: none; width: 100%; min-height: 52px; border: 0; background: var(--cream); color: var(--ink); font-weight: 700; }
+.sheet-actions.menu .btn:active:not(:disabled) { background: var(--track); }
 .flag-item { display: flex; flex-direction: column; padding: 10px 12px; background: var(--cream); border-radius: 12px; margin: 8px 0; }
 .reason-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
 .chip-btn { border: 1.5px solid var(--line); background: var(--paper); border-radius: 999px; padding: 8px 12px; font-size: .875rem; font-weight: 600; cursor: pointer; min-height: 38px; }
@@ -648,7 +663,7 @@ button.flip-card.flipped:not(:disabled):active { transform: rotateY(180deg) scal
   /* Full-width rows in the two-column grid */
   .page > .hello, .page > .banner, .page > .kicker.pad, .page > .quick, .page > .section-title, .page > .seg,
   .page > .panel, .page > .unit-hero, .page > .tip, .page > p, .page > .unit-list,
-  .page > .link-row, .page > .search, .page > .filters, .page > .bank, .page > .word-list,
+  .page > .link-row, .page > .search, .page > .filters, .page > .legend, .page > .bank, .page > .word-list,
   .page > .g-sec, .page > .g-empty, .page > .g-intro, .page > .my-link, .page > .set-sec,
   .page > .recheck, .page > .preview-banner,
   .page > .week-plan, .page > .empty-state, .page > .decks-sec, .page > .pick-list, .page > .deck-cards, .page > .pick-search, .page > .field, .page > .add-unit, .page > .pick-more { grid-column: 1 / -1; }

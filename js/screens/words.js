@@ -5,7 +5,7 @@ import { icon } from '../icons.js';
 import { isMastered, isHidden } from '../srs.js';
 import { itemOptions } from '../ui.js';
 import { stripAll } from '../vitext.js';
-import { say, wireSay, header, wireHeader } from './shared.js';
+import { say, wireSay, header, wireHeader, statusDot, statusLegend } from './shared.js';
 
 // ── WORD BANK ───────────────────────────────────────────────────────────────
 export function words(root, filter = 'all') {
@@ -18,9 +18,10 @@ export function words(root, filter = 'all') {
   <div class="page">
     <input class="search" type="search" placeholder="Search Vietnamese or English…" aria-label="Search words" autocomplete="off" autocorrect="off" autocapitalize="off">
     <nav class="seg filters">${[['all', 'All'], ['learning', 'Learning'], ['mastered', 'Mastered'], ['missed', 'Missed'], ['hidden', 'Hidden']].map(([k, n]) => `<button class="${k === filter ? 'on' : ''}" data-f="${k}">${n} <small>${counts[k]}</small></button>`).join('')}</nav>
+    ${statusLegend(['learning', 'mastered'])}
     ${learned.length ? `<ul class="word-list bank">${learned.map(it => { const c = cards[it.id], u = C.unit(it.unit); return `
       <li class="word-row" data-say="${esc(it.vi)}" data-id="${it.id}" data-st="${isMastered(c) ? 'mastered' : 'learning'}${c.lapses ? ' missed' : ''}${hidden(c) ? ' hidden-card' : ''}" data-q="${esc(stripAll(`${it.vi} ${it.en} ${it.north}`).toLowerCase())}">
-        <span class="dot ${isMastered(c) ? 'mastered' : 'learning'}"></span>
+        ${statusDot(isMastered(c) ? 'mastered' : 'learning')}
         <div class="grow"><div class="vi" lang="vi">${esc(it.vi)}</div><div class="muted">${esc(it.en)}${it.edited ? ' <span class="edited-mark">✏️ edited</span>' : ''}</div>
           <div class="small muted">${u.icon} ${esc(u.title)} · ${c.suspended ? 'suspended' : (c.buriedUntil || 0) > now ? 'buried until tomorrow' : `review ${when(c)}`}${c.lapses ? ` · missed ×${c.lapses}` : ''}${c.leech ? ' · 🐌 leech' : ''}</div></div>
         <button class="icon-btn opts" aria-label="Options for ${esc(it.vi)}">${icon('more')}</button>

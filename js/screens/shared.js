@@ -21,6 +21,11 @@ export function wireSay(root) {
 }
 export const sayBtn = (t, label = 'Play audio') => audioAvailable(L()) ? `<button class="icon-btn say" data-say="${esc(t)}" aria-label="${label}">${icon('speaker')}</button>` : '';
 export const bar = (p, cls = '') => `<div class="bar ${cls}"><div style="width:${Math.max(0, Math.min(100, p))}%"></div></div>`;
+// Learning status as a shape as well as a colour (ring / half / check), with a label for VoiceOver.
+const STATUS = { new: 'New', learning: 'Learning', mastered: 'Mastered' };
+export const statusDot = s => `<span class="dot ${s}" role="img" aria-label="${STATUS[s]}"></span>`;
+export const statusLegend = (kinds = ['new', 'learning', 'mastered']) =>
+  `<p class="legend" aria-hidden="true">${kinds.map(k => `<span><span class="dot ${k}"></span>${STATUS[k]}</span>`).join('')}</p>`;
 export const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 
 // Three header kinds, all on the page's own background (red is kept for actions):

@@ -10,7 +10,7 @@ import { isMastered } from '../srs.js';
 import { flagSheet, confirmSheet, itemOptions, sheet, undoToast } from '../ui.js';
 import { stripAll } from '../vitext.js';
 import { spellingProblems } from '../vispell.js';
-import { L, say, go, wireSay, bar, plural, header, wireHeader, startLesson } from './shared.js';
+import { L, say, go, wireSay, bar, plural, header, wireHeader, startLesson, statusDot, statusLegend } from './shared.js';
 
 // ── LEARN (unit list) ───────────────────────────────────────────────────────
 export function learn(root) {
@@ -58,9 +58,9 @@ export function unit(root, id, tab = 'words') {
   const flagBtn = it => `<button class="icon-btn flag-it" data-id="${it.id}" aria-label="Options for ${esc(it.vi)}: edit, report…">${it.kind === 'grammar' ? icon('flag') : icon('more')}</button>`;
 
   const panels = {
-    words: () => `<ul class="word-list">${items.filter(i => i.kind === 'word').map(it => `
+    words: () => `${statusLegend()}<ul class="word-list">${items.filter(i => i.kind === 'word').map(it => `
       <li class="word-row" data-say="${esc(it.vi)}">
-        <span class="dot ${status(it)}" title="${status(it)}"></span>
+        ${statusDot(status(it))}
         <div class="grow">
           <div class="vi" lang="vi">${esc(it.vi)}</div>
           <div class="muted">${esc(it.en)}${it.edited ? ' <span class="edited-mark">✏️ edited</span>' : ''}</div>
@@ -70,12 +70,12 @@ export function unit(root, id, tab = 'words') {
       </li>`).join('')}</ul>`,
     phrases: () => `<ul class="word-list">${items.filter(i => i.kind === 'phrase').map(it => `
       <li class="word-row" data-say="${esc(it.vi)}">
-        <span class="dot ${status(it)}"></span>
+        ${statusDot(status(it))}
         <div class="grow"><div class="vi" lang="vi">${esc(it.vi)}</div><div class="muted">${esc(it.en)}${it.edited ? ' <span class="edited-mark">✏️ edited</span>' : ''}</div></div>${flagBtn(it)}
       </li>`).join('')}</ul>`,
     grammar: () => gItems.map(it => { const g = it.point; return `
       <section class="card grammar-card">
-        <div class="row"><span class="dot ${status(it)}"></span><h2 class="grow">${esc(g.title)}</h2>${flagBtn(it)}</div>
+        <div class="row">${statusDot(status(it))}<h2 class="grow">${esc(g.title)}</h2>${flagBtn(it)}</div>
         <p>${esc(g.explain)}</p>
         ${g.pattern ? `<div class="pattern">${esc(g.pattern)}</div>` : ''}
         ${g.table ? X.grammarTable(g.table) : ''}
@@ -167,7 +167,7 @@ export function grammar(root) {
       if (!pts.length) return '';
       return `<section class="g-sec"><h2 class="section-title">${esc(sec)}</h2><ul class="word-list">${pts.map(({ i, u }) => `
         <li class="word-row g-link" data-href="#/unit/${u.id}/grammar" data-id="${i.id}" data-q="${esc(grammarSearchText(i.point, u))}" data-qa="${esc(grammarSearchText(i.point, u, true))}">
-          <span class="dot ${!cards[i.id] ? 'new' : isMastered(cards[i.id]) ? 'mastered' : 'learning'}"></span>
+          ${statusDot(!cards[i.id] ? 'new' : isMastered(cards[i.id]) ? 'mastered' : 'learning')}
           <div class="grow"><b>${esc(i.point.title)}</b><div class="muted small">${u.icon} ${esc(u.title)}</div><div class="small g-hit hidden" lang="vi"></div></div>${icon('chevron')}
         </li>`).join('')}</ul></section>`;
     }).join('')}
@@ -210,7 +210,7 @@ export function mywords(root) {
     </section>
     ${list.length ? `<ul class="word-list mine">${list.map(it => { const c = cards[it.id]; return `
       <li class="word-row" data-say="${esc(it.vi)}" data-id="${it.id}">
-        <span class="dot ${!c ? 'new' : isMastered(c) ? 'mastered' : 'learning'}"></span>
+        ${statusDot(!c ? 'new' : isMastered(c) ? 'mastered' : 'learning')}
         <div class="grow"><div class="vi" lang="vi">${esc(it.vi)}</div><div class="muted">${esc(it.en)}</div>
           ${it.north ? `<div class="hanoi">Hanoi: <b lang="vi">${esc(it.north)}</b></div>` : ''}${it.note ? `<div class="note">💡 ${esc(it.note)}</div>` : ''}
           <span class="chip ${it.verified ? 'ok' : 'warn'}">${it.verified ? '✓ checked with family' : 'not yet checked'}</span></div>

@@ -7,9 +7,12 @@ import { tomorrow } from './srs.js';
 import { spellingProblems } from './vispell.js';
 import * as D from './decks.js';
 import { toast } from './util.js';
+import { icon } from './icons.js';
 
 // sheet({ title, text, html, actions: [{ label, value, kind }] }) → Promise<value | null>
-export function sheet({ title = '', text = '', html = '', actions = [{ label: 'OK', value: true, kind: 'primary' }], onOpen, stack = false } = {}) {
+// menu: true lays the actions out as an iPhone action sheet: grouped rows ({ group, icon }) and Cancel
+// (the action whose value is null) as its own row below.
+export function sheet({ title = '', text = '', html = '', actions = [{ label: 'OK', value: true, kind: 'primary' }], onOpen, stack = false, menu = false } = {}) {
   return new Promise(resolve => {
     const wrap = document.createElement('div');
     wrap.className = 'sheet-wrap';
@@ -17,7 +20,7 @@ export function sheet({ title = '', text = '', html = '', actions = [{ label: 'O
       <div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title || text || 'Options')}" tabindex="-1">
         <div class="sheet-grip" aria-hidden="true"></div>
         ${title ? `<h2>${esc(title)}</h2>` : ''}${text ? `<p class="muted">${esc(text)}</p>` : ''}${html}
-        <div class="sheet-actions${stack ? ' stack' : ''}">${actions.map((a, i) => `<button class="btn ${a.kind || 'ghost'}" data-i="${i}">${esc(a.label)}</button>`).join('')}</div>
+        ${menu ? menuActions(actions) : `<div class="sheet-actions${stack ? ' stack' : ''}">${actions.map((a, i) => `<button class="btn ${a.kind || 'ghost'}" data-i="${i}">${esc(a.label)}</button>`).join('')}</div>`}
       </div>`;
     document.body.appendChild(wrap);
     requestAnimationFrame(() => wrap.classList.add('open'));
@@ -102,6 +105,15 @@ function dragToDismiss(wrap, close) {
 
 // Close a full-screen lesson/game layer with a short slide down. It is renamed right away so
 // nothing (tests, the update check) still sees an open session while it animates out.
+function menuActions(actions) {
+  const groups = [];
+  actions.forEach((a, i) => { if (a.value !== null) (groups[a.group || 0] ||= []).push([a, i]); });
+  const cancel = actions.findIndex(a => a.value === null);
+  return `<div class="sheet-actions menu">${groups.filter(Boolean).map(g => `<div class="menu-group">${g.map(([a, i]) =>
+    `<button class="btn menu-row${a.kind === 'warn' ? ' warn' : ''}" data-i="${i}">${a.icon ? icon(a.icon) : ''}<span>${esc(a.label)}</span></button>`).join('')}</div>`).join('')}
+    ${cancel >= 0 ? `<button class="btn menu-cancel" data-i="${cancel}">${esc(actions[cancel].label)}</button>` : ''}</div>`;
+}
+
 export function dismissLayer(el) {
   el.className = 'layer-leaving';
   el.setAttribute('aria-hidden', 'true');
@@ -149,15 +161,15 @@ export async function itemOptions(item, { deckId } = {}) {
   const card = C.card(item.id), now = Date.now();
   const buried = card && (card.buriedUntil || 0) > now;
   const actions = [];
-  if (item.kind !== 'grammar') actions.push({ label: '✏️ Edit card', value: 'edit' }, { label: '➕ Add to deck…', value: 'deck' });
-  if (deckId) actions.push({ label: 'Remove from this deck', value: 'undeck' });
-  if (card && card.suspended) actions.push({ label: 'Unsuspend', value: 'unsuspend', kind: 'primary' });
+  if (item.kind !== 'grammar') actions.push({ label: 'Edit card', value: 'edit', icon: 'edit' }, { label: 'Add to deck…', value: 'deck', icon: 'plus' });
+  if (deckId) actions.push({ label: 'Remove from this deck', value: 'undeck', icon: 'minus' });
+  if (card && card.suspended) actions.push({ label: 'Unsuspend', value: 'unsuspend', icon: 'eye', group: 1 });
   else if (card) {
-    actions.push(buried ? { label: 'Unbury', value: 'unbury' } : { label: 'Bury until tomorrow', value: 'bury' });
-    actions.push({ label: 'Suspend (stop showing it)', value: 'suspend' });
+    actions.push(buried ? { label: 'Unbury', value: 'unbury', icon: 'eye', group: 1 } : { label: 'Bury until tomorrow', value: 'bury', icon: 'moon', group: 1 });
+    actions.push({ label: 'Suspend (stop showing it)', value: 'suspend', icon: 'eyeoff', kind: 'warn', group: 1 });
   }
-  actions.push({ label: '🚩 Report a problem', value: 'report' }, { label: 'Cancel', value: null });
-  const act = await sheet({ title: item.vi, text: item.en, actions, stack: true });
+  actions.push({ label: 'Report a problem', value: 'report', icon: 'flag', group: 2 }, { label: 'Cancel', value: null });
+  const act = await sheet({ title: item.vi, text: item.en, actions, menu: true });
   if (act === 'report') { await flagSheet(item); return 'report'; }
   if (act === 'edit') return (await editCard(item)) ? 'edit' : null;
   if (act === 'deck') return (await chooseDeck([item.id])) ? 'deck' : null;

@@ -10,7 +10,7 @@ import * as P from '../planner.js';
 import { continueUnit } from '../placement.js';
 import { stripAll } from '../vitext.js';
 import { spellingProblems } from '../vispell.js';
-import { say, go, wireSay, bar, plural, header, wireHeader, startLesson } from './shared.js';
+import { say, go, wireSay, bar, plural, header, wireHeader, startLesson, statusDot } from './shared.js';
 
 // ── REVIEW ──────────────────────────────────────────────────────────────────
 export function review(root) {
@@ -90,7 +90,7 @@ export function deck(root, id, sub) {
     </section>
     ${its.length ? `<ul class="word-list deck-cards">${its.map(it => { const c = cards[it.id]; return `
       <li class="word-row" data-say="${esc(it.vi)}" data-id="${it.id}">
-        <span class="dot ${!c ? 'new' : isMastered(c) ? 'mastered' : 'learning'}"></span>
+        ${statusDot(!c ? 'new' : isMastered(c) ? 'mastered' : 'learning')}
         <div class="grow"><div class="vi" lang="vi">${esc(it.vi)}</div><div class="muted">${esc(it.en)}${it.edited ? ' <span class="edited-mark">✏️ edited</span>' : ''}</div>
           <div class="small muted">${it.mine ? '📝 your card' : `${C.unit(it.unit)?.icon || ''} ${esc(C.unit(it.unit)?.title || '')}`}</div></div>
         <button class="icon-btn opts" aria-label="Options for ${esc(it.vi)}">${icon('more')}</button>
