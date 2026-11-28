@@ -184,7 +184,7 @@ export function run(opts) {
     <header class="s-head">
       <button class="icon-btn s-close" aria-label="Close">${icon('x')}</button>
       <div class="s-progress"><div class="s-bar"></div></div>
-      <button class="icon-btn s-flag" aria-label="Options for this item: bury, suspend or report">${icon('more')}</button>
+      <button class="icon-btn s-flag" aria-label="Options for this item: hide, stop showing or report">${icon('more')}</button>
     </header>
     <main class="s-body" tabindex="-1"></main>
     <footer class="s-foot"></footer>`;
@@ -291,7 +291,7 @@ function feedback(s, foot, result, html = '') {
   // ⋯ sits beside Continue so bury/suspend/report is reachable one-handed (the top-right one is a stretch).
   const st = s.queue[s.i];
   foot.innerHTML = `<div class="fb-msg"><strong>${msg}</strong>${html}</div>
-    <div class="fb-row">${st?.item ? `<button class="icon-btn fb-more" aria-label="Options for this item: bury, suspend or report">${icon('more')}</button>` : ''}<button class="btn primary next">Continue</button></div>`;
+    <div class="fb-row">${st?.item ? `<button class="icon-btn fb-more" aria-label="Options for this item: hide, stop showing or report">${icon('more')}</button>` : ''}<button class="btn primary next">Continue</button></div>`;
   const b = $('.next', foot); b.focus({ preventScroll: true }); b.onclick = () => next(s);
   $('.fb-more', foot)?.addEventListener('click', () => $('.s-flag', s.root).click());
 }

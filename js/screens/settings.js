@@ -28,7 +28,7 @@ export function settings(root, section) {
     ${isPreview() ? `<details class="card set-sec" name="settings" data-sec="preview" ${openSection === 'preview' ? 'open' : ''}>
       <summary><span class="set-ico" aria-hidden="true">🧪</span><span class="grow"><b>Preview</b><small class="muted">Sample data for testing</small></span><span class="set-chev" aria-hidden="true">${icon('chevron')}</span></summary>
       <div class="set-body">
-        <p class="small">This preview link started with sample progress so you can try everything: due cards, a leech, buried and suspended cards, My words, two decks, an edited card, a streak freeze, and an old over-generous placement to re-check or reset. It’s separate from your real app.</p>
+        <p class="small">This preview link started with sample progress so you can try everything: due cards, a word that keeps slipping, hidden and stopped cards, My words, two decks, an edited card, a streak freeze, and an old over-generous placement to re-check or reset. It’s separate from your real app.</p>
         <button class="btn ghost wide reset-demo">Reset sample data</button>
       </div>
     </details>` : ''}
@@ -77,8 +77,9 @@ export function settings(root, section) {
       <summary><span class="set-ico" aria-hidden="true">📚</span><span class="grow"><b>Study</b><small class="muted">${st.dailyGoal} XP a day · remember ${Math.round((st.retention || 0.9) * 100)}%${st.reviewCap ? ` · ${st.reviewCap} reviews max` : ''}</small></span><span class="set-chev" aria-hidden="true">${icon('chevron')}</span></summary>
       <div class="set-body">
       <label class="field"><span>Daily goal</span><select class="opt-goal">${[30, 60, 100, 150].map(n => `<option value="${n}" ${n === st.dailyGoal ? 'selected' : ''}>${n} XP (${{ 30: 'casual', 60: 'regular', 100: 'serious', 150: 'intense' }[n]})</option>`).join('')}</select></label>
-      <label class="field"><span>Remember target</span><select class="opt-retention">${[[0.8, '80% (fewer reviews)'], [0.85, '85%'], [0.9, '90% (recommended)'], [0.95, '95% (more reviews)']].map(([v, n]) => `<option value="${v}" ${v === (st.retention || 0.9) ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
-      <p class="muted small">Reviews are scheduled with FSRS, the method modern Anki uses: each word comes back when your chance of remembering it drops to this level.</p>
+      <label class="field"><span>How well to remember</span><select class="opt-retention">${[[0.8, '80% (fewer reviews)'], [0.85, '85%'], [0.9, '90% (recommended)'], [0.95, '95% (more reviews)']].map(([v, n]) => `<option value="${v}" ${v === (st.retention || 0.9) ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+      <p class="muted small">Each word comes back when your chance of remembering it drops to this level. Higher means more reviews.</p>
+      <details class="tip"><summary>How reviews work</summary><p class="muted small">Reviews are scheduled with FSRS, the method modern Anki uses. It learns how well you know each word from your answers, and spaces the reviews out further each time you remember it.</p></details>
       <label class="field"><span>Daily review limit</span><select class="opt-cap">${CAP_CHOICES.map(n => `<option value="${n}" ${n === (st.reviewCap || 0) ? 'selected' : ''}>${n ? `${n} reviews a day` : 'No limit (recommended)'}</option>`).join('')}</select></label>
       <p class="muted small">For busy days. Cards past the limit wait until tomorrow. A limit keeps sessions short, but a long backlog then takes longer to clear.</p>
       <label class="field"><span>New items per lesson</span><select class="opt-new">${[5, 8, 10, 12].map(n => `<option value="${n}" ${n === st.newPerLesson ? 'selected' : ''}>${n}</option>`).join('')}</select></label>

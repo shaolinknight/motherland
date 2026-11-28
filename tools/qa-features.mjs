@@ -171,8 +171,8 @@ await scenario('My words: add, typo warning, practice, check, delete', async p =
 await scenario('Bury, suspend, Hidden filter, Anki export', async p => {
   await p.goto(BASE + '#/home'); await p.waitForSelector('.hello'); await seed(p, dueCards, { unit: 'u03', n: 6 }); await p.reload();
   await p.goto(BASE + '#/words'); await p.waitForSelector('.bank .opts');
-  await p.click('.bank .word-row .opts'); await p.click('.sheet-actions .btn >> text=Bury until tomorrow'); await p.waitForTimeout(300);
-  await p.click('.bank .word-row:nth-child(2) .opts'); await p.click('.sheet-actions .btn >> text=Suspend'); await p.waitForTimeout(400);
+  await p.click('.bank .word-row .opts'); await p.click('.sheet-actions .btn >> text=Hide until tomorrow'); await p.waitForTimeout(300);
+  await p.click('.bank .word-row:nth-child(2) .opts'); await p.click('.sheet-actions .btn >> text=Stop showing this card'); await p.waitForTimeout(400);
   await p.click('.filters button[data-f="hidden"]'); await p.waitForTimeout(150);
   ok((await p.$$eval('.bank .word-row:not(.hidden)', r => r.length)) === 2, 'Hidden lists the buried and the suspended card');
   ok((await p.evaluate(async () => (await import('/js/course.js')).dueItems().length)) === 4, 'hidden cards leave the review queue');
@@ -186,7 +186,7 @@ await scenario('Undo for small changes', async p => {
   await p.goto(BASE + '#/home'); await p.waitForSelector('.hello'); await seed(p, dueCards, { unit: 'u03', n: 3 }); await p.reload();
   await p.goto(BASE + '#/words'); await p.waitForSelector('.bank .opts');
   const id = await p.$eval('.bank .word-row', r => r.dataset.id);
-  await p.click('.bank .word-row .opts'); await p.click('.sheet-actions .btn >> text=Bury until tomorrow');
+  await p.click('.bank .word-row .opts'); await p.click('.sheet-actions .btn >> text=Hide until tomorrow');
   await p.waitForSelector('#toast.show .toast-action');
   const h = await p.$eval('.toast-action', b => b.getBoundingClientRect().height);
   ok(h >= 44, 'Undo button is a full-size tap target', `${h}px`);

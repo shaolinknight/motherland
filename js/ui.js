@@ -163,10 +163,10 @@ export async function itemOptions(item, { deckId } = {}) {
   const actions = [];
   if (item.kind !== 'grammar') actions.push({ label: 'Edit card', value: 'edit', icon: 'edit' }, { label: 'Add to deck…', value: 'deck', icon: 'plus' });
   if (deckId) actions.push({ label: 'Remove from this deck', value: 'undeck', icon: 'minus' });
-  if (card && card.suspended) actions.push({ label: 'Unsuspend', value: 'unsuspend', icon: 'eye', group: 1 });
+  if (card && card.suspended) actions.push({ label: 'Show this card again', value: 'unsuspend', icon: 'eye', group: 1 });
   else if (card) {
-    actions.push(buried ? { label: 'Unbury', value: 'unbury', icon: 'eye', group: 1 } : { label: 'Bury until tomorrow', value: 'bury', icon: 'moon', group: 1 });
-    actions.push({ label: 'Suspend (stop showing it)', value: 'suspend', icon: 'eyeoff', kind: 'warn', group: 1 });
+    actions.push(buried ? { label: 'Show again today', value: 'unbury', icon: 'eye', group: 1 } : { label: 'Hide until tomorrow', value: 'bury', icon: 'moon', group: 1 });
+    actions.push({ label: 'Stop showing this card', value: 'suspend', icon: 'eyeoff', kind: 'warn', group: 1 });
   }
   actions.push({ label: 'Report a problem', value: 'report', icon: 'flag', group: 2 }, { label: 'Cancel', value: null });
   const act = await sheet({ title: item.vi, text: item.en, actions, menu: true });
@@ -187,7 +187,7 @@ export async function itemOptions(item, { deckId } = {}) {
   if (act === 'unsuspend') delete card.suspended;
   card.edited = now;   // so a sync merge keeps this choice (not `last`, which FSRS reads as a review)
   S.save();
-  const msg = { bury: 'Buried until tomorrow', unbury: 'Back in your reviews', suspend: 'Suspended. Find it in Word bank → Hidden', unsuspend: 'Back in your reviews' }[act];
+  const msg = { bury: 'Hidden until tomorrow', unbury: 'Back in your reviews', suspend: 'Card stopped. Find it in Word bank → Hidden', unsuspend: 'Back in your reviews' }[act];
   undoToast(msg, () => {
     for (const [k, v] of Object.entries(prev)) { if (v === undefined) delete card[k]; else card[k] = v; }
     card.edited = Date.now();

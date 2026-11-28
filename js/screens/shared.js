@@ -48,7 +48,15 @@ export function header(title, { back, sub } = {}) {
     <button class="icon-btn gear" aria-label="Settings">${icon('gear')}</button>
   </header>`;
 }
+// Segmented controls and filter rows that scroll sideways get a soft right edge while more is hidden.
+function markOverflow(root) {
+  $$('.seg', root).forEach(seg => {
+    const update = () => seg.classList.toggle('more-right', seg.scrollLeft + seg.clientWidth < seg.scrollWidth - 2);
+    update(); seg.addEventListener('scroll', update, { passive: true });
+  });
+}
 export function wireHeader(root) {
+  requestAnimationFrame(() => markOverflow(root));
   const b = $('.back', root);
   if (b) b.onclick = () => { if (window.__navDepth > 0) { window.__goingBack = true; history.back(); } else go(b.dataset.parent); };
   $('.gear', root)?.addEventListener('click', () => go('#/settings'));
@@ -99,6 +107,5 @@ export function backupDue() {
 export function streakLine() {
   const { n, freezeLeft } = S.streakDetails();
   if (!n) return 'Start a streak today';
-  const freeze = freezeLeft ? '🧊 freeze ready' : '🧊 freeze used this week';
-  return `🔥 ${n}-day streak · <span title="One missed day a week won’t break your streak">${freeze}</span>`;
+  return `🔥 ${n}-day streak${freezeLeft ? '' : ' <span class="chip freeze" title="One missed day a week won’t break your streak">🧊 freeze used</span>'}`;
 }

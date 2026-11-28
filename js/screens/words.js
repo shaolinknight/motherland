@@ -23,7 +23,7 @@ export function words(root, filter = 'all') {
       <li class="word-row" data-say="${esc(it.vi)}" data-id="${it.id}" data-st="${isMastered(c) ? 'mastered' : 'learning'}${c.lapses ? ' missed' : ''}${hidden(c) ? ' hidden-card' : ''}" data-q="${esc(stripAll(`${it.vi} ${it.en} ${it.north}`).toLowerCase())}">
         ${statusDot(isMastered(c) ? 'mastered' : 'learning')}
         <div class="grow"><div class="vi" lang="vi">${esc(it.vi)}</div><div class="muted">${esc(it.en)}${it.edited ? ' <span class="edited-mark">✏️ edited</span>' : ''}</div>
-          <div class="small muted">${u.icon} ${esc(u.title)} · ${c.suspended ? 'suspended' : (c.buriedUntil || 0) > now ? 'buried until tomorrow' : `review ${when(c)}`}${c.lapses ? ` · missed ×${c.lapses}` : ''}${c.leech ? ' · 🐌 leech' : ''}</div></div>
+          <div class="small muted">${u.icon} ${esc(u.title)} · ${c.suspended ? 'stopped' : (c.buriedUntil || 0) > now ? 'hidden until tomorrow' : `review ${when(c)}`}${c.lapses ? ` · missed ×${c.lapses}` : ''}${c.leech ? ' · 🐌 keeps slipping' : ''}</div></div>
         <button class="icon-btn opts" aria-label="Options for ${esc(it.vi)}">${icon('more')}</button>
       </li>`; }).join('')}</ul><p class="muted small center empty-msg hidden">No matches.</p>`
       : `<p class="muted center pad">Words you learn in lessons will collect here.</p><a class="btn primary" href="#/learn">Start a lesson</a>`}

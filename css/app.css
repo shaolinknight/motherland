@@ -97,10 +97,10 @@ a.card:active, button.card:not(:disabled):active { transform: scale(.99); }
   text-decoration: none; white-space: normal; text-align: center; line-height: 1.2;   /* wraps at large text sizes */
 }
 .btn:active:not(:disabled) { transform: scale(.97); }
-.btn:disabled { opacity: .45; cursor: default; }
+.btn:disabled { background: var(--track); color: var(--muted); border-color: transparent; box-shadow: none; cursor: default; }
 .btn.primary { background: var(--brand); color: #fff; box-shadow: 0 3px 0 var(--brand-deep); }
 .btn.ghost { background: var(--paper); color: var(--brand-dark); border-color: var(--line); }
-.btn.danger { background: var(--paper); color: var(--amber); border-color: var(--amber-soft); }
+.btn.danger { background: var(--paper); color: var(--brand-dark); border-color: var(--brand-line); }
 .btn.small { min-height: 44px; padding: 0 14px; font-size: .875rem; }
 .btn.wide { width: 100%; }
 .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
@@ -122,7 +122,7 @@ a.card:active, button.card:not(:disabled):active { transform: scale(.99); }
 .preview-banner { background: var(--blue-soft); color: var(--blue); }
 
 /* ── Home ── */
-.hello { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; background: linear-gradient(135deg, var(--paper) 0%, var(--gold-soft) 140%); }
+.hello { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; background: linear-gradient(135deg, var(--paper) 0%, var(--hello-tint, var(--gold-soft)) 140%); }
 .hello > div:first-child { flex: 1 1 9rem; min-width: 0; }   /* at large text sizes the ring wraps below */
 .ring {
   --p: 0; width: max(84px, 5.25rem); height: max(84px, 5.25rem); border-radius: 50%; flex-shrink: 0;   /* grows with text size */
@@ -149,7 +149,9 @@ a.card:active, button.card:not(:disabled):active { transform: scale(.99); }
 .att-row small { display: block; color: var(--muted); font-size: .75rem; line-height: 1.3; }
 .att-ico { width: 36px; height: 36px; border-radius: 10px; background: var(--gold-soft); color: var(--gold-ink); display: grid; place-items: center; flex-shrink: 0; font-size: 1.0625rem; }
 .att-row.cta-test .att-ico { background: var(--brand); color: #fff; }
-.att-row.backup-nudge .btn { flex-shrink: 0; }
+.att-row.backup-nudge { align-items: flex-start; }
+.att-actions { display: flex; gap: 8px; margin-top: 10px; }
+.chip.freeze { font-size: var(--fs-caption); padding: 1px 8px; vertical-align: 1px; }
 .unit-ico { width: 48px; height: 48px; border-radius: 14px; background: var(--gold-soft); display: grid; place-items: center; font-size: 1.625rem; flex-shrink: 0; }
 .unit-ico.big { width: 60px; height: 60px; font-size: 2rem; }
 .vi { font-weight: 600; }
@@ -164,12 +166,13 @@ a.card:active, button.card:not(:disabled):active { transform: scale(.99); }
 .unit-list { display: flex; flex-direction: column; gap: 8px; }
 .unit-row { padding: 12px; }
 .unit-name { display: flex; align-items: center; gap: 6px; }
-.unit-name b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.unit-name b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
 /* ── Unit detail ── */
 .unit-hero .chip { margin-top: 4px; }
 .tip summary { font-weight: 700; cursor: pointer; min-height: 44px; padding-block: 10px; box-sizing: border-box; }
 .tip p { margin-top: 8px; }
+.seg.more-right { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); }
 .seg { display: flex; background: var(--track); border-radius: 999px; padding: 4px; gap: 2px; position: sticky; top: calc(var(--safe-t) + 70px); z-index: 10; box-shadow: 0 0 0 6px var(--cream); overflow-x: auto; scrollbar-width: none; }
 .seg::-webkit-scrollbar { display: none; }
 .seg button { flex: 1 0 auto; min-height: 44px; border: 0; background: transparent; border-radius: 999px; font-weight: 700; font-size: .875rem; color: var(--muted); cursor: pointer; padding: 0 4px; }
@@ -340,7 +343,7 @@ code { background: var(--cream); padding: 1px 5px; border-radius: 4px; font-size
   font-size: 1.0625rem; font-weight: 600; text-align: left; cursor: pointer; box-shadow: 0 2px 0 var(--line); overflow-wrap: anywhere;
 }
 .options.grid2 .option { text-align: center; font-size: 1.25rem; }
-.option small { display: block; font-size: .75rem; color: var(--muted); font-weight: 600; }
+.option small { display: block; font-size: var(--fs-secondary); color: var(--muted); font-weight: 600; }
 .option:active { transform: translateY(1px); }
 .option.right { border-color: var(--jade); background: var(--jade-soft); color: var(--jade); }
 .option.wrong { border-color: var(--amber); background: var(--amber-soft); color: var(--amber); }
@@ -502,7 +505,7 @@ button.ex-row:active { background: var(--gold-soft); }
 .sheet-actions .btn { flex: 1; }
 .sheet-actions.stack { flex-direction: column; }
 .sheet-actions.stack .btn { flex: none; width: 100%; }
-.sheet-actions .btn.danger { background: var(--amber); color: #fff; border-color: var(--amber); }
+.sheet-actions .btn.danger { background: var(--brand-soft); color: var(--brand-dark); border-color: transparent; }
 /* Action sheet (sheet({ menu: true })): grouped list rows with icons, Cancel on its own below. */
 .sheet-actions.menu { flex-direction: column; gap: 10px; }
 .menu-group { display: flex; flex-direction: column; background: var(--cream); border-radius: 16px; overflow: hidden; }
@@ -724,6 +727,7 @@ button.flip-card.flipped:not(:disabled):active { transform: rotateY(180deg) scal
    :root (flag red + star gold). Token names: --brand* is the language's main color, --gold* its
    second color (gold only for Vietnamese). Every pair is checked for 4.5:1 text contrast. ── */
 /* Korea: taegukgi blue, with its red as the second color */
+:root:is([data-lang="ko"], [data-lang="ja"], [data-lang="es"]) { --hello-tint: var(--brand-soft); }   /* greeting tint (Vietnamese keeps gold) */
 :root[data-lang="ko"] {
   --brand: #0047A0; --brand-dark: #00357A; --brand-deep: #00306E; --brand-soft: #E6EEF8; --brand-mid: #9DB7DE; --brand-line: #C5D6EE;
   --accent: var(--brand); --gold: #CD2E3A; --gold-soft: #FBE8EA; --gold-ink: #A3222D; --gold-line: #F2C3C7;

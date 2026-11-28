@@ -50,7 +50,7 @@ export function unit(root, id, tab = 'words') {
   const status = it => { const c = cards[it.id]; return !c ? 'new' : isMastered(c) ? 'mastered' : 'learning'; };
   const showH = S.settings().showHanoi;
   const gItems = items.filter(i => i.kind === 'grammar');
-  const tabs = [['words', 'Words'], ['phrases', 'Phrases'], ...(gItems.length ? [['grammar', 'Grammar']] : []), ...(u.dialogue.length ? [['dialogue', 'Talk']] : []), ...(u.reading ? [['reading', 'Read']] : [])];
+  const tabs = [['words', 'Words'], ['phrases', 'Phrases'], ...(gItems.length ? [['grammar', 'Grammar']] : []), ...(u.dialogue.length ? [['dialogue', 'Dialogue']] : []), ...(u.reading ? [['reading', 'Reading']] : [])];
   if (!tabs.some(t => t[0] === tab)) tab = 'words';
   const remaining = items.filter(i => !cards[i.id]).length;
   const newVocab = items.filter(i => i.kind !== 'grammar' && !cards[i.id]).length;

@@ -34,7 +34,7 @@ export function home(root) {
       <div>
         <h1 lang="vi">${greet}</h1>
         <p class="muted">${C.get().flag} ${C.get().native} · ${streakLine()}</p>
-        ${wk.change != null ? `<p class="small ${wk.change >= 0 ? 'up' : 'down'}">${wk.change >= 0 ? '▲' : '▼'} ${Math.abs(wk.change)}% XP vs this point last week</p>` : ''}
+        ${wk.change > 0 ? `<p class="small up">▲ ${wk.change}% XP vs this point last week</p>` : ''}
         ${st.settings.syncUrl ? `<p class="sync-line small" role="status">${syncStatus()}</p>` : ''}
       </div>
       <div class="ring" style="--p:${ring}" role="img" aria-label="Daily goal ${today.xp} of ${goal} XP"><span><b>${today.xp}</b><small>/${goal} XP</small></span></div>
@@ -86,8 +86,8 @@ function attention() {
   if (!S.lang().placements.length) rows.push(`<li><a class="att-row cta-test" href="#/placement"><span aria-hidden="true" class="att-ico">${icon('target')}</span>
     <span class="grow"><b>Find your level</b><small>A 4-minute test, so lessons start in the right place</small></span>${icon('chevron')}</a></li>`);
   if (backupDue()) rows.push(`<li><div class="att-row backup-nudge" role="group" aria-label="Backup reminder"><span aria-hidden="true" class="att-ico">💾</span>
-    <span class="grow"><b>Back up your progress</b><small>It’s only on this phone. Save a file, or set up Sheet sync in Settings.</small></span>
-    <button class="btn primary small do-backup">Save</button><button class="icon-btn later-backup" aria-label="Remind me later">${icon('x')}</button></div></li>`);
+    <span class="grow"><b>Back up your progress</b><small>It’s only on this phone. Save a file, or set up Sheet sync in Settings.</small>
+      <span class="att-actions"><button class="btn primary small do-backup">Save backup</button><button class="btn ghost small later-backup">Later</button></span></span></div></li>`);
   if (skipped >= 5) rows.push(`<li><a class="att-row retest" href="#/diagnostics"><span aria-hidden="true" class="att-ico">🔍</span>
     <span class="grow"><b>Re-check what the test skipped</b><small>${plural(skipped, 'word')} marked as known haven’t been reviewed yet</small></span>${icon('chevron')}</a></li>`);
   if (retestDue()) rows.push(`<li><a class="att-row retest" href="#/placement"><span aria-hidden="true" class="att-ico">${icon('target')}</span>

@@ -62,7 +62,7 @@ export function progress(root) {
     </section>
 
     <section class="link-row">
-      <a class="card link-card" href="#/leaderboard"><span aria-hidden="true" class="mode-ico">🏆</span><div class="grow"><b>Leaderboards</b><p class="muted small">Weeks · months · games</p></div></a>
+      <a class="card link-card" href="#/leaderboard"><span aria-hidden="true" class="mode-ico">🏆</span><div class="grow"><b>Leaderboards</b><p class="muted small">Your best runs</p></div></a>
       <a class="card link-card" href="#/words"><span aria-hidden="true" class="mode-ico">${icon('cards')}</span><div class="grow"><b>Word bank</b><p class="muted small">${seenV} learned</p></div></a>
     </section>
 
@@ -102,7 +102,7 @@ export function progress(root) {
     ${lessons.length ? `<section class="card"><p class="kicker">Recent lessons</p><ul class="mini-list">${lessons.map(l => `<li><a href="#/unit/${l.unit.id}">${l.unit.icon} ${esc(l.unit.title)}</a><span class="grow"></span>${l.done ? '<span class="chip ok">complete</span>' : ''}<small class="muted">${timeAgo(l.at)}</small></li>`).join('')}</ul></section>` : ''}
 
     ${weak.length ? `<section class="card"><p class="kicker">What you miss most</p>
-      <ul class="mini-list">${weak.map(i => `<li data-say="${esc(i.vi)}"><span class="vi" lang="vi">${esc(i.vi)}</span><span class="muted grow ellip">${esc(i.en)}</span>${cards[i.id].leech ? '<span class="chip leech">🐌 leech</span>' : ''}<span class="chip warn">×${cards[i.id].lapses}</span></li>`).join('')}</ul></section>` : ''}
+      <ul class="mini-list">${weak.map(i => `<li data-say="${esc(i.vi)}"><span class="vi" lang="vi">${esc(i.vi)}</span><span class="muted grow ellip">${esc(i.en)}</span>${cards[i.id].leech ? '<span class="chip leech">🐌 keeps slipping</span>' : ''}<span class="chip warn">×${cards[i.id].lapses}</span></li>`).join('')}</ul></section>` : ''}
 
     <section class="card">
       <p class="kicker">Units</p>
